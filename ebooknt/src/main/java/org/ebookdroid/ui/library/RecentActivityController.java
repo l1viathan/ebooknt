@@ -543,12 +543,10 @@ public class RecentActivityController extends AbstractActivityController<RecentA
             }
 
             if (diff.isAutoScanDirsChanged()) {
-                bookshelfAdapter.startScan();
                 return;
             }
             if (diff.isAllowedFileTypesChanged()) {
                 recentAdapter.setBooks(SettingsManager.getRecentBooks().values(), filter);
-                bookshelfAdapter.startScan();
             }
             if (diff.isAutoScanRemovableMediaChanged()) {
                 final Collection<String> media = MediaManager.getReadableMedia();

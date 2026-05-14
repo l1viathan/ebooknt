@@ -29,3 +29,6 @@ pom.xml.*
 #IntelliJ IDEA
 .idea
 *.iml
+
+# claude code
+/.claude
