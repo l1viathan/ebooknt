@@ -155,5 +155,6 @@
 
     <string name="error_invalid_view_mode">This action is only available in view mode %1$s</string>
 
-    <string name="error_write_external_storage_permission">Document Viewer requires the WRITE_EXTERNAL_STORAGE permission</string>
+    <string name="error_write_external_storage_permission">Document Viewer requires storage access permission</string>
+    <string name="permission_manage_storage_rationale">Document Viewer needs access to all files to browse and open your ebook library.\n\nPlease grant \"All files access\" on the next screen.</string>
 </resources>
