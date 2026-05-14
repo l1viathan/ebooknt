@@ -148,7 +148,6 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     protected void init() {
         final LibSettings libSettings = LibSettings.current();
         recentAdapter.setBooks(SettingsManager.getRecentBooks().values(), libSettings.allowedFileTypes);
-        bookshelfAdapter.startScan();
     }
 
     /**

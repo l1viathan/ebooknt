@@ -76,6 +76,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
         this.scanner.addListener(base);
 
         this.searchQuery = LibSettings.current().searchBookQuery;
+        checkServiceAdapters();
     }
 
     public void onDestroy() {
@@ -295,12 +296,15 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
     }
 
     public void startScan() {
-        clearData();
         final LibSettings libSettings = LibSettings.current();
         final Set<String> folders = new LinkedHashSet<String>(libSettings.autoScanDirs);
         if (libSettings.autoScanRemovableMedia) {
             folders.addAll(MediaManager.getReadableMedia());
         }
+        if (folders.isEmpty()) {
+            return;
+        }
+        clearData();
         scanner.startScan(libSettings.allowedFileTypes, folders);
     }
 

@@ -11,7 +11,11 @@
       "Bash(aapt2 dump *)",
       "Bash(aapt dump *)",
       "Bash(/home/arc/.android/sdk/build-tools/34.0.0/aapt dump *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(adb devices *)",
+      "Bash(adb *)",
+      "Bash(grep --line-buffered -v \"^$\")",
+      "Bash(./gradlew :ebooknt:assembleDebug -x lint --quiet)"
     ]
   }
 }

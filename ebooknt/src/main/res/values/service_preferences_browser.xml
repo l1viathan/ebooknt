@@ -5,7 +5,7 @@
     <string translatable="false" name="pref_usebookcase_defvalue">true</string>
 
     <string translatable="false" name="pref_brautoscandir_id">brautoscandir</string>
-    <string translatable="false" name="pref_brautoscandir_defvalue">/sdcard</string>
+    <string translatable="false" name="pref_brautoscandir_defvalue">/sdcard/EbookNT</string>
 
     <string translatable="false" name="pref_autoscanremovable_id">autoscanremovable</string>
     <string translatable="false" name="pref_autoscanremovable_defvalue">false</string>

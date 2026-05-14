@@ -130,21 +130,29 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         inflater.inflate(R.menu.recentmenu, menu);
 
         MenuItem searchItem = menu.findItem(R.id.recentmenu_searchBook);
-        SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                ActionEx a = getController().getOrCreateAction(R.id.actions_searchBook);
-                a.addParameter(new Constant("input", new SpannableStringBuilder(query)));
-                a.run();
-                return true;
+        if (searchItem != null) {
+            android.view.View actionView = searchItem.getActionView();
+            if (actionView == null) {
+                actionView = MenuItemCompat.getActionView(searchItem);
             }
+            if (actionView instanceof SearchView) {
+                final SearchView searchView = (SearchView) actionView;
+                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(String query) {
+                        ActionEx a = getController().getOrCreateAction(R.id.actions_searchBook);
+                        a.addParameter(new Constant("input", new SpannableStringBuilder(query)));
+                        a.run();
+                        return true;
+                    }
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
+                    @Override
+                    public boolean onQueryTextChange(String newText) {
+                        return false;
+                    }
+                });
             }
-        });
+        }
 
         return true;
     }
