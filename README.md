@@ -1,10 +1,10 @@
-# Document Viewer
+# EbookNT
 
 [<img src="https://f-droid.org/badge/get-it-on.png"
       alt="Get it on F-Droid"
       height="80">](https://f-droid.org/app/org.sufficientlysecure.viewer)
 
-Document Viewer is a highly customizable document viewer for Android.
+EbookNT is a highly customizable document viewer for Android.
 
 Supports the following formats:
 * PDF
@@ -22,7 +22,7 @@ FAQ, information about supported MIME types, and available Intents can be found 
 
 ## Development
 
-Document Viewer is a fork of the last GPL version of EBookDroid (http://code.google.com/p/ebookdroid/).
+EbookNT is a fork of the last GPL version of EBookDroid (http://code.google.com/p/ebookdroid/).
 
 We need your support to fix outstanding bugs, join development by forking the project!
 
@@ -39,12 +39,12 @@ Expand the Extras directory and install "Android Support Repository"
 Select everything for the newest SDK
 3. Export ANDROID_HOME pointing to your Android SDK
 5. Pull in submodules with ``./init.sh``
-5. Build native libraries with ``cd document-viewer; ndk-build``
+5. Build native libraries with ``cd ebooknt; ndk-build``
 6. Execute ``./gradlew build``
 
 ### NDK Debugging
 
-1. ``cd document-viewer; ndk-build -j8 NDK_DEBUG=1``
+1. ``cd ebooknt; ndk-build -j8 NDK_DEBUG=1``
 2. From Android Studio: Run -> Debug... to build and install the APK and launch it on the device. 
 3. ``cp src/main/AndroidManifest.xml . # Hack required for ndk-gdb to find everything``
 4. ``ndk-gdb``
@@ -62,22 +62,22 @@ I am using the newest [Android Studio](http://developer.android.com/sdk/installi
 The [Document Viewer Fontpack](https://github.com/PrivacyApps/document-viewer-fontpack) is no longer supported. Our MuPDF patches to support this no longer apply cleanly, so support for the font pack was dropped.
 
 # Licenses
-Document Viewer is licensed under the GPLv3+.  
+EbookNT is licensed under the GPLv3+.  
 The file LICENSE includes the full license text.
 
 ## Details
-Document Viewer is free software: you can redistribute it and/or modify
+EbookNT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-Document Viewer is distributed in the hope that it will be useful,
+EbookNT is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Document Viewer.  If not, see <http://www.gnu.org/licenses/>.
+along with EbookNT.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Java Libraries
 * JCIFS  
