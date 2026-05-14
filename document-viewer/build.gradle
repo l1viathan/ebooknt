@@ -30,13 +30,14 @@ ext.versionCodes = ['armeabi-v7a':2, 'x86':3, 'arm64-v8a':5, 'x86_64':6]
 import com.android.build.OutputFile
 
 android {
-    compileSdkVersion 28
-    // copied from: https://github.com/kontalk/androidclient
-    // temporarly introduced to fix Cyanogenmod bug
-    // https://issuetracker.google.com/issues/64434571#comment35
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 33
 
     useLibrary 'org.apache.http.legacy'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 
     defaultConfig {
         minSdkVersion 14
@@ -93,7 +94,7 @@ android {
     }
     
     // Do not abort build if lint finds errors
-    lintOptions {
+    lint {
         abortOnError false
     }
 }
