@@ -47,7 +47,7 @@ android {
     }
 
     sourceSets.main {
-        jniLibs.srcDir 'libs'
+        jniLibs.srcDir '../libs'
     }
 
     splits {

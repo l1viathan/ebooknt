@@ -17,6 +17,9 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.View;
 
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,6 +61,22 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
         drawQueue = new DrawQueue();
         scrollThread = new ScrollEventThread(base, this);
         scrollThread.start();
+    }
+
+    @Override
+    public void onSurfaceCreated(final GL10 gl, final EGLConfig config) {
+        android.util.Log.e("EBOOKNT", "GLView.onSurfaceCreated");
+        super.onSurfaceCreated(gl, config);
+        post(new Runnable() {
+            @Override
+            public void run() {
+                android.util.Log.e("EBOOKNT", "GLView.onSurfaceCreated post running");
+                final org.ebookdroid.ui.viewer.IViewController dc = base.getDocumentController();
+                if (dc != null) {
+                    dc.toggleRenderingEffects();
+                }
+            }
+        });
     }
 
     protected void draw(GLCanvas canvas) {

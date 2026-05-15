@@ -923,9 +923,13 @@ JNIEXPORT jlong JNICALL
 JNI_FN(MuPdfOutline_open)(JNIEnv *env, jclass clazz, jlong dochandle)
 {
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
-    if (!doc->outline)
-        doc->outline = fz_load_outline(doc->ctx, doc->document);
-//    DEBUG("PdfOutline.open(): return handle = %p", doc->outline);
+    if (!doc->outline) {
+        fz_try(doc->ctx) {
+            doc->outline = fz_load_outline(doc->ctx, doc->document);
+        } fz_catch(doc->ctx) {
+            doc->outline = NULL;
+        }
+    }
     return (jlong) (uintptr_t) doc->outline;
 }
 
@@ -959,7 +963,7 @@ JNI_FN(MuPdfOutline_getLink)(JNIEnv *env, jclass clazz, jlong outlinehandle, jlo
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
 
     // DEBUG("PdfOutline_getLink(%p)",outline);
-    if (!outline)
+    if (!outline || !outline->uri)
         return NULL;
 
     if (fz_is_external_link(doc->ctx, outline->uri))
@@ -985,7 +989,7 @@ JNI_FN(MuPdfOutline_fillLinkTargetPoint)(JNIEnv *env, jclass clazz, jlong dochan
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
     fz_outline *outline = (fz_outline*) (uintptr_t) outlinehandle;
 
-    if (!outline || fz_is_external_link(doc->ctx, outline->uri))
+    if (!outline || !outline->uri || fz_is_external_link(doc->ctx, outline->uri))
     {
         return 0;
     }

@@ -46,9 +46,6 @@ public abstract class AbstractEvent implements IEvent {
         if (!nodesToDecode.isEmpty()) {
             ctrl.base.getDecodingProgressModel().increase(nodesToDecode.size());
             decodePageTreeNodes(viewState, nodesToDecode);
-            if (LCTX.isDebugEnabled()) {
-                LCTX.d(viewState + " => " + nodesToDecode.size());
-            }
         }
 
         return viewState;

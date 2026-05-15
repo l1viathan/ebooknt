@@ -48,6 +48,7 @@ public class EventReset extends AbstractEvent {
     @Override
     public ViewState process() {
         try {
+            android.util.Log.e("EBOOKNT", "EventReset clearPages=" + clearPages + " reason=" + reason);
             if (clearPages) {
                 final List<GLBitmaps> bitmapsToRecycle = new ArrayList<GLBitmaps>();
                 for (final Page page : ctrl.model.getPages()) {

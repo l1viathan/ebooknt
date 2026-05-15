@@ -440,9 +440,11 @@ public abstract class AbstractViewController extends AbstractComponentController
         if (LCTX.isDebugEnabled()) {
             LCTX.d("onLayoutChanged(" + layoutChanged + ", " + layoutLocked + "," + oldLaout + ", " + newLayout + ")");
         }
+        android.util.Log.e("EBOOKNT", "onLayoutChanged lc=" + layoutChanged + " ll=" + layoutLocked
+                + " old=" + oldLaout + " new=" + newLayout);
         if (layoutChanged && !layoutLocked) {
             if (isShown) {
-                EventPool.newEventReset(this, InvalidateSizeReason.LAYOUT, true).process().release();
+                EventPool.newEventReset(this, InvalidateSizeReason.LAYOUT, false).process().release();
                 return true;
             } else {
                 if (LCTX.isDebugEnabled()) {
@@ -460,7 +462,12 @@ public abstract class AbstractViewController extends AbstractComponentController
      */
     @Override
     public final void toggleRenderingEffects() {
-        EventPool.newEventReset(this, null, true).process().release();
+        android.util.Log.e("EBOOKNT", "toggleRenderingEffects model=" + model
+                + " pages=" + (model != null ? model.getPages().length : -1),
+                new Throwable());
+        if (model != null && model.getPages().length > 0) {
+            EventPool.newEventReset(this, null, true).process().release();
+        }
     }
 
     /**
