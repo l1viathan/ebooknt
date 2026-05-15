@@ -2,6 +2,7 @@ package org.ebookdroid.ui.viewer.adapters;
 
 import org.sufficientlysecure.viewer.R;
 import org.ebookdroid.common.settings.books.BookSettings;
+import org.ebookdroid.common.settings.types.PageType;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.codec.OutlineLink;
 import org.ebookdroid.core.models.DocumentModel;
@@ -11,6 +12,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -63,6 +65,12 @@ public class OutlineAdapter extends BaseAdapter {
         this.pageIndexes = new int[this.objects.length];
         this.states = new OutlineItemState[this.objects.length];
 
+        final Page[] allPages = model.getPages();
+        final SparseArray<Page> docIndexMap = new SparseArray<Page>(allPages.length);
+        for (final Page p : allPages) {
+            docIndexMap.put(p.index.docIndex, p);
+        }
+
         boolean treeFound = false;
         for (int i = 0; i < this.objects.length; i++) {
             mapping.put(i, i);
@@ -74,9 +82,13 @@ public class OutlineAdapter extends BaseAdapter {
                 states[i] = OutlineItemState.LEAF;
             }
 
-            final Page page = model.getLinkTargetPage(this.objects[i].targetPage - 1, this.objects[i].targetRect, null,
-                    bs.splitRTL);
-            this.pageIndexes[i] = page != null ? page.index.viewIndex + 1 : -1;
+            final int docIndex = this.objects[i].targetPage - 1;
+            Page target = docIndex >= 0 ? docIndexMap.get(docIndex) : null;
+            if (target != null && bs != null && this.objects[i].targetRect != null
+                    && target.type == PageType.LEFT_PAGE && this.objects[i].targetRect.left >= 0.5f) {
+                target = model.getPageObject(target.index.viewIndex + (bs.splitRTL ? -1 : 1));
+            }
+            this.pageIndexes[i] = target != null ? target.index.viewIndex + 1 : -1;
         }
 
         currentId = current != null ? objects.indexOf(current) : -1;
@@ -166,47 +178,53 @@ public class OutlineAdapter extends BaseAdapter {
         return -1;
     }
 
+    private static final class ViewHolder {
+        TextView title;
+        ImageView btn;
+        View space;
+        TextView pageIndex;
+    }
+
     @Override
     public View getView(final int position, final View convertView, final ViewGroup parent) {
         final int id = (int) getItemId(position);
-        View container = null;
-        boolean firstTime = false;
+        View container;
+        ViewHolder holder;
         if (convertView == null) {
             container = LayoutInflater.from(context).inflate(R.layout.outline_item, parent, false);
-            firstTime = true;
+            holder = new ViewHolder();
+            holder.title = (TextView) container.findViewById(R.id.outline_title);
+            holder.btn = (ImageView) container.findViewById(R.id.outline_collapse);
+            holder.space = container.findViewById(R.id.outline_space);
+            holder.pageIndex = (TextView) container.findViewById(R.id.outline_pageindex);
+            final RelativeLayout.LayoutParams btnParams = (LayoutParams) holder.btn.getLayoutParams();
+            spaceWidth = btnParams.width / 2;
+            container.setOnClickListener(voidListener);
+            holder.title.setOnClickListener(itemListener);
+            container.setTag(holder);
         } else {
             container = convertView;
+            holder = (ViewHolder) container.getTag();
         }
-        final TextView view = (TextView) container.findViewById(R.id.outline_title);
-        final ImageView btn = (ImageView) container.findViewById(R.id.outline_collapse);
-        final View space = container.findViewById(R.id.outline_space);
-        final TextView pageIndex = (TextView) container.findViewById(R.id.outline_pageindex);
 
         final OutlineLink item = getItem(position);
-        view.setText(item.title.trim());
-        view.setTag(position);
-        btn.setTag(position);
-        pageIndex.setText(getPageIndex(position));
+        holder.title.setText(item.title.trim());
+        holder.title.setTag(position);
+        holder.btn.setTag(position);
+        holder.pageIndex.setText(getPageIndex(position));
 
         container.setBackgroundDrawable(id == currentId ? this.selected : this.background);
 
-        if (firstTime) {
-            final RelativeLayout.LayoutParams btnParams = (LayoutParams) btn.getLayoutParams();
-            spaceWidth = btnParams.width / 2;
-            container.setOnClickListener(voidListener);
-            view.setOnClickListener(itemListener);
-        }
-
-        final RelativeLayout.LayoutParams sl = (LayoutParams) space.getLayoutParams();
+        final RelativeLayout.LayoutParams sl = (LayoutParams) holder.space.getLayoutParams();
         sl.width = item.level * spaceWidth;
-        space.setLayoutParams(sl);
+        holder.space.setLayoutParams(sl);
 
         if (states[id] == OutlineItemState.LEAF) {
-            btn.setOnClickListener(voidListener);
-            btn.setImageDrawable(null);
+            holder.btn.setOnClickListener(voidListener);
+            holder.btn.setImageDrawable(null);
         } else {
-            btn.setOnClickListener(collapseListener);
-            btn.setImageResource(states[id] == OutlineItemState.EXPANDED ? R.drawable.viewer_outline_item_expanded
+            holder.btn.setOnClickListener(collapseListener);
+            holder.btn.setImageResource(states[id] == OutlineItemState.EXPANDED ? R.drawable.viewer_outline_item_expanded
                     : R.drawable.viewer_outline_item_collapsed);
         }
 

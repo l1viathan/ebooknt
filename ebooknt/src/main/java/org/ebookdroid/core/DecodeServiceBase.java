@@ -49,6 +49,8 @@ public class DecodeServiceBase implements DecodeService {
 
     final AtomicBoolean isRecycled;
 
+    private volatile List<OutlineLink> cachedOutline;
+
     final AtomicReference<ViewState> viewState;
 
     final Map<Integer, CodecPageHolder> pages;
@@ -362,12 +364,16 @@ public class DecodeServiceBase implements DecodeService {
 
     @Override
     public List<OutlineLink> getOutline() {
-        return document != null ? document.getOutline() : null;
+        if (cachedOutline == null) {
+            cachedOutline = document != null ? document.getOutline() : null;
+        }
+        return cachedOutline;
     }
 
     @Override
     public void recycle() {
         if (isRecycled.compareAndSet(false, true)) {
+            cachedOutline = null;
             executor.recycle();
         }
     }

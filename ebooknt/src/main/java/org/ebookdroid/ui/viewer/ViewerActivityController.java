@@ -479,12 +479,34 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.mainmenu_outline)
     public void showOutline(final ActionEx action) {
-        final List<OutlineLink> outline = documentModel.decodeService.getOutline();
-        if ((outline != null) && (outline.size() > 0)) {
-            final OutlineDialog dlg = new OutlineDialog(this, outline);
-            dlg.show();
-        } else {
-            getManagedComponent().showToastText(Toast.LENGTH_SHORT, R.string.outline_missed);
+        new OutlineLoadTask().execute();
+    }
+
+    final class OutlineLoadTask extends AsyncTask<Void, Void, List<OutlineLink>> {
+        private ProgressDialog progress;
+
+        @Override
+        protected void onPreExecute() {
+            progress = ProgressDialog.show(getManagedComponent(), "",
+                    getManagedComponent().getString(R.string.msg_loading), true);
+        }
+
+        @Override
+        protected List<OutlineLink> doInBackground(final Void... params) {
+            return documentModel.decodeService.getOutline();
+        }
+
+        @Override
+        protected void onPostExecute(final List<OutlineLink> outline) {
+            try {
+                progress.dismiss();
+            } catch (final Throwable ignored) {
+            }
+            if (outline != null && outline.size() > 0) {
+                new OutlineDialog(ViewerActivityController.this, outline).show();
+            } else {
+                getManagedComponent().showToastText(Toast.LENGTH_SHORT, R.string.outline_missed);
+            }
         }
     }
 
