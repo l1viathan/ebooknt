@@ -20,7 +20,7 @@
     <string name="menu_show_options_menu">"显示菜单"</string>
     <string name="menu_backupsettings">"备份与恢复"</string>
     <string name="menu_crop">"手动分隔"</string>
-    <string name="menu_navigation_menu">"导航"</string>
+    <string name="menu_navigation_menu">"导航(其它)"</string>
     <string name="menu_fastsettings_menu">"查看"</string>
     <string name="menu_allsettings_menu">"设置"</string>
     <string name="menu_show_library">"显示书目"</string>

@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
+        android:id="@+id/mainmenu_outline"
+        android:alphabeticShortcut="o"
+        android:icon="@drawable/viewer_menu_outline"
+        android:title="@string/menu_outline"/>
+    <item
         android:id="@+id/mainmenu_bookmark"
         android:alphabeticShortcut="b"
         android:icon="@drawable/viewer_menu_bookmark_add"
@@ -16,11 +21,6 @@
         android:alphabeticShortcut="r"
         android:icon="@drawable/viewer_menu_searchtext"
         android:title="@string/menu_searchtext"/>
-    <item
-        android:id="@+id/mainmenu_outline"
-        android:alphabeticShortcut="o"
-        android:icon="@drawable/viewer_menu_outline"
-        android:title="@string/menu_outline"/>
     <item
         android:id="@+id/mainmenu_zoom"
         android:alphabeticShortcut="z"

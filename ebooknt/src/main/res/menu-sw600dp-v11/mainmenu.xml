@@ -3,20 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/mainmenu_outline"
+        android:icon="@drawable/viewer_menu_outline"
+        app:showAsAction="always"
+        android:title="@string/menu_outline"/>
+    <item
         android:id="@+id/mainmenu_nav_menu"
         android:icon="@drawable/viewer_actionbar_menu_navigation"
         app:showAsAction="always"
         android:title="@string/menu_navigation_menu">
         <menu>
             <item
-                android:id="@+id/mainmenu_outline"
-                android:icon="@drawable/viewer_menu_outline"
-                android:title="@string/menu_outline"/>
-            <item
                 android:id="@+id/mainmenu_search"
                 android:icon="@drawable/viewer_menu_searchtext"
                 app:showAsAction="ifRoom"
-                android:title="Search"/>
+                android:title="@string/menu_search"/>
             <item
                 android:id="@+id/mainmenu_bookmark"
                 android:icon="@drawable/viewer_menu_bookmark_add"
