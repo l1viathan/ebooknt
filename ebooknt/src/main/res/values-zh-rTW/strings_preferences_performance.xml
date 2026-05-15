@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pref_performance_category">"效能設定"</string>
+    <string name="pref_performance_category_summary">"設定效能引數"</string>
+    <string name="pref_pagesinmemory_title">"記憶體頁面"</string>
+    <string name="pref_pagesinmemory_summary">"儲存在記憶體中的頁數"</string>
+    <string name="pref_lowlevel_category">"低階別的應用程式首選項（需重新載入檔案）"</string>
+    <string name="pref_lowlevel_category_summary">"低階別的應用程式首選項（需重新載入檔案）"</string>
+    <string name="pref_decoding_threads_title">"解碼執行緒數量"</string>
+    <string name="pref_decoding_threads_summary">"執行解碼執行緒的數量"</string>
+    <string name="pref_decodethread_priority_title">"解碼執行緒優先順序"</string>
+    <string name="pref_decodethread_priority_summary">"設定解碼執行緒優先順序"</string>
+    <string name="pref_drawthread_priority_title">"表面繪圖執行緒優先順序"</string>
+    <string name="pref_drawthread_priority_summary">"設定表面繪圖執行緒優先順序"</string>
+    <string name="list_thread_priority_lowest">"最低"</string>
+    <string name="list_thread_priority_lower">"較低"</string>
+    <string name="list_thread_priority_normal">"正常"</string>
+    <string name="list_thread_priority_higher">"較高"</string>
+    <string name="list_thread_priority_highest">"最高"</string>
+    <string name="pref_decodingonscroll_title">"在滾動中解碼"</string>
+    <string name="pref_decodingonscroll_summary">"允許在滾動或快速翻動頁面過程中解碼"</string>
+    <string name="pref_bitmapsize_title">"點陣圖尺寸"</string>
+    <string name="pref_bitmapsize_summary">"設定點陣圖尺寸"</string>
+    <string name="list_bitmapsize_64" translatable="true">"64 × 64"</string>
+    <string name="list_bitmapsize_128" translatable="true">"128 × 128"</string>
+    <string name="list_bitmapsize_256" translatable="true">"256 × 256"</string>
+    <string name="list_bitmapsize_512" translatable="true">"512 × 512"</string>
+    <string name="list_bitmapsize_1024" translatable="true">"1024 × 1024"</string>
+    <string name="pref_heappreallocate_title">"預分配堆疊"</string>
+    <string name="pref_heappreallocate_summary">"程式啟動時預分配堆疊大小（兆位元組）"</string>
+    <string name="pref_pdfstoragesize_title">"MuPDF內部儲存容量"</string>
+    <string name="pref_pdfstoragesize_summary">"MuPDF內部儲存容量大小（兆位元組）"</string>
+
+</resources>

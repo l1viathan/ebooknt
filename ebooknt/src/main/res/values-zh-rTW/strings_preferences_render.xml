@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pref_rotation_title">"旋轉模式"</string>
+    <string name="pref_rotation_summary">"如何改變旋轉"</string>
+    <string name="list_rotation_unspecified" translatable="true">"不指定"</string>
+    <string name="list_rotation_land" translatable="true">"強制橫屏"</string>
+    <string name="list_rotation_port" translatable="true">"強制豎屏"</string>
+    <string name="list_rotation_user" translatable="true">"使用者"</string>
+    <string name="list_rotation_behind" translatable="true">"背景"</string>
+    <string name="list_rotation_auto" translatable="true">"自動"</string>
+    <string name="list_rotation_nosensor" translatable="true">"無感測器"</string>
+    <string name="list_rotation_sensor_landscape" translatable="true">"感測器橫屏"</string>
+    <string name="list_rotation_sensor_portrait" translatable="true">"感測器豎屏"</string>
+    <string name="list_rotation_reverse_landscape" translatable="true">"反向橫屏"</string>
+    <string name="list_rotation_reverse_portrait" translatable="true">"反向豎屏"</string>
+    <string name="list_rotation_full_sensor" translatable="true">"全感測器"</string>
+    <string name="pref_render_category">"呈現"</string>
+    <string name="pref_render_category_summary">"渲染設定"</string>
+    <string name="pref_book_category">"當前設定"</string>
+    <string name="pref_book_category_summary">"當前閱讀的檔案設定"</string>
+    <string name="pref_firstpageoffset_title">"第一頁位移量"</string>
+    <string name="pref_firstpageoffset_summary">"顯示給使用者的第一頁索引"</string>
+    <string name="pref_splitpages_title">"拆分頁面"</string>
+    <string name="pref_splitpages_summary">"將縱向頁面拆分為兩個橫向頁面"</string>
+    <string name="pref_splitpages_rtl_title">"從右往左拆分頁面"</string>
+    <string name="pref_splitpages_rtl_summary">"將橫向頁面從右往左拆分為兩個縱向頁面"</string>
+    <string name="pref_croppages_title">"裁剪頁面"</string>
+    <string name="pref_croppages_summary">"裁剪頁面邊框"</string>
+    <string name="pref_viewmode_title">"頁面檢視模式"</string>
+    <string name="pref_viewmode_summary">"頁面檢視模式"</string>
+    <string name="list_viewmode_vertical_scroll">"上下滾動"</string>
+    <string name="list_viewmode_horizontal_scroll">"水平滾動"</string>
+    <string name="list_viewmode_single_page">"單個頁面"</string>
+    <string name="pref_singlepage_category">"單個頁面設定"</string>
+    <string name="pref_singlepage_category_summary">"設定實際為單頁模式"</string>
+    <string name="pref_align_title">"頁面對齊模式"</string>
+    <string name="pref_align_summary">"如何對齊頁"</string>
+    <string name="list_align_by_width">"按寬度"</string>
+    <string name="list_align_by_height">"按高度"</string>
+    <string name="list_align_auto">"自動"</string>
+    <string name="pref_animationtype_title">"動畫型別"</string>
+    <string name="pref_animationtype_summary">"選擇過渡動畫的型別"</string>
+    <string name="list_animation_none">"無"</string>
+    <string name="list_animation_curler_simple">"簡單卷"</string>
+    <string name="list_animation_curler_dynamic">"動態卷"</string>
+    <string name="list_animation_curler_natural">"自然捲"</string>
+    <string name="list_animation_slider">"滑動"</string>
+    <string name="list_animation_fader">"漸顯淡入"</string>
+    <string name="list_animation_squeezer">"擠壓"</string>
+    <string name="list_animation_slider2">"滑過"</string>
+    <string name="pref_postprocessing_category">"後處理效果"</string>
+    <string name="pref_postprocessing_summary">"後處理效果"</string>
+    <string name="pref_nightmode_title">"夜間模式"</string>
+    <string name="pref_nightmode_summary">"在黑色背景上使用白色符號"</string>
+    <string name="pref_posimages_in_nightmode_title">"夜間模式的正片"</string>
+    <string name="pref_posimages_in_nightmode_summary">"在夜間模式顯示灰度影象（影象不反色）"</string>
+    <string name="pref_contrast_title">"對比度"</string>
+    <string name="pref_contrast_summary">"對比度校正極 (0—1000，預設為 100)"</string>
+    <string name="pref_gamma_title">"伽馬"</string>
+    <string name="pref_gamma_summary">"伽馬校正極 (0—200，預設為 100)"</string>
+    <string name="pref_exposure_title">"曝光"</string>
+    <string name="pref_exposure_summary">"曝光校正極 (0—200，預設為 100)</string>
+    <string name="pref_autolevels_title">"自動色階"</string>
+    <string name="pref_autolevels_summary">"使用自動水平矯正"</string>
+
+    <string name="pref_tint_title">"色調"</string>
+    <string name="pref_tint_summary">"使用下面指定的顏色為頁面著色"</string>
+    <string name="pref_tint_color_title">"色調顏色"</string>
+    <string name="pref_tint_color_summary">"用於為頁面著色的顏色"</string>
+    <string name="pref_rtl_title">"從右往左"</string>
+    <string name="pref_rtl_summary">"水平滾動和單頁模式的頁面順序"</string>
+
+</resources>

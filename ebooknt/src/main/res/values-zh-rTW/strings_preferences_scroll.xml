@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pref_scroll_category">"觸控和滾動"</string>
+    <string name="pref_scroll_category_summary">"觸控和滾動首選項"</string>
+    <string name="pref_tapsenabled_title">"啟用點選"</string>
+    <string name="pref_tapsenabled_summary">"定義使用點選區域和行動"</string>
+    <string name="pref_scroll_title">"滾動高度"</string>
+    <string name="pref_scroll_summary">"設定捲軸的高度"</string>
+    <string name="pref_touchdelay_title">"輕觸處理延時"</string>
+    <string name="pref_touchdelay_summary">"觸控處理延時（毫秒）"</string>
+    <string name="pref_animate_scrolling_title">"動畫滾動"</string>
+    <string name="pref_animate_scrolling_summary">"動畫滾動滾動模式"</string>
+
+    <string name="pref_volumekeyscrolling_title">"音量鍵滾動"</string>
+    <string name="pref_volumekeyscrolling_summary">"使用音量鍵滾動而不是調節音量"</string>
+    <string name="pref_tapfullscreen_title">"點選切換全屏"</string>
+    <string name="pref_tapfullscreen_summary">"在點選區域或超連結外的任何位置點選以切換全屏"</string>
+
+</resources>

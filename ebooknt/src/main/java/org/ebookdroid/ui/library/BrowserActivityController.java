@@ -118,7 +118,10 @@ public class BrowserActivityController extends AbstractActivityController<Browse
 
     @ActionMethod(ids = R.id.browserhome)
     public void goHome(final ActionEx action) {
-        if (BaseDroidApp.EXT_STORAGE.exists()) {
+        final Set<String> dirs = LibSettings.current().autoScanDirs;
+        if (LengthUtils.isNotEmpty(dirs)) {
+            setCurrentDir(new File(dirs.iterator().next()));
+        } else if (BaseDroidApp.EXT_STORAGE.exists()) {
             setCurrentDir(BaseDroidApp.EXT_STORAGE);
         } else {
             setCurrentDir(new File("/"));

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="pref_navigation_category">"導航與歷史"</string>
+    <string name="pref_navigation_category_summary">"導航及歷史設定"</string>
+    <string name="pref_showbookmarksmenu_summary">"在選單中顯示書籤"</string>
+    <string name="pref_showbookmarksmenu_title">"在導航選單中顯示書籤"</string>
+    <string name="pref_link_highlight_summary">"選擇顏色環節突出"</string>
+    <string name="pref_link_highlight_title">"連結突出"</string>
+    <string name="pref_search_highlight_summary">"選擇顏色的搜尋結果突出"</string>
+    <string name="pref_search_highlight_title">"搜尋突出"</string>
+    <string name="pref_current_search_highlight_summary">"選擇顏色突出當前搜尋結果"</string>
+    <string name="pref_current_search_highlight_title">"搜尋當前突出"</string>
+    <string name="pref_storeGotoHistory_title">"轉到頁面導航歷史記錄中的商店"</string>
+    <string name="pref_storeGotoHistory_summary">""</string>
+    <string name="pref_storeLinkGotoHistory_title">"轉到連結儲存在導航歷史記錄"</string>
+    <string name="pref_storeLinkGotoHistory_summary">""</string>
+    <string name="pref_storeOutlineGotoHistory_title">"商店轉到大綱環節在導航歷史記錄"</string>
+    <string name="pref_storeOutlineGotoHistory_summary">""</string>
+    <string name="pref_storeSearchGotoHistory_title">"到商店去搜尋結果中的導航歷史記錄"</string>
+    <string name="pref_storeSearchGotoHistory_summary">""</string>
+
+</resources>

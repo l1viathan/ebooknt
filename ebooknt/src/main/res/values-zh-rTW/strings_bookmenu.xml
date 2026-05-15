@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="bookmenu_open">"開啟書籍"</string>
+    <string name="bookmenu_settings">"設定"</string>
+    <string name="bookmenu_openbookshelf">"顯示書架"</string>
+    <string name="bookmenu_openbookfolder">"顯示資料夾"</string>
+    <string name="bookmenu_recentgroup">"清空最近的瀏覽記錄"</string>
+    <string name="bookmenu_removefromrecent">"清空瀏覽記錄"</string>
+    <string name="bookmenu_cleardata">"清除快取的資料"</string>
+    <string name="bookmenu_deletesettings">"恢復預設值"</string>
+    <string name="bookmenu_filegroup">"檔案操作"</string>
+    <string name="bookmenu_copy">"複製"</string>
+    <string name="bookmenu_rename">"重新命名"</string>
+    <string name="bookmenu_move">"另存為"</string>
+    <string name="bookmenu_delete">"刪除"</string>
+
+</resources>

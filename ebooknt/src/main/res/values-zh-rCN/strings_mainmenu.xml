@@ -32,4 +32,9 @@
     <string name="menu_force_landscape">"强制横屏"</string>
     <string name="menu_show_files">"显示文件"</string>
     <string name="menu_search">"搜索"</string>
+    <string name="menu_singlepage">"单页"</string>
+    <string name="menu_share">"分享…"</string>
+    <string name="menu_openwith">"用其他应用打开…"</string>
+    <string name="menu_reverse_orientation">"反转方向"</string>
+
 </resources>
