@@ -25,7 +25,6 @@ import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebookdroid.ui.library.tasks.CopyBookTask;
 import org.ebookdroid.ui.library.tasks.MoveBookTask;
 import org.ebookdroid.ui.library.tasks.RenameBookTask;
-import org.ebookdroid.ui.opds.OPDSActivity;
 import org.ebookdroid.ui.settings.SettingsUI;
 import org.ebookdroid.ui.viewer.ViewerActivity;
 
@@ -447,13 +446,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         getManagedComponent().startActivity(myIntent);
     }
 
-    @ActionMethod(ids = R.id.mainmenu_opds)
-    public void goOPDSBrowser(final ActionEx action) {
-        final Intent myIntent = new Intent(getManagedComponent(), OPDSActivity.class);
-        getManagedComponent().startActivity(myIntent);
-    }
-
-    @ActionMethod(ids = R.id.recentmenu_backupsettings)
+@ActionMethod(ids = R.id.recentmenu_backupsettings)
     public void backupSettings(final ActionEx action) {
         new BackupDlg(m_managedComponent).show();
     }

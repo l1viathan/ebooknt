@@ -13,9 +13,6 @@ import android.support.annotation.WorkerThread;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-
-import jcifs.smb.SmbFileInputStream;
 
 import org.emdev.common.cache.CacheManager;
 import org.emdev.ui.progress.IProgressIndicator;
@@ -51,34 +48,6 @@ public enum ContentScheme {
                 th.printStackTrace();
             }
             return super.getResourceName(cr, uri);
-        }
-    },
-
-    SMB("smb", "[SMB source]", true) {
-
-        @Override
-        @WorkerThread
-        public File loadToCache(final Uri uri, final String extension, final IProgressIndicator progress) throws IOException {
-            final UIFileCopying ui = new UIFileCopying(R.string.opds_loading_book, 64 * 1024, progress);
-            return CacheManager.createTempDocument(new SmbFileInputStream(uri.toString()), uri.getLastPathSegment(), ui);
-        }
-    },
-
-    HTTP("http", "[HTTP source]", true) {
-
-        @Override
-        @WorkerThread
-        public File loadToCache(final Uri uri, final String extension, final IProgressIndicator progress) throws IOException {
-            return loadFromURL(uri, progress);
-        }
-    },
-
-    HTTPS("https", "[HTTPS source]", true) {
-
-        @Override
-        @WorkerThread
-        public File loadToCache(final Uri uri, final String extension, final IProgressIndicator progress) throws IOException {
-            return loadFromURL(uri, progress);
         }
     },
 
@@ -152,9 +121,4 @@ public enum ContentScheme {
         return UNKNOWN;
     }
 
-    public static File loadFromURL(final Uri uri, final IProgressIndicator progress) throws IOException {
-        final URL url = new URL(uri.toString());
-        final UIFileCopying ui = new UIFileCopying(R.string.msg_loading_book, 64 * 1024, progress);
-        return CacheManager.createTempDocument(url.openStream(), uri.getLastPathSegment(), ui);
-    }
 }

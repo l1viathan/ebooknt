@@ -76,7 +76,7 @@ public class RenameBookTask extends BaseFileAsyncTask<BookNode, FileTaskResult> 
             return target;
         }
 
-        final UIFileCopying worker = new UIFileCopying(R.string.opds_loading_book, 256 * 1024, this);
+        final UIFileCopying worker = new UIFileCopying(R.string.msg_loading_book, 256 * 1024, this);
         worker.copy(origin, target);
 
         return target;

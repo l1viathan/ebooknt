@@ -6,7 +6,6 @@ import org.ebookdroid.common.settings.listeners.IAppSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.IBackupSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.IBookSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.ILibSettingsChangeListener;
-import org.ebookdroid.common.settings.listeners.IOpdsSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.IRecentBooksChangedListener;
 import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
@@ -53,7 +52,7 @@ public class SettingsManager {
     private static final Map<String, BookSettings> bookSettings = new HashMap<String, BookSettings>();
 
     static ListenerProxy listeners = new ListenerProxy(IAppSettingsChangeListener.class,
-            IBackupSettingsChangeListener.class, ILibSettingsChangeListener.class, IOpdsSettingsChangeListener.class,
+            IBackupSettingsChangeListener.class, ILibSettingsChangeListener.class,
             IBookSettingsChangeListener.class, IRecentBooksChangedListener.class);
 
     private static BookSettingsUpdate updateThread;
@@ -67,7 +66,6 @@ public class SettingsManager {
             AppSettings.init();
             BackupSettings.init();
             LibSettings.init();
-            OpdsSettings.init();
 
             updateThread = new BookSettingsUpdate();
             updateThread.start();
@@ -392,7 +390,6 @@ public class SettingsManager {
             AppSettings.onSettingsChanged();
             BackupSettings.onSettingsChanged();
             LibSettings.onSettingsChanged();
-            OpdsSettings.onSettingsChanged();
         } finally {
             lock.writeLock().unlock();
         }

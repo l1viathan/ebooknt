@@ -5,7 +5,6 @@ import org.ebookdroid.ui.settings.fragments.BackupFragment;
 import org.ebookdroid.ui.settings.fragments.BasePreferenceFragment;
 import org.ebookdroid.ui.settings.fragments.BrowserFragment;
 import org.ebookdroid.ui.settings.fragments.NavFragment;
-import org.ebookdroid.ui.settings.fragments.OpdsFragment;
 import org.ebookdroid.ui.settings.fragments.PerformanceFragment;
 import org.ebookdroid.ui.settings.fragments.RenderFragment;
 import org.ebookdroid.ui.settings.fragments.ScrollFragment;
@@ -48,8 +47,7 @@ public class FragmentedSettingsActivity extends SettingsActivity {
                 || BackupFragment.class.getName().equals(fragmentName)
                 || BasePreferenceFragment.class.getName().equals(fragmentName)
                 || BrowserFragment.class.getName().equals(fragmentName)
-                || OpdsFragment.class.getName().equals(fragmentName)
-                || RenderFragment.class.getName().equals(fragmentName)) {
+|| RenderFragment.class.getName().equals(fragmentName)) {
             return true;
         }
         return false;
