@@ -1,8 +1,0 @@
-[submodule "document-viewer/jni/mupdf/mupdf"]
-	path = ebooknt/jni/mupdf/mupdf
-	url = git://git.ghostscript.com/mupdf.git
-	ignore = dirty
-[submodule "document-viewer/jni/djvu/djvulibre"]
-	path = ebooknt/jni/djvu/djvulibre
-	url = git://git.code.sf.net/p/djvu/djvulibre-git
-	ignore = dirty
