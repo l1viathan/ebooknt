@@ -93,8 +93,8 @@
     <string name="book_rename_msg">"输入新的书名:"</string>
     <string name="book_delete_title">"删除"</string>
     <string name="book_delete_msg">"确定要删除本书？"</string>
-    <string name="outline_title">"大纲"</string>
-    <string name="outline_missed">"没有大纲文件"</string>
+    <string name="outline_title">"目录"</string>
+    <string name="outline_missed">"没有目录"</string>
     <string name="error_page_out_of_rande">"无效的页码。有效页码范围: 1-%1$d"</string>
     <string name="msg_loading">"载入中… 请稍候"</string>
     <string name="msg_getting_page_size">"获取页面大小 %1$d/%2$d"</string>

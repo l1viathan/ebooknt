@@ -3,7 +3,7 @@
 
     <string name="menu_close">"關閉"</string>
     <string name="menu_goto_page">"轉到頁面"</string>
-    <string name="menu_outline">"大綱"</string>
+    <string name="menu_outline">"目錄"</string>
     <string name="menu_zoom">"縮放"</string>
     <string name="menu_nightmode">"日間/夜間"</string>
     <string name="menu_settings">"首選項"</string>

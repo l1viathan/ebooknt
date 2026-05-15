@@ -15,7 +15,7 @@
     <string name="pref_storeGotoHistory_summary">""</string>
     <string name="pref_storeLinkGotoHistory_title">"转到链接存储在导航历史记录"</string>
     <string name="pref_storeLinkGotoHistory_summary">""</string>
-    <string name="pref_storeOutlineGotoHistory_title">"商店转到大纲环节在导航历史记录"</string>
+    <string name="pref_storeOutlineGotoHistory_title">"商店转到目录环节在导航历史记录"</string>
     <string name="pref_storeOutlineGotoHistory_summary">""</string>
     <string name="pref_storeSearchGotoHistory_title">"到商店去搜索结果中的导航历史记录"</string>
     <string name="pref_storeSearchGotoHistory_summary">""</string>

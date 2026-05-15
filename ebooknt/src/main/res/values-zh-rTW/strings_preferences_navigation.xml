@@ -15,7 +15,7 @@
     <string name="pref_storeGotoHistory_summary">""</string>
     <string name="pref_storeLinkGotoHistory_title">"轉到連結儲存在導航歷史記錄"</string>
     <string name="pref_storeLinkGotoHistory_summary">""</string>
-    <string name="pref_storeOutlineGotoHistory_title">"商店轉到大綱環節在導航歷史記錄"</string>
+    <string name="pref_storeOutlineGotoHistory_title">"商店轉到目錄環節在導航歷史記錄"</string>
     <string name="pref_storeOutlineGotoHistory_summary">""</string>
     <string name="pref_storeSearchGotoHistory_title">"到商店去搜尋結果中的導航歷史記錄"</string>
     <string name="pref_storeSearchGotoHistory_summary">""</string>
