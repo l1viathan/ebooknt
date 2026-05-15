@@ -41,6 +41,7 @@ LOCAL_SRC_FILES := \
 	djvulibre/libdjvu/DjVuPalette.cpp \
 	djvulibre/libdjvu/DjVuPort.cpp \
 	djvulibre/libdjvu/DjVuText.cpp \
+	djvulibre/libdjvu/DjVuToPS.cpp \
 	djvulibre/libdjvu/GBitmap.cpp \
 	djvulibre/libdjvu/GContainer.cpp \
 	djvulibre/libdjvu/GException.cpp \
