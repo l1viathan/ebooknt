@@ -78,6 +78,9 @@ public class BaseDroidApp extends Application {
             APP_VERSION_NAME = LengthUtils.safeString(pi.versionName, "DEV");
             APP_PACKAGE = pi.packageName;
             EXT_STORAGE = Environment.getExternalStorageDirectory();
+            if (EXT_STORAGE == null) {
+                EXT_STORAGE = new File("/storage/emulated/0");
+            }
             APP_STORAGE = getAppStorage(APP_PACKAGE);
             IS_EMULATOR = "sdk".equalsIgnoreCase(Build.MODEL);
 

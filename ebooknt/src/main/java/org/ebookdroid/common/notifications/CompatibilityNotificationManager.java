@@ -15,7 +15,7 @@ class CompatibilityNotificationManager extends AbstractNotificationManager {
     @Override
     public int notify(final CharSequence title, final CharSequence message, final Intent intent) {
         try {
-            final NotificationCompat.Builder nb = new NotificationCompat.Builder(BaseDroidApp.context);
+            final NotificationCompat.Builder nb = new NotificationCompat.Builder(BaseDroidApp.context, ModernNotificationManager.CHANNEL_ID);
 
             nb.setSmallIcon(R.drawable.application_icon);
             nb.setAutoCancel(true);
@@ -28,7 +28,7 @@ class CompatibilityNotificationManager extends AbstractNotificationManager {
             nb.setTicker(message);
             nb.setContentText(message);
 
-            final Notification notification = nb.getNotification();
+            final Notification notification = nb.build();
             final int id = SEQ.getAndIncrement();
             getManager().notify(id, notification);
 

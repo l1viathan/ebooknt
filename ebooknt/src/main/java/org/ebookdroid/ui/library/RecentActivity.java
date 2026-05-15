@@ -176,7 +176,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         }
 
         ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_all, "path", "/");
-        ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_external, "path", BaseDroidApp.EXT_STORAGE.getAbsolutePath());
+        final String extPath = BaseDroidApp.EXT_STORAGE != null ? BaseDroidApp.EXT_STORAGE.getAbsolutePath() : "/";
+        ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_external, "path", extPath);
 
         final MenuItem storageMenu = menu.findItem(R.id.recent_storage_menu);
         if (storageMenu != null) {

@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,11 +45,13 @@ abstract class AbstractNotificationManager implements INotificationManager {
     }
 
     protected PendingIntent getIntent(final Intent intent) {
-        return intent != null ? PendingIntent.getActivity(EBookDroidApp.context, 0, intent, 0) : getDefaultIntent();
+        final int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0;
+        return intent != null ? PendingIntent.getActivity(EBookDroidApp.context, 0, intent, flags) : getDefaultIntent();
     }
 
     protected PendingIntent getDefaultIntent() {
-        return PendingIntent.getActivity(BaseDroidApp.context, 0, new Intent(), 0);
+        final int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0;
+        return PendingIntent.getActivity(BaseDroidApp.context, 0, new Intent(), flags);
     }
 
     protected NotificationManager getManager() {

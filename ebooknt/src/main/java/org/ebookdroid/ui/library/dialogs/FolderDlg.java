@@ -2,6 +2,7 @@ package org.ebookdroid.ui.library.dialogs;
 
 import org.ebookdroid.EBookDroidApp;
 import org.sufficientlysecure.viewer.R;
+import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.library.adapters.BrowserAdapter;
 
 import android.app.Activity;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.Set;
 
 import org.emdev.common.filesystem.DirectoryFilter;
 import org.emdev.ui.actions.ActionController;
@@ -111,7 +113,10 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
 
     @ActionMethod(ids = R.id.browserhome)
     public void goHome(final ActionEx action) {
-        if (EBookDroidApp.EXT_STORAGE.exists()) {
+        final Set<String> dirs = LibSettings.current().autoScanDirs;
+        if (dirs != null && !dirs.isEmpty()) {
+            setCurrentDir(new File(dirs.iterator().next()));
+        } else if (EBookDroidApp.EXT_STORAGE != null && EBookDroidApp.EXT_STORAGE.exists()) {
             setCurrentDir(EBookDroidApp.EXT_STORAGE);
         } else {
             setCurrentDir(new File("/"));
