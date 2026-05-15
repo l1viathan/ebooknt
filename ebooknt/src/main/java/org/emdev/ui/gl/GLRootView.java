@@ -157,6 +157,10 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         LCTX.i("onSurfaceChanged: " + width + "x" + height + ", gl10: " + gl1.toString());
         Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);
         mCanvas.setSize(width, height);
+        // Ensure one render frame with the new surface dimensions so the screen
+        // doesn't stay gray if a size change cleared the GL surface buffer.
+        mRenderRequested = false;
+        requestRender();
     }
 
     @Override

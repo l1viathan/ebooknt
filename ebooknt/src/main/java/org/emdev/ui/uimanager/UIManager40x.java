@@ -63,7 +63,13 @@ public class UIManager40x implements IUIManager {
             if (fullScreen) {
                 view.setSystemUiVisibility(getHideSysUIFlags(activity));
             } else {
-                view.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                // Keep LAYOUT flags so the window stays full-size when system bars appear.
+                // Without these, showing status/nav bars resizes the window → EventReset → gray pages.
+                view.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                    View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                );
             }
         }
     }
@@ -108,7 +114,7 @@ public class UIManager40x implements IUIManager {
         return 0 != (Configuration.SCREENLAYOUT_SIZE_XLARGE & c.screenLayout);
     }
 
-    private static class Data {
+    static class Data {
         boolean statusBarHidden = false;
     }
 }
