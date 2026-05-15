@@ -43,7 +43,7 @@
     <string name="list_clear_recent_mode_delete_bookmarks">"删除所有书签"</string>
     <string name="list_clear_recent_mode_delete_book_settings">"删除所有设置"</string>
     <string name="list_clear_recent_mode_delete_cached_data">"删除所有缓存的数据"</string>
-<!--<string name="about_prefix">"en"</string>-->
+    <string name="about_prefix">zh</string>
     <string name="about_title">"EBookDroid"</string>
     <string name="about_commmon_title">"软件信息"</string>
     <string name="about_fonts_title">"字体"</string>
