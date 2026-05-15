@@ -2,8 +2,10 @@ package org.emdev.ui;
 
 import org.sufficientlysecure.viewer.R;
 import org.ebookdroid.ui.about.AboutActivity;
+import org.emdev.BaseDroidApp;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -33,6 +35,11 @@ public abstract class AbstractActionActivity<A extends Activity, C extends Abstr
 
     protected boolean recreated;
     C controller;
+
+    @Override
+    protected void attachBaseContext(final Context newBase) {
+        super.attachBaseContext(BaseDroidApp.wrapContext(newBase));
+    }
 
     protected AbstractActionActivity(final boolean shouldBeTaskRoot, final int... events) {
         id = SEQ.getAndIncrement();

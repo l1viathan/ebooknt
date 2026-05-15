@@ -2,12 +2,14 @@ package org.emdev;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.io.File;
@@ -145,5 +147,17 @@ public class BaseDroidApp extends Application {
             context.getResources().updateConfiguration(config, context.getResources().getDisplayMetrics());
         }
         Log.i(APP_NAME, "UI Locale: " + appLocale);
+    }
+
+    public static Context wrapContext(final Context base) {
+        final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(base);
+        final String lang = prefs.getString("lang", "");
+        if (LengthUtils.isNotEmpty(lang)) {
+            final Locale locale = new Locale(lang);
+            final Configuration config = new Configuration(base.getResources().getConfiguration());
+            config.setLocale(locale);
+            return base.createConfigurationContext(config);
+        }
+        return base;
     }
 }

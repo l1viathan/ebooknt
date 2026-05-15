@@ -1,6 +1,7 @@
 package org.ebookdroid.ui.library;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -14,9 +15,15 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 
+import org.emdev.BaseDroidApp;
 import org.sufficientlysecure.viewer.R;
 
 public class RequestPermissionsActivity extends AppCompatActivity {
+
+    @Override
+    protected void attachBaseContext(final Context newBase) {
+        super.attachBaseContext(BaseDroidApp.wrapContext(newBase));
+    }
 
     private static final int REQUEST_LEGACY_STORAGE = 10;
 

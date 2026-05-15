@@ -2,15 +2,22 @@ package org.ebookdroid.ui.settings;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 
+import org.emdev.BaseDroidApp;
 import org.emdev.common.log.LogContext;
 import org.emdev.common.log.LogManager;
 
 public class BaseSettingsActivity extends PreferenceActivity implements IPreferenceContainer {
 
     public static final LogContext LCTX = LogManager.root().lctx("Settings");
+
+    @Override
+    protected void attachBaseContext(final Context newBase) {
+        super.attachBaseContext(BaseDroidApp.wrapContext(newBase));
+    }
 
     protected final PreferencesDecorator decorator = new PreferencesDecorator(this);
 

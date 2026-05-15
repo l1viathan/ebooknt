@@ -22,12 +22,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.emdev.BaseDroidApp;
 import org.emdev.utils.CompareUtils;
 import org.emdev.utils.LayoutUtils;
 import org.emdev.utils.LengthUtils;
 import org.emdev.utils.wiki.Wiki;
 
 public class AboutActivity extends AppCompatActivity {
+
+    @Override
+    protected void attachBaseContext(final Context newBase) {
+        super.attachBaseContext(BaseDroidApp.wrapContext(newBase));
+    }
 
     private static final Part[] PARTS = {
             // Start
