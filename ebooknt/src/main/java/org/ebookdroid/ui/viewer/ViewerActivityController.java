@@ -45,6 +45,7 @@ import org.ebookdroid.ui.viewer.views.ViewEffects;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.support.v7.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.Intent;
@@ -535,6 +536,69 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     @ActionMethod(ids = R.id.mainmenu_settings)
     public void showAppSettings(final ActionEx action) {
         SettingsUI.showAppSettings(getManagedComponent(), bookSettings.fileName);
+    }
+
+    @ActionMethod(ids = R.id.mainmenu_fastsettings_menu)
+    public void showFastSettingsDialog(final ActionEx action) {
+        final ViewerActivity activity = getManagedComponent();
+        final AppSettings as = AppSettings.current();
+        final BookSettings bs = bookSettings;
+
+        final int[] ids = {
+            R.id.mainmenu_fullscreen,
+            R.id.mainmenu_showtitle,
+            R.id.mainmenu_nightmode,
+            R.id.mainmenu_force_portrait,
+            R.id.mainmenu_force_landscape,
+            R.id.mainmenu_reverse_orientation,
+            R.id.mainmenu_singlepage,
+            R.id.mainmenu_splitpages,
+            R.id.mainmenu_croppages,
+        };
+        final int[] labelRes = {
+            R.string.pref_fullscreen_title,
+            R.string.pref_title_title,
+            R.string.menu_nightmode,
+            R.string.menu_force_portrait,
+            R.string.menu_force_landscape,
+            R.string.menu_reverse_orientation,
+            R.string.menu_singlepage,
+            R.string.pref_splitpages_title,
+            R.string.pref_croppages_title,
+        };
+        final boolean[] checked = {
+            as.fullScreen,
+            as.showTitle,
+            bs != null && bs.nightMode,
+            bs != null && (bs.rotation == RotationType.PORTRAIT || bs.rotation == RotationType.REVERSE_PORTRAIT),
+            bs != null && (bs.rotation == RotationType.LANDSCAPE || bs.rotation == RotationType.REVERSE_LANDSCAPE),
+            bs != null && (bs.rotation == RotationType.REVERSE_PORTRAIT || bs.rotation == RotationType.REVERSE_LANDSCAPE),
+            bs != null && bs.viewMode == DocumentViewMode.SINGLE_PAGE,
+            bs != null && bs.splitPages,
+            bs != null && bs.cropPages,
+        };
+        final CharSequence[] labels = new CharSequence[labelRes.length];
+        for (int i = 0; i < labelRes.length; i++) {
+            labels[i] = activity.getString(labelRes[i]);
+        }
+
+        new AlertDialog.Builder(activity)
+            .setTitle(R.string.menu_fastsettings_menu)
+            .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
+                switch (ids[which]) {
+                    case R.id.mainmenu_fullscreen:          AppSettings.toggleFullScreen(); break;
+                    case R.id.mainmenu_showtitle:           AppSettings.toggleTitleVisibility(); break;
+                    case R.id.mainmenu_nightmode:           if (bs != null) SettingsManager.toggleNightMode(bs); break;
+                    case R.id.mainmenu_force_portrait:      forcePortrait(null); break;
+                    case R.id.mainmenu_force_landscape:     forceLandscape(null); break;
+                    case R.id.mainmenu_reverse_orientation: reverseOrientation(null); break;
+                    case R.id.mainmenu_singlepage:          toggleSinglePage(null); break;
+                    case R.id.mainmenu_splitpages:          toggleSplitPages(null); break;
+                    case R.id.mainmenu_croppages:           toggleCropPages(null); break;
+                }
+            })
+            .setPositiveButton(android.R.string.ok, null)
+            .show();
     }
 
     @ActionMethod(ids = R.id.mainmenu_fullscreen)

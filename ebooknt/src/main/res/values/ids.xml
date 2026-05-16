@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- IDs for menu items removed from XML but still referenced in Java action handlers -->
+<resources>
+    <item name="mainmenu_fullscreen" type="id"/>
+    <item name="mainmenu_showtitle" type="id"/>
+    <item name="mainmenu_nightmode" type="id"/>
+    <item name="mainmenu_force_portrait" type="id"/>
+    <item name="mainmenu_force_landscape" type="id"/>
+    <item name="mainmenu_reverse_orientation" type="id"/>
+    <item name="mainmenu_singlepage" type="id"/>
+    <item name="mainmenu_splitpages" type="id"/>
+    <item name="mainmenu_croppages" type="id"/>
+    <item name="recentmenu_backupsettings" type="id"/>
+</resources>
