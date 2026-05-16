@@ -40,4 +40,8 @@
     <string name="menu_force_portrait">Force portrait</string>
     <string name="menu_force_landscape">Force landscape</string>
     <string name="menu_reverse_orientation">Reverse orientation</string>
+    <string name="menu_add_to_library">Add to library</string>
+    <string name="menu_add_to_library_done">Added to library: %s</string>
+    <string name="menu_fit_by_height">Fit by height</string>
+    <string name="menu_fit_by_width">Fit by width</string>
 </resources>

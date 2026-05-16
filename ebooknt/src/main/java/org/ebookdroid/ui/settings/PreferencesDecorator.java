@@ -11,6 +11,8 @@ import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.core.curl.PageAnimationType;
 
+import android.preference.CheckBoxPreference;
+
 import android.app.Activity;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
@@ -74,6 +76,8 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
     public void decorateBooksSettings(final BookSettings bs) {
         addViewModeListener(BOOK_VIEW_MODE.key, BOOK_PAGE_ALIGN.key, BOOK_ANIMATION_TYPE.key);
         addAnimationTypeListener(BOOK_ANIMATION_TYPE.key, BOOK_PAGE_ALIGN.key);
+        addCropPagesAlignListener(BOOK_CROP_PAGES.key, BOOK_VIEW_MODE.key, BOOK_PAGE_ALIGN.key);
+        addViewModeAlignListener(BOOK_VIEW_MODE.key, BOOK_CROP_PAGES.key, BOOK_PAGE_ALIGN.key);
 
         enableSinglePageModeSetting(bs.viewMode, BOOK_PAGE_ALIGN.key, BOOK_ANIMATION_TYPE.key);
     }
@@ -245,6 +249,56 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
 
     protected void addViewModeListener(final String source, final String... targets) {
         addListener(source, new ViewModeListener(targets));
+    }
+
+    protected void addCropPagesAlignListener(final String cropKey, final String viewModeKey, final String alignKey) {
+        addListener(cropKey, new OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(final Preference preference, final Object newValue) {
+                if (Boolean.TRUE.equals(newValue)) {
+                    final ListPreference viewModePref = (ListPreference) findPreference(viewModeKey);
+                    if (viewModePref != null) {
+                        final DocumentViewMode mode = EnumUtils.getByResValue(DocumentViewMode.class, viewModePref.getValue(), null);
+                        final PageAlign autoAlign = autocropAlignFor(mode);
+                        if (autoAlign != null) {
+                            setBookPageAlign(alignKey, autoAlign);
+                        }
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    protected void addViewModeAlignListener(final String viewModeKey, final String cropKey, final String alignKey) {
+        addListener(viewModeKey, new OnPreferenceChangeListener() {
+            @Override
+            public boolean onPreferenceChange(final Preference preference, final Object newValue) {
+                final CheckBoxPreference cropPref = (CheckBoxPreference) findPreference(cropKey);
+                if (cropPref != null && cropPref.isChecked()) {
+                    final DocumentViewMode mode = EnumUtils.getByResValue(DocumentViewMode.class, newValue.toString(), null);
+                    final PageAlign autoAlign = autocropAlignFor(mode);
+                    if (autoAlign != null) {
+                        setBookPageAlign(alignKey, autoAlign);
+                    }
+                }
+                return true;
+            }
+        });
+    }
+
+    private static PageAlign autocropAlignFor(final DocumentViewMode mode) {
+        if (mode == DocumentViewMode.SINGLE_PAGE) return PageAlign.HEIGHT;
+        if (mode == DocumentViewMode.VERTICALL_SCROLL) return PageAlign.WIDTH;
+        return null;
+    }
+
+    private void setBookPageAlign(final String alignKey, final PageAlign align) {
+        final ListPreference alignPref = (ListPreference) findPreference(alignKey);
+        if (alignPref != null) {
+            alignPref.setValue(align.getResValue());
+            setListPreferenceSummary(alignPref, alignPref.getValue());
+        }
     }
 
     protected static class CompositeListener implements OnPreferenceChangeListener {

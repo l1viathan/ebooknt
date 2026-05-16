@@ -66,7 +66,7 @@ public class BrowserActivityController extends AbstractActivityController<Browse
      */
     @Override
     public void beforeCreate(final BrowserActivity activity) {
-        adapter = new BrowserAdapter(filter);
+        adapter = new BrowserAdapter(activity, filter);
     }
 
     /**
@@ -210,6 +210,28 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         if (!file.isDirectory()) {
             final Bookmark b = action.getParameter("bookmark");
             showDocument(Uri.fromFile(file), b);
+        }
+    }
+
+    @ActionMethod(ids = R.id.librarymenu_addtolibrary)
+    public void addFolderToLibrary(final ActionEx action) {
+        final Object src = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
+        android.util.Log.d("AddToLib", "source=" + src + " isDir=" + (src instanceof java.io.File && ((java.io.File)src).isDirectory()));
+        final File file = src instanceof File ? (File) src : null;
+        final BrowserActivity activity = getManagedComponent();
+        if (file != null && file.isDirectory()) {
+            final String path = file.getAbsolutePath();
+            final java.util.Set<String> before = LibSettings.current().autoScanDirs;
+            android.util.Log.d("AddToLib", "before=" + before + " adding=" + path);
+            LibSettings.changeAutoScanDirs(path, true);
+            final java.util.Set<String> after = LibSettings.current().autoScanDirs;
+            android.util.Log.d("AddToLib", "after=" + after);
+            android.widget.Toast.makeText(activity,
+                activity.getString(R.string.menu_add_to_library_done, path),
+                android.widget.Toast.LENGTH_SHORT).show();
+        } else {
+            android.util.Log.d("AddToLib", "skipped: file=" + file);
+            android.widget.Toast.makeText(activity, "AddToLib: skipped (file=" + src + ")", android.widget.Toast.LENGTH_LONG).show();
         }
     }
 

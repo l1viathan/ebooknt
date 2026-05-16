@@ -2,6 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
+        android:id="@+id/librarymenu_addtolibrary"
+        android:title="@string/menu_add_to_library"/>
+    <item
         android:id="@+id/librarymenu_properties"
         android:title="Show folder properties"/>
     <item

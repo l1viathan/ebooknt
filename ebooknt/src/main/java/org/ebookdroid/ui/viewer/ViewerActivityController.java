@@ -19,6 +19,7 @@ import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.common.settings.listeners.IAppSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.IBookSettingsChangeListener;
 import org.ebookdroid.common.settings.types.DocumentViewMode;
+import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.common.touch.TouchManager;
 import org.ebookdroid.core.DecodeService;
 import org.ebookdroid.core.NavigationHistory;
@@ -544,6 +545,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         final AppSettings as = AppSettings.current();
         final BookSettings bs = bookSettings;
 
+        final int IDX_FORCE_PORTRAIT = 3;
+        final int IDX_FORCE_LANDSCAPE = 4;
+        final int IDX_ALIGN_HEIGHT = 9;
+        final int IDX_ALIGN_WIDTH = 10;
+
         final int[] ids = {
             R.id.mainmenu_fullscreen,
             R.id.mainmenu_showtitle,
@@ -554,6 +560,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             R.id.mainmenu_singlepage,
             R.id.mainmenu_splitpages,
             R.id.mainmenu_croppages,
+            R.id.mainmenu_align_by_height,
+            R.id.mainmenu_align_by_width,
         };
         final int[] labelRes = {
             R.string.pref_fullscreen_title,
@@ -565,6 +573,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             R.string.menu_singlepage,
             R.string.pref_splitpages_title,
             R.string.pref_croppages_title,
+            R.string.menu_fit_by_height,
+            R.string.menu_fit_by_width,
         };
         final boolean[] checked = {
             as.fullScreen,
@@ -576,6 +586,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             bs != null && bs.viewMode == DocumentViewMode.SINGLE_PAGE,
             bs != null && bs.splitPages,
             bs != null && bs.cropPages,
+            bs != null && bs.cropPages && bs.pageAlign == PageAlign.HEIGHT,
+            bs != null && bs.cropPages && bs.pageAlign == PageAlign.WIDTH,
         };
         final CharSequence[] labels = new CharSequence[labelRes.length];
         for (int i = 0; i < labelRes.length; i++) {
@@ -584,21 +596,81 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         new AlertDialog.Builder(activity)
             .setTitle(R.string.menu_fastsettings_menu)
-            .setMultiChoiceItems(labels, checked, (dialog, which, isChecked) -> {
+            .setMultiChoiceItems(labels, checked, (dlg, which, isChecked) -> {
+                final AlertDialog alertDlg = (AlertDialog) dlg;
                 switch (ids[which]) {
                     case R.id.mainmenu_fullscreen:          AppSettings.toggleFullScreen(); break;
                     case R.id.mainmenu_showtitle:           AppSettings.toggleTitleVisibility(); break;
                     case R.id.mainmenu_nightmode:           if (bs != null) SettingsManager.toggleNightMode(bs); break;
-                    case R.id.mainmenu_force_portrait:      forcePortrait(null); break;
-                    case R.id.mainmenu_force_landscape:     forceLandscape(null); break;
+                    case R.id.mainmenu_force_portrait:
+                        if (isChecked) setDialogItem(alertDlg, IDX_FORCE_LANDSCAPE, false, checked);
+                        forcePortrait(null);
+                        break;
+                    case R.id.mainmenu_force_landscape:
+                        if (isChecked) setDialogItem(alertDlg, IDX_FORCE_PORTRAIT, false, checked);
+                        forceLandscape(null);
+                        break;
                     case R.id.mainmenu_reverse_orientation: reverseOrientation(null); break;
-                    case R.id.mainmenu_singlepage:          toggleSinglePage(null); break;
+                    case R.id.mainmenu_singlepage: {
+                        if (bs != null) {
+                            final boolean goingSingle = (bs.viewMode != DocumentViewMode.SINGLE_PAGE);
+                            setDialogItem(alertDlg, IDX_ALIGN_HEIGHT, bs.cropPages && goingSingle, checked);
+                            setDialogItem(alertDlg, IDX_ALIGN_WIDTH, bs.cropPages && !goingSingle, checked);
+                        }
+                        toggleSinglePage(null);
+                        break;
+                    }
                     case R.id.mainmenu_splitpages:          toggleSplitPages(null); break;
-                    case R.id.mainmenu_croppages:           toggleCropPages(null); break;
+                    case R.id.mainmenu_croppages: {
+                        if (bs != null) {
+                            final boolean h = isChecked && bs.viewMode == DocumentViewMode.SINGLE_PAGE;
+                            final boolean w = isChecked && bs.viewMode == DocumentViewMode.VERTICALL_SCROLL;
+                            setDialogItem(alertDlg, IDX_ALIGN_HEIGHT, h, checked);
+                            setDialogItem(alertDlg, IDX_ALIGN_WIDTH, w, checked);
+                        }
+                        toggleCropPages(null);
+                        break;
+                    }
+                    case R.id.mainmenu_align_by_height:
+                        if (bs == null || !bs.cropPages) {
+                            setDialogItem(alertDlg, IDX_ALIGN_HEIGHT, false, checked);
+                            break;
+                        }
+                        if (isChecked) {
+                            setDialogItem(alertDlg, IDX_ALIGN_WIDTH, false, checked);
+                            SettingsManager.setPageAlign(bs, PageAlign.HEIGHT);
+                        } else {
+                            SettingsManager.setPageAlign(bs, PageAlign.AUTO);
+                        }
+                        break;
+                    case R.id.mainmenu_align_by_width:
+                        if (bs == null || !bs.cropPages) {
+                            setDialogItem(alertDlg, IDX_ALIGN_WIDTH, false, checked);
+                            break;
+                        }
+                        if (isChecked) {
+                            setDialogItem(alertDlg, IDX_ALIGN_HEIGHT, false, checked);
+                            SettingsManager.setPageAlign(bs, PageAlign.WIDTH);
+                        } else {
+                            SettingsManager.setPageAlign(bs, PageAlign.AUTO);
+                        }
+                        break;
                 }
             })
             .setPositiveButton(android.R.string.ok, null)
             .show();
+    }
+
+    private void setDialogItem(final android.support.v7.app.AlertDialog dlg, final int idx,
+                               final boolean val, final boolean[] checkedArr) {
+        checkedArr[idx] = val;
+        dlg.getListView().setItemChecked(idx, val);
+        final int off = idx - dlg.getListView().getFirstVisiblePosition();
+        final View child = (off >= 0 && off < dlg.getListView().getChildCount())
+                ? dlg.getListView().getChildAt(off) : null;
+        if (child instanceof android.widget.Checkable) {
+            ((android.widget.Checkable) child).setChecked(val);
+        }
     }
 
     @ActionMethod(ids = R.id.mainmenu_fullscreen)

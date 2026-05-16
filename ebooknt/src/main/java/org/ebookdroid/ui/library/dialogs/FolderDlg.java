@@ -54,7 +54,7 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
     public void show(final File file, int titleId, final int okActionId) {
         final View view = LayoutInflater.from(context).inflate(R.layout.folder_dialog, null);
 
-        adapter = new BrowserAdapter(filter);
+        adapter = new BrowserAdapter(context, filter);
 
         header = (TextView) view.findViewById(R.id.browsertext);
         filesView = (ListView) view.findViewById(R.id.browserview);
@@ -84,7 +84,7 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
     public void show(final File file, int titleId, final int okActionId, final int cancelActionId) {
         final View view = LayoutInflater.from(context).inflate(R.layout.folder_dialog, null);
 
-        adapter = new BrowserAdapter(filter);
+        adapter = new BrowserAdapter(context, filter);
 
         header = (TextView) view.findViewById(R.id.browsertext);
         filesView = (ListView) view.findViewById(R.id.browserview);

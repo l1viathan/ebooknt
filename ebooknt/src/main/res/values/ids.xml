@@ -10,5 +10,7 @@
     <item name="mainmenu_singlepage" type="id"/>
     <item name="mainmenu_splitpages" type="id"/>
     <item name="mainmenu_croppages" type="id"/>
+    <item name="mainmenu_align_by_height" type="id"/>
+    <item name="mainmenu_align_by_width" type="id"/>
     <item name="recentmenu_backupsettings" type="id"/>
 </resources>

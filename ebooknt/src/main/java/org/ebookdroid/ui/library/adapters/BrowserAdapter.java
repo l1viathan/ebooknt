@@ -4,6 +4,11 @@ import org.sufficientlysecure.viewer.R;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.common.settings.SettingsManager;
 
+import android.content.Context;
+import android.os.Build;
+import android.os.Environment;
+import android.os.storage.StorageManager;
+import android.os.storage.StorageVolume;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -25,12 +30,14 @@ import org.emdev.utils.LengthUtils;
 
 public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
 
+    private final Context context;
     private final FileFilter filter;
 
     private File currentDirectory;
     private List<File> files = Collections.emptyList();
 
-    public BrowserAdapter(final FileFilter filter) {
+    public BrowserAdapter(final Context context, final FileFilter filter) {
+        this.context = context;
         this.filter = filter;
     }
 
@@ -83,13 +90,47 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
         }
         this.currentDirectory = currentDirectory;
 
-        final File[] files = currentDirectory.listFiles(filter);
+        File[] files = currentDirectory.listFiles(filter);
+
+        if (files == null && "/".equals(currentDirectory.getAbsolutePath())) {
+            // File("/").listFiles() returns null on modern Android even with storage permission.
+            // Use Android storage APIs to enumerate accessible storage volumes instead.
+            files = getStorageRoots();
+        }
 
         if (LengthUtils.isNotEmpty(files)) {
             Arrays.sort(files, this);
         }
 
         setFiles(files);
+    }
+
+    private File[] getStorageRoots() {
+        final List<File> roots = new ArrayList<>();
+        final File primary = Environment.getExternalStorageDirectory();
+        if (primary != null) {
+            roots.add(primary);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            final StorageManager sm = (StorageManager) context.getSystemService(Context.STORAGE_SERVICE);
+            for (final StorageVolume vol : sm.getStorageVolumes()) {
+                if (!Environment.MEDIA_MOUNTED.equals(vol.getState())) {
+                    continue;
+                }
+                File dir = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    dir = vol.getDirectory();
+                } else {
+                    try {
+                        dir = (File) vol.getClass().getMethod("getPathFile").invoke(vol);
+                    } catch (Exception ignored) {}
+                }
+                if (dir != null && !dir.equals(primary)) {
+                    roots.add(dir);
+                }
+            }
+        }
+        return roots.isEmpty() ? null : roots.toArray(new File[0]);
     }
 
     private void setFiles(final File[] files) {

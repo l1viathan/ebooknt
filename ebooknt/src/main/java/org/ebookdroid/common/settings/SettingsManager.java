@@ -324,6 +324,12 @@ public class SettingsManager {
         try {
             final BookSettings olds = new BookSettings(current);
             current.cropPages = !current.cropPages;
+            if (current.cropPages) {
+                final PageAlign autoAlign = autocropAlignFor(current.viewMode);
+                if (autoAlign != null) {
+                    current.pageAlign = autoAlign;
+                }
+            }
             current.lastChanged = System.currentTimeMillis();
             db.storeBookSettings(current);
             applyBookSettingsChanges(olds, current);
@@ -340,12 +346,40 @@ public class SettingsManager {
         try {
             final BookSettings olds = new BookSettings(current);
             current.viewMode = (current.viewMode == DocumentViewMode.SINGLE_PAGE ? DocumentViewMode.VERTICALL_SCROLL : DocumentViewMode.SINGLE_PAGE);
+            if (current.cropPages) {
+                final PageAlign autoAlign = autocropAlignFor(current.viewMode);
+                if (autoAlign != null) {
+                    current.pageAlign = autoAlign;
+                }
+            }
             current.lastChanged = System.currentTimeMillis();
             db.storeBookSettings(current);
             applyBookSettingsChanges(olds, current);
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    public static void setPageAlign(final BookSettings current, final PageAlign align) {
+        if (current == null) {
+            return;
+        }
+        lock.writeLock().lock();
+        try {
+            final BookSettings olds = new BookSettings(current);
+            current.pageAlign = align;
+            current.lastChanged = System.currentTimeMillis();
+            db.storeBookSettings(current);
+            applyBookSettingsChanges(olds, current);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private static PageAlign autocropAlignFor(final DocumentViewMode mode) {
+        if (mode == DocumentViewMode.SINGLE_PAGE) return PageAlign.HEIGHT;
+        if (mode == DocumentViewMode.VERTICALL_SCROLL) return PageAlign.WIDTH;
+        return null;
     }
 
     public static void currentPageChanged(final BookSettings current, final PageIndex oldIndex, final PageIndex newIndex) {
