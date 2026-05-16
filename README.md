@@ -4,9 +4,9 @@
       alt="Get it on F-Droid"
       height="80">](https://f-droid.org/app/org.sufficientlysecure.viewer)
 
-EbookNT is a highly customizable document viewer for Android.
+EbookNT is an offline pdf/djvu reader for Android.
 
-Supports the following formats:
+Supported formats:
 * PDF
 * DjVu
 * EPUB
@@ -14,17 +14,12 @@ Supports the following formats:
 * CBZ (Comic Books, no support for rar compressed CBR)
 * FictionBook (fb2)
 
-Collaboration with electronic publication sites and access to online ebook catalogs is allowed by the supported OPDS protocol.
-
-FAQ, information about supported MIME types, and available Intents can be found in the [Wiki](https://github.com/dschuermann/document-viewer/wiki).
-
 ## [Changelog](https://raw.githubusercontent.com/SufficientlySecure/document-viewer/HEAD/document-viewer/src/main/assets/about/en/changelog.wiki)
 
 ## Development
 
-EbookNT is a fork of the last GPL version of EBookDroid (http://code.google.com/p/ebookdroid/).
+EbookNT is a fork of Document Viewer (https://github.com/SufficientlySecure/document-viewer), which in turn is based on the last GPL version of EBookDroid (http://code.google.com/p/ebookdroid/).
 
-We need your support to fix outstanding bugs, join development by forking the project!
 
 ## Building
 
