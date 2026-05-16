@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -681,7 +682,13 @@ public class DecodeServiceBase implements DecodeService {
                     stopDecoding(task, null, "recycling");
                 }
 
-                tasks.add(new ShutdownTask());
+                // One ShutdownTask per thread + a latch so the last thread to finish
+                // its current native call is the one that actually frees the document.
+                final CountDownLatch latch = new CountDownLatch(threads.length);
+                final AtomicBoolean shutdownDone = new AtomicBoolean(false);
+                for (int i = 0; i < threads.length; i++) {
+                    tasks.add(new ShutdownTask(latch, shutdownDone));
+                }
 
                 synchronized (run) {
                     run.notifyAll();
@@ -751,13 +758,27 @@ public class DecodeServiceBase implements DecodeService {
 
     class ShutdownTask extends Task {
 
-        public ShutdownTask() {
+        final CountDownLatch latch;
+        final AtomicBoolean shutdownDone;
+
+        public ShutdownTask(final CountDownLatch latch, final AtomicBoolean shutdownDone) {
             super(0);
+            this.latch = latch;
+            this.shutdownDone = shutdownDone;
         }
 
         @Override
         public void run() {
-            executor.shutdown();
+            latch.countDown();
+            try {
+                latch.await(); // wait for all threads to finish their current decode
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            // Only one thread actually calls shutdown to free native resources
+            if (shutdownDone.compareAndSet(false, true)) {
+                executor.shutdown();
+            }
         }
     }
 

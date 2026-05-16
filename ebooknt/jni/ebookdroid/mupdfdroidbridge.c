@@ -56,6 +56,8 @@ struct renderpage_s
 
 extern fz_locks_context * jni_new_locks();
 extern void jni_free_locks(fz_locks_context *locks);
+extern void jni_lock(fz_context *ctx);
+extern void jni_unlock(fz_context *ctx);
 
 char ext_font_Courier[1024];
 char ext_font_CourierBold[1024];
@@ -339,23 +341,28 @@ JNI_FN(MuPdfDocument_getPageInfo)(JNIEnv *env, jclass cls, jlong handle, jint pa
 {
     renderdocument_t *doc = (renderdocument_t*) (long) handle;
 
-    //TODO: Review this. Possible broken
-
     fz_page *page = NULL;
     fz_rect bounds;
 
     jclass clazz;
     jfieldID fid;
 
+    int page_error = 0;
+    jni_lock(doc->ctx);
     fz_try(doc->ctx)
     {
-    page = fz_load_page(doc->ctx, doc->document, pageNumber - 1);
-    fz_bound_page(doc->ctx, page, &bounds);
+        page = fz_load_page(doc->ctx, doc->document, pageNumber - 1);
+        fz_bound_page(doc->ctx, page, &bounds);
     }
     fz_catch(doc->ctx)
     {
-        return -1;
+        if (page) { fz_drop_page(doc->ctx, page); page = NULL; }
+        page_error = 1;
     }
+    jni_unlock(doc->ctx);
+
+    if (page_error)
+        return -1;
 
     if (page)
     {
@@ -380,7 +387,9 @@ JNI_FN(MuPdfDocument_getPageInfo)(JNIEnv *env, jclass cls, jlong handle, jint pa
         fid = (*env)->GetFieldID(env, clazz, "version", "I");
         (*env)->SetIntField(env, cpi, fid, 0);
 
+        jni_lock(doc->ctx);
         fz_drop_page(doc->ctx, page);
+        jni_unlock(doc->ctx);
         return 0;
     }
     return -1;
@@ -392,7 +401,12 @@ JNI_FN(MuPdfLinks_getFirstPageLink)(JNIEnv *env, jclass clazz, jlong handle,
 {
     renderdocument_t *doc = (renderdocument_t*) (long) handle;
     renderpage_t *page = (renderpage_t*) (long) pagehandle;
-    return (jlong)(long)((page && doc)?fz_load_links(doc->ctx, page->page):NULL);
+    if (!page || !doc)
+        return (jlong)(long)NULL;
+    jni_lock(doc->ctx);
+    fz_link *links = fz_load_links(doc->ctx, page->page);
+    jni_unlock(doc->ctx);
+    return (jlong)(long)links;
 }
 
 JNIEXPORT jlong JNICALL
@@ -413,7 +427,10 @@ JNI_FN(MuPdfLinks_getPageLinkType)(JNIEnv *env, jclass clazz, jlong handle, jlon
     if (link == NULL)
         return 0;
 
-    return fz_is_external_link(doc->ctx, link->uri) ? 2 : 1;
+    jni_lock(doc->ctx);
+    int external = fz_is_external_link(doc->ctx, link->uri);
+    jni_unlock(doc->ctx);
+    return external ? 2 : 1;
 }
 
 JNIEXPORT jstring JNICALL
@@ -468,7 +485,10 @@ JNI_FN(MuPdfLinks_getPageLinkTargetPage)(JNIEnv *env, jclass clazz, jlong handle
     if (!link)
         return -1;
 
-    return fz_resolve_link(doc->ctx, doc->document, link->uri, NULL, NULL);
+    jni_lock(doc->ctx);
+    int page = fz_resolve_link(doc->ctx, doc->document, link->uri, NULL, NULL);
+    jni_unlock(doc->ctx);
+    return page;
 }
 
 JNIEXPORT jint JNICALL
@@ -478,25 +498,26 @@ JNI_FN(MuPdfLinks_fillPageLinkTargetPoint)(JNIEnv *env, jclass clazz, jlong hand
     renderdocument_t *doc = (renderdocument_t*) (long) handle;
     fz_link *link = (fz_link*) (long) linkhandle;
 
-    if (!link || fz_is_external_link(doc->ctx, link->uri))
-    {
+    if (!link)
         return 0;
-    }
+
+    /* Resolve link target before entering critical section: must not hold
+     * a pthread mutex (jni_lock) while GetPrimitiveArrayCritical is active. */
+    jni_lock(doc->ctx);
+    int is_external = fz_is_external_link(doc->ctx, link->uri);
+    jni_unlock(doc->ctx);
+
+    if (is_external)
+        return 0;
+
+    float x = 0.0f, y = 0.0f;
+    jni_lock(doc->ctx);
+    fz_resolve_link(doc->ctx, doc->document, link->uri, &x, &y);
+    jni_unlock(doc->ctx);
 
     jfloat *point = (*env)->GetPrimitiveArrayCritical(env, pointArray, 0);
     if (!point)
-    {
         return 0;
-    }
-
-    float x = 0.0f, y = 0.0f;
-    int pageNum = fz_resolve_link(doc->ctx, doc->document, link->uri, &x, &y);
-
-//    DEBUG("MuPdfLinks_fillPageLinkTargetPoint(): %d %x (%f, %f) - (%f, %f)",
-//          link->dest.ld.gotor.page,
-//          link->dest.ld.gotor.flags,
-//          link->dest.ld.gotor.lt.x, link->dest.ld.gotor.lt.y,
-//          link->dest.ld.gotor.rb.x, link->dest.ld.gotor.rb.y);
 
     point[0] = x;
     point[1] = y;
@@ -510,7 +531,7 @@ JNIEXPORT jint JNICALL
 JNI_FN(MuPdfDocument_getPageCount)(JNIEnv *env, jclass clazz, jlong handle)
 {
     renderdocument_t *doc = (renderdocument_t*) (long) handle;
-    return (fz_count_pages(doc->ctx, doc->document));
+    return fz_count_pages(doc->ctx, doc->document);
 }
 
 JNIEXPORT jlong JNICALL
@@ -519,8 +540,6 @@ JNI_FN(MuPdfPage_open)(JNIEnv *env, jclass clazz, jlong dochandle, jint pageno)
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
     renderpage_t *page = NULL;
     fz_device *dev = NULL;
-
-//    DEBUG("MuPdfPage_open(%p, %d): start", doc, pageno);
 
     fz_context* ctx = fz_clone_context(doc->ctx);
     if (!ctx)
@@ -534,6 +553,7 @@ JNI_FN(MuPdfPage_open)(JNIEnv *env, jclass clazz, jlong dochandle, jint pageno)
 
     if (!page)
     {
+        fz_drop_context(ctx);
         mupdf_throw_exception(env, "Out of Memory");
         return (jlong) (long) NULL;
     }
@@ -542,32 +562,39 @@ JNI_FN(MuPdfPage_open)(JNIEnv *env, jclass clazz, jlong dochandle, jint pageno)
     page->page = NULL;
     page->pageList = NULL;
 
-    fz_try(ctx)
+    /* Display list and list device must be created with the master context,
+     * alongside fz_load_page and fz_run_page — per MuPDF multi-threading rules.
+     * All operations on doc->ctx are serialized via jni_lock. */
+    int load_error = 0;
+    jni_lock(doc->ctx);
+    fz_try(doc->ctx)
     {
-        page->pageList = fz_new_display_list(ctx, NULL);
-        dev = fz_new_list_device(ctx, page->pageList);
+        page->pageList = fz_new_display_list(doc->ctx, NULL);
+        dev = fz_new_list_device(doc->ctx, page->pageList);
         page->page = fz_load_page(doc->ctx, doc->document, pageno - 1);
         fz_run_page(doc->ctx, page->page, dev, &fz_identity, NULL);
     }
-    fz_always(ctx)
+    fz_catch(doc->ctx)
     {
-        fz_drop_device(ctx, dev);
+        ERROR("MuPdfPage_open(%d): %s", pageno, fz_caught_message(doc->ctx));
+        if (dev) { fz_drop_device(doc->ctx, dev); dev = NULL; }
+        if (page->pageList) { fz_drop_display_list(doc->ctx, page->pageList); page->pageList = NULL; }
+        if (page->page) { fz_drop_page(doc->ctx, page->page); page->page = NULL; }
+        load_error = 1;
     }
-    fz_catch(ctx)
+    if (!load_error)
     {
-        fz_drop_device(ctx, dev);
-        fz_drop_display_list(ctx, page->pageList);
-        fz_drop_page(ctx, page->page);
+        fz_drop_device(doc->ctx, dev);
+    }
+    jni_unlock(doc->ctx);
 
+    if (load_error)
+    {
         fz_free(ctx, page);
         fz_drop_context(ctx);
-
-        page = NULL;
-        ctx = NULL;
-        mupdf_throw_exception(env, "error loading page");
+        mupdf_throw_exception(env, "error loading/running page");
+        return (jlong) (long) NULL;
     }
-
-//    DEBUG("MuPdfPage_open(%p, %d): finish: %p", doc, pageno, page);
 
     return (jlong) (long) page;
 }
@@ -594,7 +621,9 @@ JNI_FN(MuPdfPage_free)(JNIEnv *env, jclass clazz, jlong dochandle, jlong handle)
 
     if (page->page)
     {
+        jni_lock(doc->ctx);
         fz_drop_page(doc->ctx, page->page);
+        jni_unlock(doc->ctx);
     }
 
     fz_free(ctx, page);
@@ -611,12 +640,14 @@ JNI_FN(MuPdfPage_getBounds)(JNIEnv *env, jclass clazz, jlong dochandle, jlong ha
 {
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
     renderpage_t *page = (renderpage_t*) (long) handle;
+    fz_rect page_bounds;
+    jni_lock(doc->ctx);
+    fz_bound_page(doc->ctx, page->page, &page_bounds);
+    jni_unlock(doc->ctx);
+
     jfloat *bbox = (*env)->GetPrimitiveArrayCritical(env, bounds, 0);
     if (!bbox)
         return;
-    fz_rect page_bounds;
-    fz_bound_page(doc->ctx, page->page, &page_bounds);
-    // DEBUG("Bounds: %f %f %f %f", page_bounds.x0, page_bounds.y0, page_bounds.x1, page_bounds.y1);
     bbox[0] = page_bounds.x0;
     bbox[1] = page_bounds.y0;
     bbox[2] = page_bounds.x1;
@@ -701,7 +732,7 @@ JNI_FN(MuPdfPage_renderPageDirect)(JNIEnv *env, jobject this, jlong dochandle,
 
          dev = fz_new_draw_device(ctx, NULL, pixmap);
 
-         fz_run_display_list(doc->ctx, page->pageList, dev, &ctm, &viewbox, NULL);
+         fz_run_display_list(ctx, page->pageList, dev, &ctm, &viewbox, NULL);
     }
     fz_always(ctx)
     {
@@ -710,7 +741,7 @@ JNI_FN(MuPdfPage_renderPageDirect)(JNIEnv *env, jobject this, jlong dochandle,
     }
     fz_catch(ctx)
     {
-        DEBUG("Render failed");
+        ERROR("renderPageDirect failed: %s", fz_caught_message(ctx));
     }
     return JNI_TRUE;
 }
@@ -924,11 +955,13 @@ JNI_FN(MuPdfOutline_open)(JNIEnv *env, jclass clazz, jlong dochandle)
 {
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
     if (!doc->outline) {
+        jni_lock(doc->ctx);
         fz_try(doc->ctx) {
             doc->outline = fz_load_outline(doc->ctx, doc->document);
         } fz_catch(doc->ctx) {
             doc->outline = NULL;
         }
+        jni_unlock(doc->ctx);
     }
     return (jlong) (uintptr_t) doc->outline;
 }
@@ -968,16 +1001,16 @@ JNI_FN(MuPdfOutline_getLink)(JNIEnv *env, jclass clazz, jlong outlinehandle, jlo
 
     if (fz_is_external_link(doc->ctx, outline->uri))
     {
-        // DEBUG("PdfOutline_getLink uri = %s",linkbuf);
         return (*env)->NewStringUTF(env, outline->uri);
     }
     else
     {
+        jni_lock(doc->ctx);
         int resolved = fz_resolve_link(doc->ctx, doc->document, outline->uri, NULL, NULL);
+        jni_unlock(doc->ctx);
 
         char linkbuf[128];
         snprintf(linkbuf, sizeof(linkbuf), "#%d", resolved + 1);
-        // DEBUG("PdfOutline_getLink goto = %s",linkbuf);
         return (*env)->NewStringUTF(env, linkbuf);
     }
 }
@@ -994,24 +1027,18 @@ JNI_FN(MuPdfOutline_fillLinkTargetPoint)(JNIEnv *env, jclass clazz, jlong dochan
         return 0;
     }
 
+    float x = 0.0f, y = 0.0f;
+    jni_lock(doc->ctx);
+    fz_resolve_link(doc->ctx, doc->document, outline->uri, &x, &y);
+    jni_unlock(doc->ctx);
+
     jfloat *point = (*env)->GetPrimitiveArrayCritical(env, pointArray, 0);
     if (!point)
     {
         return 0;
     }
-
-    float x = 0.0f, y = 0.0f;
-    int pageNum = fz_resolve_link(doc->ctx, doc->document, outline->uri, &x, &y);
-
-//    DEBUG("MuPdfOutline_fillLinkTargetPoint(): %d %x (%f, %f) - (%f, %f)",
-//          outline->dest.ld.gotor.page,
-//          outline->dest.ld.gotor.flags,
-//          outline->dest.ld.gotor.lt.x, outline->dest.ld.gotor.lt.y,
-//          outline->dest.ld.gotor.rb.x, outline->dest.ld.gotor.rb.y);
-
     point[0] = x;
     point[1] = y;
-
     (*env)->ReleasePrimitiveArrayCritical(env, pointArray, point, 0);
 
     return 0;
