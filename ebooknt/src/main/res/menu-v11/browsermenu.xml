@@ -28,7 +28,7 @@
     <item
         android:id="@+id/browserrecent"
         android:icon="@drawable/common_actionbar_recent_library"
-        app:showAsAction="ifRoom"
-        android:title="@string/menu_close"/>
+        app:showAsAction="never"
+        android:title="@string/menu_show_recent"/>
 
 </menu>

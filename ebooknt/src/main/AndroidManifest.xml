@@ -147,7 +147,6 @@
         <activity
             android:name="org.ebookdroid.ui.library.BrowserActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
-            android:launchMode="singleTask"
             android:exported="false" />
         <activity
             android:name="org.ebookdroid.ui.about.AboutActivity"

@@ -435,6 +435,12 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         }
     }
 
+    public void goFileBrowserFromSpinner() {
+        final Intent myIntent = new Intent(getManagedComponent(), BrowserActivity.class);
+        myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        getManagedComponent().startActivity(myIntent);
+    }
+
     @ActionMethod(ids = { R.id.recent_showbrowser, R.id.recent_storage_all, R.id.recent_storage_external,
             R.id.actions_storage })
     public void goFileBrowser(final ActionEx action) {
@@ -443,6 +449,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         if (path != null) {
             myIntent.setData(Uri.fromFile(new File(path)));
         }
+        myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         getManagedComponent().startActivity(myIntent);
     }
 

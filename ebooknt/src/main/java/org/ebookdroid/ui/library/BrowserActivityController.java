@@ -145,8 +145,8 @@ public class BrowserActivityController extends AbstractActivityController<Browse
     public void goRecent(final ActionEx action) {
         final BrowserActivity activity = getManagedComponent();
         final Intent myIntent = new Intent(activity, RecentActivity.class);
+        myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(myIntent);
-        activity.finish();
     }
 
 /**

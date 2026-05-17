@@ -25,7 +25,7 @@
         android:id="@+id/recent_showbrowser"
         android:alphabeticShortcut="l"
         android:icon="@drawable/recent_actionbar_filebrowser"
-        app:showAsAction="ifRoom"
+        app:showAsAction="never"
         android:title="@string/menu_show_files"/>
     <item
         android:id="@+id/mainmenu_settings"

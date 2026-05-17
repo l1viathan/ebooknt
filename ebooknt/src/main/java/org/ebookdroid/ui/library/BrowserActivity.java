@@ -19,11 +19,14 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ArrayAdapter;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.ViewFlipper;
 
@@ -45,8 +48,13 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     ViewFlipper viewflipper;
 
+    private Spinner locationSpinner;
+    private ArrayList<String> locationItems;
+    private ArrayAdapter<String> locationAdapter;
+    private boolean spinnerInitialized = false;
+
     public BrowserActivity() {
-        super(false, ON_CREATE);
+        super(false, ON_CREATE, ON_RESUME);
     }
 
     /**
@@ -70,11 +78,49 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        locationItems = new ArrayList<String>();
+        locationItems.add(getString(R.string.menu_show_recent));  // position 0: navigate to Recent (top of dropdown)
+        locationItems.add("");  // position 1: current directory (always selected)
+
+        locationAdapter = new ArrayAdapter<String>(this, R.layout.browser_spinner_item, locationItems);
+        locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
+
+        locationSpinner = (Spinner) toolbar.findViewById(R.id.browser_location_spinner);
+        locationSpinner.setAdapter(locationAdapter);
+        locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
+                if (!spinnerInitialized) return;
+                if (position == 0) {
+                    getController().goRecent(null);
+                }
+            }
+
+            @Override
+            public void onNothingSelected(final AdapterView<?> parent) {
+            }
+        });
+        locationSpinner.setSelection(1);
+        locationSpinner.post(new Runnable() {
+            @Override
+            public void run() {
+                spinnerInitialized = true;
+            }
+        });
 
         final BrowserActivityController c = getController();
 
         viewflipper = (ViewFlipper) findViewById(R.id.browserflip);
         viewflipper.addView(LayoutUtils.fillInParent(viewflipper, new FileBrowserView(c, c.adapter)));
+    }
+
+    @Override
+    protected void onResumeImpl() {
+        if (locationSpinner != null) {
+            locationSpinner.setSelection(1);
+        }
     }
 
     /**
@@ -116,9 +162,15 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     }
 
     void setTitle(final File dir) {
-        final String path = dir.getAbsolutePath();
-        setTitle(path);
         UIManagerAppCompat.invalidateOptionsMenu(this);
+        if (locationItems != null && locationSpinner != null) {
+            final String path = dir.getAbsolutePath();
+            locationItems.set(1, path);
+            final View selectedView = locationSpinner.getSelectedView();
+            if (selectedView instanceof TextView) {
+                ((TextView) selectedView).setText(path);
+            }
+        }
     }
 
     /**

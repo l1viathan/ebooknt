@@ -35,11 +35,14 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.ArrayAdapter;
 import android.widget.ExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.ViewFlipper;
 
 import java.io.File;
@@ -63,6 +66,10 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     public static final int VIEW_LIBRARY = 1;
 
     private ViewFlipper viewflipper;
+
+    private Spinner locationSpinner;
+    private ArrayList<String> locationItems;
+    private ArrayAdapter<String> locationAdapter;
 
     BookcaseView bookcaseView;
     RecentBooksView recentBooksView;
@@ -93,6 +100,30 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        locationItems = new ArrayList<String>();
+        locationItems.add(getString(R.string.nav_label_recent));  // position 0: current (always selected)
+        locationItems.add(getString(R.string.menu_show_files));   // position 1: navigate to Browser
+
+        locationAdapter = new ArrayAdapter<String>(this, R.layout.browser_spinner_item, locationItems);
+        locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
+
+        locationSpinner = (Spinner) toolbar.findViewById(R.id.recent_location_spinner);
+        locationSpinner.setAdapter(locationAdapter);
+        locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
+                if (position == 1) {
+                    getController().goFileBrowserFromSpinner();
+                }
+            }
+
+            @Override
+            public void onNothingSelected(final AdapterView<?> parent) {
+            }
+        });
+        locationSpinner.setSelection(0);
     }
 
     /**
@@ -102,6 +133,9 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
      */
     @Override
     protected void onResumeImpl() {
+        if (locationSpinner != null) {
+            locationSpinner.setSelection(0);
+        }
         UIManagerAppCompat.invalidateOptionsMenu(this);
 
         // HACK: invalidating the adapter when the tab view is not visible seems to leave
