@@ -35,38 +35,38 @@ Others						33,711	13.00 %
 
     <string-array name="pref_lang_entries" translatable="false">
         <item>@string/list_lang_default</item>
-        <item>@string/list_lang_ru</item>
-        <item>@string/list_lang_en</item>
-        <item>@string/list_lang_de</item>
-        <item>@string/list_lang_es</item>
-        <item>@string/list_lang_fr</item>
-        <item>@string/list_lang_uk</item>
-        <item>@string/list_lang_it</item>
-        <item>@string/list_lang_nl</item>
         <item>@string/list_lang_zh</item>
         <item>@string/list_lang_zh_tw</item>
-        <item>@string/list_lang_iw</item>
-        <item>@string/list_lang_ko</item>
+        <item>@string/list_lang_nl</item>
+        <item>@string/list_lang_en</item>
         <item>@string/list_lang_eo</item>
+        <item>@string/list_lang_fr</item>
+        <item>@string/list_lang_de</item>
+        <item>@string/list_lang_iw</item>
+        <item>@string/list_lang_it</item>
+        <item>@string/list_lang_ko</item>
         <item>@string/list_lang_pl</item>
+        <item>@string/list_lang_ru</item>
+        <item>@string/list_lang_es</item>
+        <item>@string/list_lang_uk</item>
     </string-array>
 
     <string-array name="pref_lang_values" translatable="false">
         <item>@string/pref_lang_default</item>
-        <item>@string/pref_lang_ru</item>
-        <item>@string/pref_lang_en</item>
-        <item>@string/pref_lang_de</item>
-        <item>@string/pref_lang_es</item>
-        <item>@string/pref_lang_fr</item>
-        <item>@string/pref_lang_uk</item>
-        <item>@string/pref_lang_it</item>
-        <item>@string/pref_lang_nl</item>
         <item>@string/pref_lang_zh</item>
         <item>@string/pref_lang_zh_tw</item>
-        <item>@string/pref_lang_iw</item>
-        <item>@string/pref_lang_ko</item>
+        <item>@string/pref_lang_nl</item>
+        <item>@string/pref_lang_en</item>
         <item>@string/pref_lang_eo</item>
+        <item>@string/pref_lang_fr</item>
+        <item>@string/pref_lang_de</item>
+        <item>@string/pref_lang_iw</item>
+        <item>@string/pref_lang_it</item>
+        <item>@string/pref_lang_ko</item>
         <item>@string/pref_lang_pl</item>
+        <item>@string/pref_lang_ru</item>
+        <item>@string/pref_lang_es</item>
+        <item>@string/pref_lang_uk</item>
     </string-array>
 
     <string translatable="false" name="pref_loadrecent_id">loadrecent</string>
