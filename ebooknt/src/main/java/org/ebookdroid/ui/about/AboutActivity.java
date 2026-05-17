@@ -37,6 +37,7 @@ public class AboutActivity extends AppCompatActivity {
 
     private static final Part[] PARTS = {
             new Part(R.string.about_commmon_title, Format.HTML, "common.html"),
+            new Part(R.string.about_docviewer_title, Format.HTML, "docviewer/common.html"),
     };
 
     @Override

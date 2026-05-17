@@ -52,6 +52,7 @@
     <string name="about_changelog_title">"修改记录"</string>
     <string name="about_thanks_title">"致谢"</string>
     <string name="about_donations">"捐助"</string>
+    <string name="about_docviewer_title">"关于Document Viewer"</string>
     <string name="opds">"OPDS 浏览器"</string>
     <string name="menu_opds">"OPDS 浏览器"</string>
     <string name="opds_connecting">"连接…"</string>

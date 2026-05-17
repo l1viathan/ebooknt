@@ -67,6 +67,7 @@
     <string name="about_changelog_title">Change Log</string>
     <string name="about_thanks_title">Acknowledgments</string>
     <string name="about_donations">Donations</string>
+    <string name="about_docviewer_title">About Document Viewer</string>
 
     <string name="opds">OPDS Browser</string>
     <string name="menu_opds">OPDS Browser</string>
