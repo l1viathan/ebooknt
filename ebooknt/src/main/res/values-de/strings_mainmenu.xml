@@ -3,7 +3,7 @@
 
     <string name="menu_close">"Schließen"</string>
     <string name="menu_goto_page">"Seite"</string>
-    <string name="menu_outline">"Inhaltsverzeichnis"</string>
+    <string name="menu_outline">"Navigieren - Inhalt"</string>
     <string name="menu_zoom">"Vergrößern"</string>
     <string name="menu_nightmode">"Tag/Nacht"</string>
     <string name="menu_settings">"Alle Einstellungen"</string>
@@ -20,7 +20,9 @@
     <string name="menu_show_options_menu">"Optionsmenü anzeigen"</string>
     <string name="menu_backupsettings">"Sichern &amp; Wiederherstellen"</string>
     <string name="menu_crop">"Manuell beschneiden"</string>
-<!--<string name="menu_navigation_menu">"Navigation..."</string>-->
+    <string name="menu_navigation_menu">"Navigieren - Sonstiges"</string>
+    <string name="menu_other_menu">"Sonstiges…"</string>
+    <string name="menu_book_info">"Über dieses Buch"</string>
     <string name="menu_fastsettings_menu">"Ansicht..."</string>
     <string name="menu_allsettings_menu">"Einstellungen..."</string>
     <string name="menu_show_library">"Bibliothek anzeigen"</string>

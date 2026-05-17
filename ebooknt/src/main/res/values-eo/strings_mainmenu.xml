@@ -3,7 +3,7 @@
 
     <string name="menu_close">Fermi</string>
     <string name="menu_goto_page">Iri al…</string>
-    <string name="menu_outline">Skemo</string>
+    <string name="menu_outline">Navigi - Enhavo</string>
     <string name="menu_zoom">Pligrandigo</string>
     <string name="menu_nightmode">Taga/nokta</string>
     <string name="menu_settings">Ĉiuj agordoj</string>
@@ -23,7 +23,9 @@
     <string name="menu_singlepage">Unuobla paĝo</string>
     <string name="menu_search">Serĉi</string>
 
-    <string name="menu_navigation_menu">Navigado…</string>
+    <string name="menu_navigation_menu">Navigi - Alia</string>
+    <string name="menu_other_menu">Alia…</string>
+    <string name="menu_book_info">Pri ĉi tiu libro</string>
     <string name="menu_fastsettings_menu">Vido…</string>
     <string name="menu_allsettings_menu">Agordoj…</string>
 

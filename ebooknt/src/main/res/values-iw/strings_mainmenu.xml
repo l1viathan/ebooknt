@@ -3,7 +3,7 @@
 
     <string name="menu_close">"לסגור"</string>
     <string name="menu_goto_page">"עמוד"</string>
-    <string name="menu_outline">"תוכן העניינים"</string>
+    <string name="menu_outline">"ניווט - תוכן"</string>
     <string name="menu_zoom">"להגדיל"</string>
     <string name="menu_nightmode">"יום / לילה"</string>
     <string name="menu_settings">"כל ההגדרות"</string>
@@ -20,7 +20,9 @@
     <string name="menu_show_options_menu">"הצג תפריט"</string>
     <string name="menu_backupsettings">"שמירה ושחזור"</string>
 <!--<string name="menu_crop">"Manual crop"</string>-->
-<!--<string name="menu_navigation_menu">"Navigation..."</string>-->
+    <string name="menu_navigation_menu">"ניווט - אחר"</string>
+    <string name="menu_other_menu">"אחר…"</string>
+    <string name="menu_book_info">"אודות הספר"</string>
 <!--<string name="menu_fastsettings_menu">"View..."</string>-->
 <!--<string name="menu_allsettings_menu">"Settings..."</string>-->
 <!--<string name="menu_show_library">"Show library"</string>-->

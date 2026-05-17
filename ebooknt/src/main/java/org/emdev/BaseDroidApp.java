@@ -136,7 +136,14 @@ public class BaseDroidApp extends Application {
 
     public static void setAppLocale(final String lang) {
         final Configuration config = context.getResources().getConfiguration();
-        appLocale = LengthUtils.isNotEmpty(lang) ? new Locale(lang) : defLocale;
+        if (LengthUtils.isNotEmpty(lang)) {
+            final int sep = lang.indexOf('_');
+            appLocale = sep > 0
+                    ? new Locale(lang.substring(0, sep), lang.substring(sep + 1))
+                    : new Locale(lang);
+        } else {
+            appLocale = defLocale;
+        }
         setAppLocaleIntoConfiguration(config);
     }
 
@@ -153,7 +160,10 @@ public class BaseDroidApp extends Application {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(base);
         final String lang = prefs.getString("lang", "");
         if (LengthUtils.isNotEmpty(lang)) {
-            final Locale locale = new Locale(lang);
+            final int sep = lang.indexOf('_');
+            final Locale locale = sep > 0
+                    ? new Locale(lang.substring(0, sep), lang.substring(sep + 1))
+                    : new Locale(lang);
             final Configuration config = new Configuration(base.getResources().getConfiguration());
             config.setLocale(locale);
             return base.createConfigurationContext(config);

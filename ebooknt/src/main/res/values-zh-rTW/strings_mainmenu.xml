@@ -3,7 +3,7 @@
 
     <string name="menu_close">"關閉"</string>
     <string name="menu_goto_page">"轉到頁面"</string>
-    <string name="menu_outline">"目錄"</string>
+    <string name="menu_outline">"導航-目錄"</string>
     <string name="menu_zoom">"縮放"</string>
     <string name="menu_nightmode">"日間/夜間"</string>
     <string name="menu_settings">"首選項"</string>
@@ -20,7 +20,9 @@
     <string name="menu_show_options_menu">"顯示選單"</string>
     <string name="menu_backupsettings">"備份與恢復"</string>
     <string name="menu_crop">"手動分隔"</string>
-    <string name="menu_navigation_menu">"導航(其他)"</string>
+    <string name="menu_navigation_menu">"導航-其他"</string>
+    <string name="menu_other_menu">"其他…"</string>
+    <string name="menu_book_info">"關於本書"</string>
     <string name="menu_fastsettings_menu">"檢視"</string>
     <string name="menu_allsettings_menu">"設定"</string>
     <string name="menu_show_library">"顯示書目"</string>
