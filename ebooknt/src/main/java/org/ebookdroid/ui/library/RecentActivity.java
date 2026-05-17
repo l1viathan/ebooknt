@@ -51,7 +51,6 @@ import java.util.Set;
 
 import org.emdev.BaseDroidApp;
 import org.emdev.common.android.AndroidVersion;
-import org.emdev.common.filesystem.MediaManager;
 import org.emdev.ui.AbstractActionActivity;
 import org.emdev.ui.actions.ActionMenuHelper;
 import org.emdev.ui.uimanager.IUIManager;
@@ -188,24 +187,13 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             added.add("/");
             added.add(FileUtils.getCanonicalPath(BaseDroidApp.EXT_STORAGE));
 
-            if (ls.showScanningInMenu) {
-                for (final String path : ls.autoScanDirs) {
+            for (final String path : ls.scanDirs) {
                     final File file = new File(path);
                     final String mp = FileUtils.getCanonicalPath(file);
                     if (mp != null && added.add(mp)) {
                         addStorageMenuItem(subMenu, R.drawable.recent_menu_storage_scanned, file.getPath(), path);
                     }
                 }
-            }
-            if (ls.showRemovableMediaInMenu) {
-                for (final String path : MediaManager.getReadableMedia()) {
-                    final File file = new File(path);
-                    final String mp = FileUtils.getCanonicalPath(file);
-                    if (mp != null && added.add(mp)) {
-                        addStorageMenuItem(subMenu, R.drawable.recent_menu_storage_external, file.getName(), path);
-                    }
-                }
-            }
         }
     }
 

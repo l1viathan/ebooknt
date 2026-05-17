@@ -62,8 +62,6 @@ public class EventChildLoaded extends AbstractEvent {
             ctrl.pageUpdated(viewState, page);
 
             final boolean vis = viewState.isPageVisible(page);
-            android.util.Log.e("EBOOKNT", "ChildLoaded p=" + page.index.viewIndex
-                    + " vis=" + vis + " fv=" + viewState.pages.firstVisible + " lv=" + viewState.pages.lastVisible);
             if (vis && viewState.isNodeVisible(child, viewState.getBounds(page))) {
                 ctrl.redrawView(viewState);
             }

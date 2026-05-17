@@ -26,9 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.preference.SeekBarPreference;
-import org.emdev.ui.uimanager.IUIManager;
 import org.emdev.utils.LengthUtils;
 import org.emdev.utils.enums.EnumUtils;
 
@@ -83,9 +81,6 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
     }
 
     public void decorateBrowserSettings() {
-        final boolean isTablet = IUIManager.instance.isTabletUi(parent.getActivity()) && !AndroidVersion.lessThan3x;
-        enableSettings(isTablet, SHOW_REMOVABLE_MEDIA.key, SHOW_SCANNING_MEDIA.key);
-
         addListener(CACHE_LOCATION.key, new OnPreferenceChangeListener() {
 
             @Override

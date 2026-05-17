@@ -7,6 +7,8 @@ import org.ebookdroid.ui.library.IBrowserActivity;
 import org.ebookdroid.ui.library.views.BookshelfView;
 
 import android.database.DataSetObserver;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -23,8 +25,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -66,6 +66,20 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     private String searchQuery;
 
+    private int committedCount = SERVICE_SHELVES;
+
+    private boolean notifyPending = false;
+
+    private final Handler uiHandler = new Handler(Looper.getMainLooper());
+
+    private final Runnable notifyRunnable = new Runnable() {
+        @Override
+        public void run() {
+            notifyPending = false;
+            notifyDataSetChanged();
+        }
+    };
+
     public BooksAdapter(final IBrowserActivity base, final RecentAdapter adapter) {
         this.base = base;
         this.recent = adapter;
@@ -103,7 +117,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     @Override
     public int getCount() {
-        return getListCount();
+        return committedCount;
     }
 
     @Override
@@ -297,10 +311,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     public void startScan() {
         final LibSettings libSettings = LibSettings.current();
-        final Set<String> folders = new LinkedHashSet<String>(libSettings.autoScanDirs);
-        if (libSettings.autoScanRemovableMedia) {
-            folders.addAll(MediaManager.getReadableMedia());
-        }
+        final Set<String> folders = new LinkedHashSet<String>(libSettings.scanDirs);
         if (folders.isEmpty()) {
             return;
         }
@@ -371,8 +382,14 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
             return false;
         }
 
-        if (!scanner.isScan()) {
+        if (scanner.isScan()) {
+            // scanner already running; onFileScan will match against searchQuery live
+        } else if (getListCount() > SERVICE_SHELVES) {
+            // shelves already populated, search within them
             new SearchTask().execute("");
+        } else {
+            // shelves empty; trigger scan — onFileScan matches against searchQuery as it goes
+            startScan();
         }
 
         return true;
@@ -421,14 +438,18 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
                 search.nodes.add(node);
             }
         }
-        if (newShelf) {
-            notifyDataSetChanged();
-        } else {
-            a.notifyDataSetChanged();
-        }
+        a.notifyDataSetChanged();
+        scheduleNotify();
         if (found) {
             Collections.sort(search.nodes);
             search.notifyDataSetChanged();
+        }
+    }
+
+    private void scheduleNotify() {
+        if (!notifyPending) {
+            notifyPending = true;
+            uiHandler.postDelayed(notifyRunnable, 150);
         }
     }
 
@@ -530,9 +551,11 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
         if (LengthUtils.isEmpty(searchQuery)) {
             return false;
         }
-        final String bookTitle = StringUtils.cleanupTitle(node.name).toLowerCase();
-        final int pos = bookTitle.indexOf(searchQuery);
-        return pos >= 0;
+        // search against the raw filename (minus extension) so bracketed content like [author] is included
+        final String name = node.name;
+        final int dotPos = name.lastIndexOf('.');
+        final String base = (dotPos > 0 ? name.substring(0, dotPos) : name).toLowerCase();
+        return base.contains(searchQuery.toLowerCase());
     }
 
     public void registerDataSetObserver(final DataSetObserver dataSetObserver) {
@@ -547,6 +570,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     @Override
     public void notifyDataSetChanged() {
+        committedCount = getListCount();
         super.notifyDataSetChanged();
         for (final DataSetObserver dso : _dsoList) {
             dso.onChanged();
@@ -597,7 +621,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     class SearchTask extends AsyncTask<String, String, Void> {
 
-        private final BlockingQueue<BookNode> queue = new ArrayBlockingQueue<BookNode>(160, true);
+        private List<BookNode> results;
 
         @Override
         protected void onPreExecute() {
@@ -606,36 +630,27 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
         @Override
         protected Void doInBackground(final String... paths) {
-            int aIndex = SERVICE_SHELVES;
-            while (aIndex < getListCount()) {
-                int nIndex = 0;
-                while (nIndex < getListCount(aIndex)) {
-                    final BookNode node = getItem(aIndex, nIndex);
-                    if (acceptSearch(node)) {
-                        queue.offer(node);
-                        publishProgress("");
+            final List<BookNode> found = new ArrayList<BookNode>();
+            synchronized (BooksAdapter.this) {
+                final int shelfCount = data.size();
+                for (int aIndex = SERVICE_SHELVES; aIndex < shelfCount; aIndex++) {
+                    final BookShelfAdapter shelf = data.valueAt(aIndex);
+                    for (final BookNode node : shelf.nodes) {
+                        if (acceptSearch(node)) {
+                            found.add(node);
+                        }
                     }
-                    nIndex++;
                 }
-                aIndex++;
             }
+            results = found;
             return null;
         }
 
         @Override
-        protected void onProgressUpdate(final String... values) {
-            final ArrayList<BookNode> nodes = new ArrayList<BookNode>();
-            while (!queue.isEmpty()) {
-                nodes.add(queue.poll());
-            }
-            if (!nodes.isEmpty()) {
-                onNodesFound(nodes);
-            }
-        }
-
-        @Override
         protected void onPostExecute(final Void v) {
-            onProgressUpdate("");
+            if (results != null && !results.isEmpty()) {
+                onNodesFound(results);
+            }
             base.showProgress(false);
         }
     }

@@ -68,9 +68,9 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
         holder.textView.setText(file.getName());
 
         if (file.isDirectory()) {
-            Set<String> autoScanDirs = LibSettings.current().autoScanDirs;
+            Set<String> scanDirs = LibSettings.current().scanDirs;
             String mp = FileUtils.invertMountPrefix(ap);
-            final boolean watched = autoScanDirs.contains(ap) || (mp != null && autoScanDirs.contains(mp));
+            final boolean watched = scanDirs.contains(ap) || (mp != null && scanDirs.contains(mp));
             holder.imageView.setImageResource(watched ? R.drawable.browser_item_folder_watched : R.drawable.browser_item_folder_open);
             holder.info.setText("");
             holder.fileSize.setText("");

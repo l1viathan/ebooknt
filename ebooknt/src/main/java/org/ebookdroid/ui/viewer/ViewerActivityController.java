@@ -1199,6 +1199,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         if (!redrawn && diff.isPageAlignChanged()) {
             dc.setAlign(newSettings.pageAlign);
+            dc.redrawView();
         }
 
         if (diff.isAnimationTypeChanged()) {

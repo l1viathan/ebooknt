@@ -113,7 +113,7 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
 
     @ActionMethod(ids = R.id.browserhome)
     public void goHome(final ActionEx action) {
-        final Set<String> dirs = LibSettings.current().autoScanDirs;
+        final Set<String> dirs = LibSettings.current().scanDirs;
         if (dirs != null && !dirs.isEmpty()) {
             setCurrentDir(new File(dirs.iterator().next()));
         } else if (EBookDroidApp.EXT_STORAGE != null && EBookDroidApp.EXT_STORAGE.exists()) {

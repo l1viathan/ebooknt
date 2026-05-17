@@ -92,7 +92,7 @@ public class BrowserActivityController extends AbstractActivityController<Browse
                 setCurrentDir(new File(absolutePath));
             }
         } else {
-            final Set<String> dirs = LibSettings.current().autoScanDirs;
+            final Set<String> dirs = LibSettings.current().scanDirs;
             if (LengthUtils.isNotEmpty(dirs)) {
                 setCurrentDir(new File(dirs.iterator().next()));
             }
@@ -117,7 +117,7 @@ public class BrowserActivityController extends AbstractActivityController<Browse
 
     @ActionMethod(ids = R.id.browserhome)
     public void goHome(final ActionEx action) {
-        final Set<String> dirs = LibSettings.current().autoScanDirs;
+        final Set<String> dirs = LibSettings.current().scanDirs;
         if (LengthUtils.isNotEmpty(dirs)) {
             setCurrentDir(new File(dirs.iterator().next()));
         } else if (BaseDroidApp.EXT_STORAGE.exists()) {
@@ -221,10 +221,10 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         final BrowserActivity activity = getManagedComponent();
         if (file != null && file.isDirectory()) {
             final String path = file.getAbsolutePath();
-            final java.util.Set<String> before = LibSettings.current().autoScanDirs;
+            final java.util.Set<String> before = LibSettings.current().scanDirs;
             android.util.Log.d("AddToLib", "before=" + before + " adding=" + path);
-            LibSettings.changeAutoScanDirs(path, true);
-            final java.util.Set<String> after = LibSettings.current().autoScanDirs;
+            LibSettings.changeScanDirs(path, true);
+            final java.util.Set<String> after = LibSettings.current().scanDirs;
             android.util.Log.d("AddToLib", "after=" + after);
             android.widget.Toast.makeText(activity,
                 activity.getString(R.string.menu_add_to_library_done, path),

@@ -535,21 +535,11 @@ public class RecentActivityController extends AbstractActivityController<RecentA
                 return;
             }
 
-            if (diff.isAutoScanDirsChanged()) {
+            if (diff.isScanDirsChanged()) {
                 return;
             }
             if (diff.isAllowedFileTypesChanged()) {
                 recentAdapter.setBooks(SettingsManager.getRecentBooks().values(), filter);
-            }
-            if (diff.isAutoScanRemovableMediaChanged()) {
-                final Collection<String> media = MediaManager.getReadableMedia();
-                if (LengthUtils.isNotEmpty(media)) {
-                    if (newSettings.autoScanRemovableMedia) {
-                        bookshelfAdapter.startScan(media);
-                    } else {
-                        bookshelfAdapter.removeAll(media);
-                    }
-                }
             }
         } finally {
             UIManagerAppCompat.invalidateOptionsMenu(getManagedComponent());
@@ -598,9 +588,6 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     public void onMediaStateChanged(final String path, final MediaState oldState, final MediaState newState) {
         if (newState.readable) {
             if (oldState == null || !oldState.readable) {
-                if (LibSettings.current().autoScanRemovableMedia) {
-                    bookshelfAdapter.startScan(path);
-                }
                 UIManagerAppCompat.invalidateOptionsMenu(getManagedComponent());
             }
             return;
