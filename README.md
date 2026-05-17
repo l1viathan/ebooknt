@@ -1,66 +1,81 @@
 # EbookNT
 
-[<img src="https://f-droid.org/badge/get-it-on.png"
-      alt="Get it on F-Droid"
-      height="80">](https://f-droid.org/app/org.sufficientlysecure.viewer)
-
-EbookNT is an offline pdf/djvu reader for Android.
+EbookNT is an offline PDF/DjVu reader for Android.
 
 Supported formats:
 * PDF
 * DjVu
 * EPUB
 * XPS (OpenXPS)
-* CBZ (Comic Books, no support for rar compressed CBR)
+* CBZ (Comic Books; RAR-compressed CBR is not supported)
 * FictionBook (fb2)
 
-## [Changelog](https://raw.githubusercontent.com/SufficientlySecure/document-viewer/HEAD/document-viewer/src/main/assets/about/en/changelog.wiki)
+*Note: Currently, only PDF and DjVu are thoroughly tested.*
 
-## Development
+EbookNT was created primarily as a personal project for my own daily use. You are welcome to use it, but please note it is provided "as-is" and at your own risk.
 
-EbookNT is a fork of Document Viewer (https://github.com/SufficientlySecure/document-viewer), which in turn is based on the last GPL version of EBookDroid (http://code.google.com/p/ebookdroid/).
+
+## Development & History
+
+EbookNT is a fork of [Document Viewer](https://github.com/SufficientlySecure/document-viewer), which in turn is based on the last GPL version of [EBookDroid](http://code.google.com/p/ebookdroid/).
+
+I'm not an Android expert - the development was done primarily with the assistance of Claude Code.
+
+Major changes:
+* **Adapted for modern Android:** Updated target SDKs and modernized the architecture.
+* **Removed submodules:** applied necessary patches and merged them into a monlithic repo
+* **100% Offline:** Removed OPDS support and the `INTERNET` permission entirely.
+* **Redesigned UI:** Tailored specifically for an uninterrupted offline reading experience.
+* **Various bug fixes and stability improvements.**
 
 
 ## Building
 
-**NOTE: NDK r14b fails to compile DV - use r15 or r13b. (See [#245](https://github.com/SufficientlySecure/document-viewer/issues/245))**
+### Prerequisites
 
-### Build with Gradle
+* Android SDK with build-tools and platform installed
+* `ANDROID_HOME` environment variable pointing to your SDK root
+* JDK 11 or newer
+* NDK installed (for the `ndk-build` step)
 
-1. Have Android SDK "tools", "platform-tools", and "build-tools" directories in your PATH (http://developer.android.com/sdk/index.html)
-2. Open the Android SDK Manager (shell command: ``android``).  
-Expand the Tools directory and select "Android SDK Build-tools" newest version.  
-Expand the Extras directory and install "Android Support Repository"  
-Select everything for the newest SDK
-3. Export ANDROID_HOME pointing to your Android SDK
-5. Pull in submodules with ``./init.sh``
-5. Build native libraries with ``cd ebooknt; ndk-build``
-6. Execute ``./gradlew build``
+`gradle.properties` is tracked via `git add -f` despite being in `.gitignore`.
+It sets `android.nonFinalResIds=false`, which is required because the code uses
+`switch`/`case` on `R.id.*` values — these must be compile-time constants.
 
-### NDK Debugging
+### Build
 
-1. ``cd ebooknt; ndk-build -j8 NDK_DEBUG=1``
-2. From Android Studio: Run -> Debug... to build and install the APK and launch it on the device. 
-3. ``cp src/main/AndroidManifest.xml . # Hack required for ndk-gdb to find everything``
-4. ``ndk-gdb``
+Native libraries must be compiled before the Gradle build. From the repo root:
+
+```
+cd ebooknt/jni/mupdf/mupdf && make generate && cd ../../../..
+cd ebooknt && ndk-build && cd ..
+./gradlew assembleDebug
+```
+
+Or for a release build:
+
+```
+cd ebooknt/jni/mupdf/mupdf && make generate && cd ../../../..
+cd ebooknt && ndk-build && cd ..
+./gradlew assembleRelease
+```
+
+`make generate` converts MuPDF font and CMap resources into C source files
+under `ebooknt/jni/mupdf/mupdf/generated/`. Re-run it only if those resources
+change. `ndk-build` reads `ebooknt/jni/` and writes `.so` files to
+`libs/<abi>/`; re-run it whenever C/C++ sources under `ebooknt/jni/` change.
 
 ### Development with Android Studio
 
-I am using the newest [Android Studio](http://developer.android.com/sdk/installing/studio.html) for development. Development with Eclipse is currently not possible because I am using the new [project structure](http://developer.android.com/sdk/installing/studio-tips.html).
+1. Clone the repository
+2. File -> Open -> select the cloned top-level folder
+3. Android Studio will import the Gradle project automatically
 
-1. Clone the project from github
-2. From Android Studio: File -> Import Project -> Select the cloned top folder
-3. Import project from external model -> choose Gradle
+## Licenses
 
-## Font Pack
+EbookNT is licensed under the GPLv3+.
+The file `LICENSE` includes the full license text.
 
-The [Document Viewer Fontpack](https://github.com/PrivacyApps/document-viewer-fontpack) is no longer supported. Our MuPDF patches to support this no longer apply cleanly, so support for the font pack was dropped.
-
-# Licenses
-EbookNT is licensed under the GPLv3+.  
-The file LICENSE includes the full license text.
-
-## Details
 EbookNT is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
@@ -68,33 +83,22 @@ the Free Software Foundation, either version 3 of the License, or
 
 EbookNT is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with EbookNT.  If not, see <http://www.gnu.org/licenses/>.
-
-## Java Libraries
-* JCIFS  
-  http://jcifs.samba.org/  
-  LGPL v2.1
-
-* Color Picker by Daniel Nilsson  
-  http://code.google.com/p/color-picker-view/  
-  Apache License v2
+along with EbookNT. If not, see <http://www.gnu.org/licenses/>.
 
 ## C Libraries
 
-* MuPDF - a lightweight PDF, EPUB, CBZ and XPS viewer   
-  http://www.mupdf.com/  
-  AGPLv3+
+* **MuPDF** — lightweight PDF, EPUB, CBZ and XPS renderer
+  http://www.mupdf.com/ — AGPLv3+
 
-* djvu - a lightweight DJVU viewer based on DjVuLibre  
-  http://djvu.sourceforge.net/  
-  GPLv2
-    
+* **DjVuLibre** — DjVu renderer
+  http://djvu.sourceforge.net/ — GPLv2
+
 ## Images
 
-* application_icon.svg  
-  http://rrze-icon-set.berlios.de/  
-  Creative Commons Attribution Share-Alike licence 3.0
+* `application_icon.svg`
+  http://rrze-icon-set.berlios.de/
+  Creative Commons Attribution Share-Alike 3.0
