@@ -1011,6 +1011,16 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         getManagedComponent().startActivity(Intent.createChooser(openwith, getManagedComponent().getString(R.string.menu_openwith)));
     }
 
+    @ActionMethod(ids = R.id.mainmenu_book_info)
+    public void showBookInfo(final ActionEx action) {
+        final String path = bookSettings != null ? bookSettings.fileName : "";
+        new AlertDialog.Builder(getManagedComponent())
+                .setTitle(R.string.menu_book_info)
+                .setMessage(path)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
+    }
+
     @ActionMethod(ids = R.id.mainmenu_close)
     public void closeActivity(final ActionEx action) {
         if (scheme == null || !scheme.promptForSave) {

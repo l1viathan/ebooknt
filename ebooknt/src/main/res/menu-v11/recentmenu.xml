@@ -27,18 +27,18 @@
         android:icon="@drawable/recent_actionbar_filebrowser"
         app:showAsAction="ifRoom"
         android:title="@string/menu_show_files"/>
-<item
-        android:id="@+id/recentmenu_cleanrecent"
-        android:alphabeticShortcut="n"
-        android:icon="@drawable/recent_actionbar_clear"
-        app:showAsAction="never"
-        android:title="@string/menu_cleanrecent"/>
     <item
         android:id="@+id/mainmenu_settings"
         android:alphabeticShortcut="t"
         android:icon="@drawable/common_actionbar_allsettings"
         app:showAsAction="never"
         android:title="@string/menu_settings"/>
+    <item
+        android:id="@+id/recentmenu_cleanrecent"
+        android:alphabeticShortcut="n"
+        android:icon="@drawable/recent_actionbar_clear"
+        app:showAsAction="never"
+        android:title="@string/menu_cleanrecent"/>
 
     <item
         android:id="@+id/mainmenu_about"
