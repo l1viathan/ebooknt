@@ -93,4 +93,12 @@
 
     <string name="pref_rtl_title">Right-to-left</string>
     <string name="pref_rtl_summary">Page order for Horizontal scroll and Single Page modes</string>
+
+    <string name="pref_templates_category">Templates</string>
+    <string name="pref_template_apply_title">Apply template…</string>
+    <string name="pref_template_save_title">Save as template…</string>
+    <string name="pref_template_name_hint">Template name</string>
+    <string name="pref_template_saved">Template \"%s\" saved</string>
+    <string name="pref_template_delete_confirm">Delete this template?</string>
+    <string name="pref_template_none">No templates saved yet</string>
 </resources>

@@ -135,5 +135,17 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:title="@string/pref_templates_category">
+
+        <Preference
+            android:key="pref_template_apply"
+            android:title="@string/pref_template_apply_title"/>
+
+        <Preference
+            android:key="pref_template_save"
+            android:title="@string/pref_template_save_title"/>
+
+    </PreferenceCategory>
 
 </PreferenceScreen>

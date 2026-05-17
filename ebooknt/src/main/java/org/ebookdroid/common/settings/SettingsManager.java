@@ -1,6 +1,8 @@
 package org.ebookdroid.common.settings;
 
 import org.ebookdroid.common.settings.books.BookSettings;
+import org.ebookdroid.common.settings.books.BookSettingsTemplate;
+import org.ebookdroid.common.settings.books.BookSettingsTemplateManager;
 import org.ebookdroid.common.settings.books.DBSettingsManager;
 import org.ebookdroid.common.settings.listeners.IAppSettingsChangeListener;
 import org.ebookdroid.common.settings.listeners.IBackupSettingsChangeListener;
@@ -49,6 +51,8 @@ public class SettingsManager {
 
     private static DBSettingsManager db;
 
+    private static BookSettingsTemplateManager templates;
+
     private static final Map<String, BookSettings> bookSettings = new HashMap<String, BookSettings>();
 
     static ListenerProxy listeners = new ListenerProxy(IAppSettingsChangeListener.class,
@@ -62,6 +66,7 @@ public class SettingsManager {
             ctx = context;
             prefs = PreferenceManager.getDefaultSharedPreferences(context);
             db = new DBSettingsManager(context);
+            templates = new BookSettingsTemplateManager(prefs);
 
             AppSettings.init();
             BackupSettings.init();
@@ -474,6 +479,37 @@ public class SettingsManager {
         } finally {
             lock.readLock().unlock();
         }
+    }
+
+    public static BookSettingsTemplateManager getTemplates() {
+        return templates;
+    }
+
+    public static void applyTemplate(final BookSettingsTemplate template, final BookSettings current) {
+        if (template == null || current == null) {
+            return;
+        }
+        lock.writeLock().lock();
+        try {
+            final BookSettings olds = new BookSettings(current);
+            template.applyTo(current);
+            db.storeBookSettings(current);
+            applyBookSettingsChanges(olds, current);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public static void prepareTemplateApply(final BookSettingsTemplate template, final BookSettings current) {
+        if (template == null || current == null) {
+            return;
+        }
+        // Write template values to SharedPreferences without touching current.
+        // onBookSettingsActivityClosed will read them back via fillBookSettings,
+        // producing a real diff against the unmodified current.
+        final BookSettings temp = new BookSettings(current);
+        template.applyTo(temp);
+        AppSettings.updatePseudoBookSettings(temp);
     }
 
     public static void applyBookSettingsChanges(final BookSettings oldSettings, final BookSettings newSettings) {

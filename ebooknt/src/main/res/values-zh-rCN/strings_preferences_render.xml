@@ -71,4 +71,12 @@
     <string name="pref_rtl_title">"从右往左"</string>
     <string name="pref_rtl_summary">"水平滚动和单页模式的页面顺序"</string>
 
+    <string name="pref_templates_category">"阅读模板"</string>
+    <string name="pref_template_apply_title">"应用模板…"</string>
+    <string name="pref_template_save_title">"另存为模板…"</string>
+    <string name="pref_template_name_hint">"模板名称"</string>
+    <string name="pref_template_saved">"模板"%s"已保存"</string>
+    <string name="pref_template_delete_confirm">"删除此模板？"</string>
+    <string name="pref_template_none">"暂无已保存的模板"</string>
+
 </resources>
