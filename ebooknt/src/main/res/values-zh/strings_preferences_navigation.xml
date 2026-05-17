@@ -11,13 +11,13 @@
     <string name="pref_search_highlight_title">"搜索突出"</string>
     <string name="pref_current_search_highlight_summary">"选择颜色突出当前搜索结果"</string>
     <string name="pref_current_search_highlight_title">"搜索当前突出"</string>
-    <string name="pref_storeGotoHistory_title">"转到页面导航历史记录中的商店"</string>
+    <string name="pref_storeGotoHistory_title">"导航历史中保存goto页"</string>
     <string name="pref_storeGotoHistory_summary">""</string>
-    <string name="pref_storeLinkGotoHistory_title">"转到链接存储在导航历史记录"</string>
+    <string name="pref_storeLinkGotoHistory_title">"导航历史中保存goto链接"</string>
     <string name="pref_storeLinkGotoHistory_summary">""</string>
-    <string name="pref_storeOutlineGotoHistory_title">"商店转到目录环节在导航历史记录"</string>
+    <string name="pref_storeOutlineGotoHistory_title">"导航历史中保存目录链接"</string>
     <string name="pref_storeOutlineGotoHistory_summary">""</string>
-    <string name="pref_storeSearchGotoHistory_title">"到商店去搜索结果中的导航历史记录"</string>
+    <string name="pref_storeSearchGotoHistory_title">"导航历史中保存搜索链接"</string>
     <string name="pref_storeSearchGotoHistory_summary">""</string>
 
 </resources>

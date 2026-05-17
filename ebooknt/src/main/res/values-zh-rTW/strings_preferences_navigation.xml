@@ -11,13 +11,13 @@
     <string name="pref_search_highlight_title">"搜尋突出"</string>
     <string name="pref_current_search_highlight_summary">"選擇顏色突出當前搜尋結果"</string>
     <string name="pref_current_search_highlight_title">"搜尋當前突出"</string>
-    <string name="pref_storeGotoHistory_title">"轉到頁面導航歷史記錄中的商店"</string>
+    <string name="pref_storeGotoHistory_title">"導航歷史中儲存goto頁"</string>
     <string name="pref_storeGotoHistory_summary">""</string>
-    <string name="pref_storeLinkGotoHistory_title">"轉到連結儲存在導航歷史記錄"</string>
+    <string name="pref_storeLinkGotoHistory_title">"導航歷史中儲存goto連結"</string>
     <string name="pref_storeLinkGotoHistory_summary">""</string>
-    <string name="pref_storeOutlineGotoHistory_title">"商店轉到目錄環節在導航歷史記錄"</string>
+    <string name="pref_storeOutlineGotoHistory_title">"導航歷史中儲存目錄連結"</string>
     <string name="pref_storeOutlineGotoHistory_summary">""</string>
-    <string name="pref_storeSearchGotoHistory_title">"到商店去搜尋結果中的導航歷史記錄"</string>
+    <string name="pref_storeSearchGotoHistory_title">"導航歷史中儲存搜尋連結"</string>
     <string name="pref_storeSearchGotoHistory_summary">""</string>
 
 </resources>
