@@ -46,6 +46,7 @@ import org.ebookdroid.ui.viewer.views.ViewEffects;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
@@ -434,6 +435,16 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         } catch (final Throwable th) {
             th.printStackTrace();
         }
+    }
+
+    @Override
+    public int getTopInset() {
+        final ViewerActivity activity = getManagedComponent();
+        if (activity == null) return 0;
+        final ActionBar bar = activity.getSupportActionBar();
+        if (bar == null || !bar.isShowing()) return 0;
+        if ((activity.view.getView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN) == 0) return 0;
+        return bar.getHeight();
     }
 
     @ActionMethod(ids = R.id.actions_openOptionsMenu)
@@ -1134,6 +1145,17 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             IUIManager.instance.setFullScreenMode(activity, activity.view.getView(), newSettings.fullScreen);
             UIManagerAppCompat.setToolbarVisible(activity, newSettings.showTitle);
             setWindowTitle();
+            activity.view.getView().post(new Runnable() {
+                @Override
+                public void run() {
+                    final IViewController dc = getDocumentController();
+                    final DocumentModel dm = getDocumentModel();
+                    if (dc != null && dm != null) {
+                        dc.invalidatePageSizes(IViewController.InvalidateSizeReason.LAYOUT, null);
+                        dc.redrawView();
+                    }
+                }
+            });
         }
 
         if (!diff.isFirstTime() && diff.isShowTitleChanged()) {

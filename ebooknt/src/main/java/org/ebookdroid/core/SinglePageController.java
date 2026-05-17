@@ -75,7 +75,7 @@ public class SinglePageController extends AbstractViewController {
 
             final RectF bounds = page.getBounds(getBase().getZoomModel().getZoom());
             final float left = bounds.left + offsetX * bounds.width();
-            final float top = bounds.top + offsetY * bounds.height();
+            final float top = (bounds.top - base.getTopInset()) + offsetY * bounds.height();
             getView().scrollTo((int) left, (int) top);
 
             final ViewState viewState = EventPool.newEventScrollTo(this, page.index.viewIndex).process();
@@ -127,7 +127,7 @@ public class SinglePageController extends AbstractViewController {
             final RectF viewRect = base.getView().getViewRect();
             final RectF bounds = page.getBounds(getBase().getZoomModel().getZoom());
 
-            if (Math.abs(viewRect.top - bounds.top) < 5 && direction < 0) {
+            if (Math.abs(viewRect.top - (bounds.top - base.getTopInset())) < 5 && direction < 0) {
                 goToPage(page.index.viewIndex - 1, offsetX, 1);
                 return;
             }
@@ -234,17 +234,19 @@ public class SinglePageController extends AbstractViewController {
     }
 
     private void invalidatePageSize(final PageAlign pageAlign, final Page page, final int width, final int height) {
-        final RectF pageBounds = calcPageBounds(pageAlign, page.getAspectRatio(), width, height);
-        // if the screen is larger than the page, center the page within the screen
+        final int topInset = base.getTopInset();
+        final int effectiveHeight = height - topInset;
+        final RectF pageBounds = calcPageBounds(pageAlign, page.getAspectRatio(), width, effectiveHeight);
         final float pageWidth = pageBounds.width();
         if (width > pageWidth) {
             final float widthDelta = (width - pageWidth) / 2;
             pageBounds.offset(widthDelta, 0);
         }
-        final float pageHeight= pageBounds.height();
-        if (height > pageHeight) {
-            final float heightDelta = (height - pageHeight) / 2;
-            pageBounds.offset(0, heightDelta);
+        final float pageHeight = pageBounds.height();
+        if (effectiveHeight > pageHeight) {
+            pageBounds.offset(0, topInset + (effectiveHeight - pageHeight) / 2);
+        } else {
+            pageBounds.offset(0, topInset);
         }
         page.setBounds(pageBounds);
     }

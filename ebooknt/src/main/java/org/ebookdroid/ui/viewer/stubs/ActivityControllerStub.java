@@ -94,4 +94,9 @@ public class ActivityControllerStub extends ActionController<ViewerActivity> imp
     @Override
     public void runOnUiThread(final Runnable r) {
     }
+
+    @Override
+    public int getTopInset() {
+        return 0;
+    }
 }

@@ -40,4 +40,6 @@ public interface IActivityController extends IActionController<ViewerActivity> {
 
     void runOnUiThread(Runnable r);
 
+    int getTopInset();
+
 }

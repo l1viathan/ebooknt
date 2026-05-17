@@ -104,7 +104,7 @@ public class VScrollController extends AbstractScrollController {
         final PageAlign pageAlign = DocumentViewMode.getPageAlign(bookSettings);
 
         if (changedPage == null) {
-            float heightAccum = 0;
+            float heightAccum = base.getTopInset();
             for (final Page page : model.getPages()) {
                 final RectF pageBounds = calcPageBounds(pageAlign, page.getAspectRatio(), width, height);
                 pageBounds.offset(0, heightAccum);

@@ -92,17 +92,18 @@ public class EventGotoPage implements IEvent {
         final RectF bounds = page.getBounds(viewState.zoom);
         final float width = bounds.width();
         final float height = bounds.height();
+        final int topInset = ctrl.base.getTopInset();
 
         if (centerPage) {
             switch (ctrl.mode) {
                 case HORIZONTAL_SCROLL:
                     return new PointF(bounds.left - (viewRect.width() - width) / 2, scrollY);
                 case VERTICALL_SCROLL:
-                    return new PointF(scrollX, bounds.top - (viewRect.height() - height) / 2);
+                    return new PointF(scrollX, (bounds.top - topInset) - ((viewRect.height() - topInset) - height) / 2);
             }
         }
 
-        return new PointF(bounds.left + offsetX * width, bounds.top + offsetY * height);
+        return new PointF(bounds.left + offsetX * width, (bounds.top - topInset) + offsetY * height);
     }
 
     protected boolean isScrollRequired(final int left, final int top, final int scrollX, final int scrollY) {
