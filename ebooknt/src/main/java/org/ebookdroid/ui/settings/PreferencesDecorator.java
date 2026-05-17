@@ -11,7 +11,7 @@ import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.core.curl.PageAnimationType;
 
-import android.preference.CheckBoxPreference;
+import android.preference.TwoStatePreference;
 
 import android.app.Activity;
 import android.preference.EditTextPreference;
@@ -269,7 +269,7 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
         addListener(viewModeKey, new OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(final Preference preference, final Object newValue) {
-                final CheckBoxPreference cropPref = (CheckBoxPreference) findPreference(cropKey);
+                final TwoStatePreference cropPref = (TwoStatePreference) findPreference(cropKey);
                 if (cropPref != null && cropPref.isChecked()) {
                     final DocumentViewMode mode = EnumUtils.getByResValue(DocumentViewMode.class, newValue.toString(), null);
                     final PageAlign autoAlign = autocropAlignFor(mode);
