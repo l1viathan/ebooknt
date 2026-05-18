@@ -1,7 +1,7 @@
 package org.ebookdroid.ui.library.dialogs;
 
 import org.ebookdroid.EBookDroidApp;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.library.adapters.BrowserAdapter;
 

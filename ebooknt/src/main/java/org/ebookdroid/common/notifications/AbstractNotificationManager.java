@@ -1,7 +1,7 @@
 package org.ebookdroid.common.notifications;
 
 import org.ebookdroid.EBookDroidApp;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;

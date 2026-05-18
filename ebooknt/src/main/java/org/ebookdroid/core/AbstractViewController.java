@@ -1,6 +1,6 @@
 package org.ebookdroid.core;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.keysbinding.KeyBindingsManager;
 import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.SettingsManager;

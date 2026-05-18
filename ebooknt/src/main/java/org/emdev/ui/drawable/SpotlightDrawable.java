@@ -16,7 +16,7 @@
 
 package org.emdev.ui.drawable;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.bitmaps.BitmapManager;
 
 import android.content.Context;

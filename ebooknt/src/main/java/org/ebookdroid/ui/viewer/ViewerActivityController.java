@@ -5,7 +5,7 @@ import org.ebookdroid.EBookDroidApp;
 import org.ebookdroid.common.settings.types.RotationType;
 import org.emdev.ui.actions.ActionMenuHelper;
 import org.emdev.ui.uimanager.UIManagerAppCompat;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.bitmaps.BitmapManager;
 import org.ebookdroid.common.bitmaps.ByteBufferManager;
 import org.ebookdroid.common.cache.CacheManager;
@@ -991,7 +991,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         Uri uri;
         if (scheme.temporary) {
             builder.scheme("content");
-            builder.authority("org.ebookdroid.document");
+            builder.authority("org.ebooknt.viewer.document");
             builder.path(m_fileName);
             builder.query(mimeType);
             uri = builder.build();

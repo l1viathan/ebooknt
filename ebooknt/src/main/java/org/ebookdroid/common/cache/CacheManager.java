@@ -1,6 +1,6 @@
 package org.ebookdroid.common.cache;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.types.CacheLocation;
 
 import android.content.Context;

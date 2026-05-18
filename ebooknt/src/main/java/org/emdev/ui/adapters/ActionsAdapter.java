@@ -1,6 +1,6 @@
 package org.emdev.ui.adapters;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.content.Context;
 import android.view.View;

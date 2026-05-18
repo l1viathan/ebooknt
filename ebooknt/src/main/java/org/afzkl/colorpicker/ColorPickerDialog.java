@@ -16,7 +16,7 @@
 
 package org.afzkl.colorpicker;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.content.Context;
 import android.graphics.PixelFormat;

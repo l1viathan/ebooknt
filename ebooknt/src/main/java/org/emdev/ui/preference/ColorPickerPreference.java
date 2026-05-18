@@ -16,7 +16,7 @@
 
 package org.emdev.ui.preference;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 
 import android.content.Context;

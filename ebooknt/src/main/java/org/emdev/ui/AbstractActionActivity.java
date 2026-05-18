@@ -1,6 +1,6 @@
 package org.emdev.ui;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.ui.about.AboutActivity;
 import org.emdev.BaseDroidApp;
 

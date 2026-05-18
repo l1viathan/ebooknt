@@ -29,7 +29,7 @@ ext.versionCodes = ['armeabi-v7a':2, 'x86':3, 'arm64-v8a':5, 'x86_64':6]
 import com.android.build.OutputFile
 
 android {
-    namespace 'org.sufficientlysecure.viewer'
+    namespace 'org.ebooknt.viewer'
     compileSdkVersion 33
 
     useLibrary 'org.apache.http.legacy'

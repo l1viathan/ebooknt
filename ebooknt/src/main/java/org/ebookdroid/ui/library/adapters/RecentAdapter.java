@@ -1,6 +1,6 @@
 package org.ebookdroid.ui.library.adapters;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.ui.library.IBrowserActivity;
 

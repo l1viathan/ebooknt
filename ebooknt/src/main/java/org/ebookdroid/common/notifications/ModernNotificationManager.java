@@ -1,6 +1,6 @@
 package org.ebookdroid.common.notifications;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.annotation.TargetApi;
 import android.app.Notification;

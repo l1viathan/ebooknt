@@ -1,7 +1,7 @@
 package org.ebookdroid.ui.viewer.dialogs;
 
 import org.emdev.ui.uimanager.UIManagerAppCompat;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.books.Bookmark;

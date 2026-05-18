@@ -1,6 +1,6 @@
 package org.ebookdroid.ui.library.dialogs;
 
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.app.Dialog;
 import android.content.Context;

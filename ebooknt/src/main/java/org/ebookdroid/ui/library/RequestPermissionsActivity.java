@@ -16,7 +16,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 
 import org.emdev.BaseDroidApp;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 public class RequestPermissionsActivity extends AppCompatActivity {
 

@@ -1,7 +1,7 @@
 package org.emdev.common.content;
 
 import org.emdev.ui.actions.ActionEx;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.content.ContentResolver;
 import android.content.Intent;

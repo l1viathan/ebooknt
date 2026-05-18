@@ -10,7 +10,7 @@ import org.ebookdroid.ui.settings.fragments.RenderFragment;
 import org.ebookdroid.ui.settings.fragments.ScrollFragment;
 import org.ebookdroid.ui.settings.fragments.TypeSpecificFragment;
 import org.ebookdroid.ui.settings.fragments.UIFragment;
-import org.sufficientlysecure.viewer.R;
+import org.ebooknt.viewer.R;
 
 import android.annotation.TargetApi;
 import android.content.res.Configuration;

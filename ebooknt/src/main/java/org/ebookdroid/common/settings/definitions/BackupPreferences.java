@@ -1,6 +1,6 @@
 package org.ebookdroid.common.settings.definitions;
 
-import static org.sufficientlysecure.viewer.R.string.*;
+import static org.ebooknt.viewer.R.string.*;
 
 import org.ebookdroid.common.settings.books.BookBackupType;
 
