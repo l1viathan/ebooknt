@@ -605,7 +605,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             labels[i] = activity.getString(labelRes[i]);
         }
 
-        new AlertDialog.Builder(activity)
+        final AlertDialog fastSettingsDlg = new AlertDialog.Builder(activity)
             .setTitle(R.string.menu_fastsettings_menu)
             .setMultiChoiceItems(labels, checked, (dlg, which, isChecked) -> {
                 final AlertDialog alertDlg = (AlertDialog) dlg;
@@ -669,7 +669,9 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 }
             })
             .setPositiveButton(android.R.string.ok, null)
-            .show();
+            .create();
+        fastSettingsDlg.setCanceledOnTouchOutside(true);
+        fastSettingsDlg.show();
     }
 
     private void setDialogItem(final android.support.v7.app.AlertDialog dlg, final int idx,
