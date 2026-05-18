@@ -92,9 +92,9 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeTint(JNIEnv* env, jcla
 
     for (i = 0; i < width * height * 4; i += 4)
     {
-        src[i]     = (src[i] * r)     / 255;
+        src[i]     = (src[i] * b)     / 255;
         src[i + 1] = (src[i + 1] * g) / 255;
-        src[i + 2] = (src[i + 2] * b) / 255;
+        src[i + 2] = (src[i + 2] * r) / 255;
     }
 }
 
@@ -138,9 +138,9 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeEraseColor(JNIEnv* env
 
     for (i = 0; i < width * height * 4; i += 4)
     {
-        src[i + 0] = r;
+        src[i + 0] = b;
         src[i + 1] = g;
-        src[i + 2] = b;
+        src[i + 2] = r;
         src[i + 3] = a;
     }
 }

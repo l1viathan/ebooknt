@@ -107,6 +107,7 @@
             android:key="@string/pref_gamma_id"
             ebookdroid:minValue="@string/pref_gamma_minvalue"
             ebookdroid:maxValue="@string/pref_gamma_maxvalue"
+            ebookdroid:displayDivisor="100"
             android:summary="@string/pref_gamma_summary"
             android:title="@string/pref_gamma_title" />
 

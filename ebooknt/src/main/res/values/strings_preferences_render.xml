@@ -83,7 +83,7 @@
     <string name="pref_contrast_summary">Contrast: %s (-255 to 255, 0 = no change)</string>
 
     <string name="pref_gamma_title">Gamma</string>
-    <string name="pref_gamma_summary">Gamma: %s (0 to 200, 100 = neutral)</string>
+    <string name="pref_gamma_summary">Gamma: %s (0.00 to 2.00, 1.00 = neutral)</string>
 
     <string name="pref_exposure_title">Exposure</string>
     <string name="pref_exposure_summary">Exposure: %s (-128 to 128, 0 = no change)</string>

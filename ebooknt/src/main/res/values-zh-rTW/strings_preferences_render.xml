@@ -58,7 +58,7 @@
     <string name="pref_contrast_title">"對比度"</string>
     <string name="pref_contrast_summary">"對比度：%s（-255 至 255，0 為無變化）"</string>
     <string name="pref_gamma_title">"伽馬"</string>
-    <string name="pref_gamma_summary">"伽馬：%s（0 至 200，100 為中性）"</string>
+    <string name="pref_gamma_summary">"伽馬：%s（0.00 至 2.00，1.00 為中性）"</string>
     <string name="pref_exposure_title">"曝光"</string>
     <string name="pref_exposure_summary">"曝光：%s（-128 至 128，0 為無變化）"</string>
     <string name="pref_autolevels_title">"自動色階"</string>
