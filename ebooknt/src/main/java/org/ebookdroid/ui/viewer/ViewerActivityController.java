@@ -34,6 +34,7 @@ import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.core.models.SearchModel;
 import org.ebookdroid.core.models.ZoomModel;
 import org.ebookdroid.droids.mupdf.codec.exceptions.MuPdfPasswordException;
+import org.ebookdroid.ui.library.RecentActivity;
 import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebookdroid.ui.settings.SettingsUI;
 import org.ebookdroid.ui.viewer.dialogs.GoToPageDialog;
@@ -118,7 +119,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     private CodecType codecType;
 
-    private final Intent intent;
+    private Intent intent;
 
     private String m_fileName;
 
@@ -257,6 +258,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         bookSettings = SettingsManager.create(id, m_fileName, scheme.temporary, intent);
         SettingsManager.applyBookSettingsChanges(null, bookSettings);
+
+        OpenBooksManager.get().onBookOpened(m_fileName);
     }
 
     /**
@@ -298,8 +301,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 CacheManager.clear(scheme.key);
             }
             SettingsManager.removeListener(this);
-            BitmapManager.clear("on finish");
-            ByteBufferManager.clear("on finish");
+            OpenBooksManager.get().onBookClosed(m_fileName);
+            if (OpenBooksManager.get().isEmpty()) {
+                BitmapManager.clear("on finish");
+                ByteBufferManager.clear("on finish");
+            }
         }
     }
 
@@ -901,6 +907,36 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     @Override
     public final BookSettings getBookSettings() {
         return bookSettings;
+    }
+
+    public String getCurrentBookPath() {
+        return m_fileName;
+    }
+
+    public void loadBook(final Intent newIntent) {
+        if (newIntent == null || newIntent.getData() == null) return;
+        if (documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
+            documentModel.recycle();
+            documentModel = ActivityControllerStub.DM_STUB;
+        }
+        this.intent = newIntent;
+        afterCreate(getManagedComponent(), false);
+        onPostCreate(null, false);
+    }
+
+    public void switchToOpenBook(final String path) {
+        final ViewerActivity activity = getManagedComponent();
+        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(path)));
+        intent.setClass(activity, ViewerActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        activity.startActivity(intent);
+    }
+
+    public void goToLibrary(final ActionEx action) {
+        final ViewerActivity activity = getManagedComponent();
+        final Intent intent = new Intent(activity, RecentActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        activity.startActivity(intent);
     }
 
     /**

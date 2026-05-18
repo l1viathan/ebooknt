@@ -17,8 +17,10 @@ import org.ebookdroid.ui.viewer.views.ManualCropView;
 import org.ebookdroid.ui.viewer.views.PageViewZoomControls;
 import org.ebookdroid.ui.viewer.views.SearchControls;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.widget.Toolbar;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
@@ -28,15 +30,24 @@ import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.AbstractActionActivity;
@@ -72,6 +83,15 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     private ManualCropView cropControls;
 
+    private DrawerLayout drawerLayout;
+
+    private ListView drawerList;
+
+    private OpenBooksAdapter openBooksAdapter;
+
+    private float edgeSwipeStartX = -1;
+    private float edgeSwipeStartY = -1;
+
     /**
      * Instantiates a new base viewer activity.
      */
@@ -100,6 +120,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         if (LCTX.isDebugEnabled()) {
             LCTX.d("onNewIntent(): " + intent);
         }
+        getController().loadBook(intent);
     }
 
     /**
@@ -112,7 +133,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         getWindowManager().getDefaultDisplay().getMetrics(DM);
         LCTX.i("XDPI=" + DM.xdpi + ", YDPI=" + DM.ydpi);
 
-        rootView = (FrameLayout) getLayoutInflater().inflate(R.layout.viewer, null);
+        final View rootLayout = getLayoutInflater().inflate(R.layout.viewer, null);
+        rootView = (FrameLayout) rootLayout.findViewById(R.id.viewer_content);
 
         frameLayout = (FrameLayout) rootView.findViewById(R.id.framelayout);
 
@@ -140,7 +162,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             builder.show();
         }
 
-        setContentView(rootView);
+        drawerLayout = (DrawerLayout) rootLayout.findViewById(R.id.viewer_drawer_layout);
+        drawerList = (ListView) rootLayout.findViewById(R.id.viewer_drawer_list);
+
+        setContentView(rootLayout);
         initOverlays();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -148,23 +173,106 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+
+        openBooksAdapter = new OpenBooksAdapter(this);
+
+        final View headerSpacer = new View(this);
+        final View footerSpacer = new View(this);
+        drawerList.addHeaderView(headerSpacer, null, false);
+        drawerList.addFooterView(footerSpacer, null, false);
+
+        drawerList.setAdapter(openBooksAdapter);
+
+        drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerOpened(final View drawerView) {
+                centerDrawerItems(headerSpacer, footerSpacer);
+            }
+        });
+
+        drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(final AdapterView<?> parent, final View view, final int position, final long id) {
+                final Object item = parent.getItemAtPosition(position);
+                if (item instanceof OpenBooksAdapter.BookItem) {
+                    final OpenBooksAdapter.BookItem book = (OpenBooksAdapter.BookItem) item;
+                    if (!book.isCurrent) {
+                        getController().switchToOpenBook(book.path);
+                    }
+                } else if (item == OpenBooksAdapter.LIBRARY_SENTINEL) {
+                    getController().goToLibrary(null);
+                }
+                if (drawerLayout != null) {
+                    drawerLayout.closeDrawers();
+                }
+            }
+        });
     }
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see org.emdev.ui.AbstractActionActivity#onResumeImpl()
      */
     @Override
     protected void onResumeImpl() {
         IUIManager.instance.onResume(this);
+        if (openBooksAdapter != null) {
+            openBooksAdapter.refresh(getController().getCurrentBookPath());
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(final MotionEvent ev) {
+        if (drawerLayout != null) {
+            final float density = getResources().getDisplayMetrics().density;
+            final float edgeSize = 40 * density;
+            final float minSwipe = 60 * density;
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (ev.getX() < edgeSize && !drawerLayout.isDrawerOpen(Gravity.START)) {
+                        edgeSwipeStartX = ev.getX();
+                        edgeSwipeStartY = ev.getY();
+                    } else {
+                        edgeSwipeStartX = -1;
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (edgeSwipeStartX >= 0) {
+                        final float dx = ev.getX() - edgeSwipeStartX;
+                        final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
+                        if (dx > minSwipe && dy < dx) {
+                            if (openBooksAdapter != null) {
+                                openBooksAdapter.refresh(getController() != null
+                                    ? getController().getCurrentBookPath() : null);
+                            }
+                            drawerLayout.openDrawer(Gravity.START);
+                            edgeSwipeStartX = -1;
+                            ev.setAction(MotionEvent.ACTION_CANCEL);
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    edgeSwipeStartX = -1;
+                    break;
+            }
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @see org.emdev.ui.AbstractActionActivity#onPauseImpl(boolean)
      */
+    @Override
+    protected void onSaveInstanceState(final Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
     @Override
     protected void onPauseImpl(final boolean finishing) {
         IUIManager.instance.onPause(this);
@@ -464,6 +572,111 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     public void showToastText(final int duration, final int resId, final Object... args) {
         Toast.makeText(getApplicationContext(), getResources().getString(resId, args), duration).show();
+    }
+
+    private void centerDrawerItems(final View headerSpacer, final View footerSpacer) {
+        drawerList.post(new Runnable() {
+            @Override
+            public void run() {
+                final int listH = drawerList.getHeight();
+                int contentH = 0;
+                for (int i = 0; i < drawerList.getChildCount(); i++) {
+                    final View child = drawerList.getChildAt(i);
+                    if (child != null && child != headerSpacer && child != footerSpacer) {
+                        contentH += child.getHeight();
+                    }
+                }
+                if (contentH <= 0 || listH <= 0) return;
+                final int spacerH = Math.max(0, (listH - contentH) / 2);
+                final android.widget.AbsListView.LayoutParams lp =
+                    new android.widget.AbsListView.LayoutParams(
+                        android.widget.AbsListView.LayoutParams.MATCH_PARENT, spacerH);
+                headerSpacer.setLayoutParams(lp);
+                footerSpacer.setLayoutParams(lp);
+                drawerList.invalidate();
+            }
+        });
+    }
+
+    static final class OpenBooksAdapter extends BaseAdapter {
+
+        static final Object LIBRARY_SENTINEL = new Object();
+
+        static final class BookItem {
+            final String path;
+            final String title;
+            final boolean isCurrent;
+            BookItem(final String path, final boolean isCurrent) {
+                this.path = path;
+                this.title = OpenBooksManager.getDisplayTitle(path);
+                this.isCurrent = isCurrent;
+            }
+        }
+
+        private static final int TYPE_BOOK = 0;
+        private static final int TYPE_ACTION = 1;
+
+        private final Context ctx;
+        private final List<Object> items = new ArrayList<>();
+
+        OpenBooksAdapter(final Context ctx) {
+            this.ctx = ctx;
+            refresh(null);
+        }
+
+        void refresh(final String currentPath) {
+            items.clear();
+            for (final String path : OpenBooksManager.get().getOpenBooks()) {
+                items.add(new BookItem(path, path.equals(currentPath)));
+            }
+            items.add(LIBRARY_SENTINEL);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public int getCount() { return items.size(); }
+
+        @Override
+        public Object getItem(final int pos) { return items.get(pos); }
+
+        @Override
+        public long getItemId(final int pos) { return pos; }
+
+        @Override
+        public int getViewTypeCount() { return 2; }
+
+        @Override
+        public int getItemViewType(final int pos) {
+            return (items.get(pos) instanceof BookItem) ? TYPE_BOOK : TYPE_ACTION;
+        }
+
+        @Override
+        public boolean isEnabled(final int pos) { return true; }
+
+        @Override
+        public View getView(final int pos, View convertView, final ViewGroup parent) {
+            if (convertView == null) {
+                final TextView tv = new TextView(ctx);
+                tv.setPadding(48, 32, 48, 32);
+                tv.setTextSize(15);
+                convertView = tv;
+            }
+            final TextView tv = (TextView) convertView;
+            final Object item = items.get(pos);
+            if (item instanceof BookItem) {
+                final BookItem book = (BookItem) item;
+                tv.setText(book.title);
+                tv.setTypeface(book.isCurrent
+                    ? android.graphics.Typeface.DEFAULT_BOLD
+                    : android.graphics.Typeface.DEFAULT);
+                tv.setTextColor(book.isCurrent ? 0xFF1976D2 : 0xFF212121);
+            } else {
+                tv.setText(R.string.drawer_action_library);
+                tv.setTypeface(android.graphics.Typeface.DEFAULT);
+                tv.setTextColor(0xFF1976D2);
+            }
+            return convertView;
+        }
     }
 
 }

@@ -25,7 +25,6 @@
     <string name="menu_book_info">"Об этой книге"</string>
     <string name="menu_fastsettings_menu">"Вид..."</string>
     <string name="menu_allsettings_menu">"Настройки..."</string>
-    <string name="menu_show_library">"Показать библиотеку"</string>
     <string name="menu_show_recent">"Показать недавние"</string>
     <string name="menu_storages">"Устройства хранения"</string>
     <string name="menu_storages_filesystem">"Файловая система"</string>

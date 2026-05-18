@@ -30,7 +30,6 @@
     <string name="menu_share">共有...</string>
     <string name="menu_openwith">...で開く</string>
 
-    <string name="menu_show_library">ライブラリーを表示</string>
     <string name="menu_show_recent">最近使用したを表示</string>
     <string name="menu_storages">ストレージ</string>
     <string name="menu_storages_filesystem">ファイルシステム</string>

@@ -32,7 +32,6 @@
     <string name="menu_share">Compartir…</string>
     <string name="menu_openwith">Abrir con…</string>
 
-    <string name="menu_show_library">Mostrar la biblioteca</string>
     <string name="menu_show_recent">Mostrar recientes</string>
     <string name="menu_storages">Almacenamiento</string>
     <string name="menu_storages_filesystem">Sistema de archivos</string>

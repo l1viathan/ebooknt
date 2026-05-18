@@ -25,7 +25,6 @@
     <string name="menu_book_info">"關於本書"</string>
     <string name="menu_fastsettings_menu">"檢視"</string>
     <string name="menu_allsettings_menu">"設定"</string>
-    <string name="menu_show_library">"顯示書目"</string>
     <string name="menu_show_recent">"顯示最近"</string>
     <string name="menu_storages">"儲存"</string>
     <string name="menu_storages_filesystem">"檔案系統"</string>

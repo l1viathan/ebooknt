@@ -25,7 +25,6 @@
     <string name="menu_book_info">"Über dieses Buch"</string>
     <string name="menu_fastsettings_menu">"Ansicht..."</string>
     <string name="menu_allsettings_menu">"Einstellungen..."</string>
-    <string name="menu_show_library">"Bibliothek anzeigen"</string>
     <string name="menu_show_recent">"Zuletzt verwendet"</string>
     <string name="menu_storages">"Speicherorte"</string>
     <string name="menu_storages_filesystem">"Dateisystem"</string>

@@ -25,7 +25,6 @@
     <string name="menu_allsettings_menu">"设置"</string>
     <string name="menu_other_menu">"其他…"</string>
     <string name="menu_book_info">"关于本书"</string>
-    <string name="menu_show_library">"显示书目"</string>
     <string name="menu_show_recent">"显示最近"</string>
     <string name="menu_storages">"存储"</string>
     <string name="menu_storages_filesystem">"文件系统"</string>
@@ -34,4 +33,5 @@
     <string name="menu_force_landscape">"强制横屏"</string>
     <string name="menu_show_files">"显示文件"</string>
     <string name="menu_search">"搜索"</string>
+    <string name="drawer_action_library">主界面</string>
 </resources>

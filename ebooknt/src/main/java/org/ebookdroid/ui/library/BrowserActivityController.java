@@ -16,6 +16,7 @@ import org.ebookdroid.ui.library.tasks.CopyBookTask;
 import org.ebookdroid.ui.library.tasks.MoveBookTask;
 import org.ebookdroid.ui.library.tasks.RenameBookTask;
 import org.ebookdroid.ui.settings.SettingsUI;
+import org.ebookdroid.ui.viewer.OpenBooksManager;
 import org.ebookdroid.ui.viewer.ViewerActivity;
 
 import android.content.Intent;
@@ -159,6 +160,9 @@ public class BrowserActivityController extends AbstractActivityController<Browse
             intent.putExtra("pageIndex", "" + b.page.viewIndex);
             intent.putExtra("offsetX", "" + b.offsetX);
             intent.putExtra("offsetY", "" + b.offsetY);
+        }
+        if (OpenBooksManager.get().isOpen(uri.getPath())) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         }
         activity.startActivity(intent);
     }

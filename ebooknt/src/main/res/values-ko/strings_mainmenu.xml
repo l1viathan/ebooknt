@@ -27,7 +27,6 @@
 <string name="menu_fastsettings_menu">보기...</string>
 <string name="menu_allsettings_menu">설정...</string>
 
-<string name="menu_show_library">라이브러리 표시</string>
 <string name="menu_show_recent">최근 목록 표시</string>
 <string name="menu_storages">저장소</string>
 <string name="menu_storages_filesystem">파일 시스템</string>

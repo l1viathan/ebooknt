@@ -32,7 +32,8 @@
     <string name="menu_share">Share…</string>
     <string name="menu_openwith">Open with…</string>
 
-    <string name="menu_show_library">Show library</string>
+    <string name="drawer_section_open_books">Open Books</string>
+    <string name="drawer_action_library">Main UI</string>
     <string name="menu_show_recent">Show recent</string>
     <string name="menu_storages">Storages</string>
     <string name="menu_storages_filesystem">File System</string>

@@ -32,7 +32,6 @@
     <string name="menu_share">Udostępnij…</string>
     <string name="menu_openwith">Otwórz za pomocą…</string>
 
-    <string name="menu_show_library">Pokaż bibliotekę</string>
     <string name="menu_show_recent">Pokaż ostatnie</string>
     <string name="menu_storages">Pamięć</string>
     <string name="menu_storages_filesystem">System plików</string>

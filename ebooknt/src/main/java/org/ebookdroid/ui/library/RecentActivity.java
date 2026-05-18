@@ -17,6 +17,8 @@ import org.ebookdroid.ui.library.views.BookcaseView;
 import org.ebookdroid.ui.library.views.LibraryView;
 import org.ebookdroid.ui.library.views.RecentBooksView;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -52,6 +54,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.ebookdroid.ui.viewer.OpenBooksManager;
+import org.ebookdroid.ui.viewer.ViewerActivity;
+
 import org.emdev.BaseDroidApp;
 import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.AbstractActionActivity;
@@ -70,6 +75,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
     private ArrayAdapter<String> locationAdapter;
+    private boolean spinnerInitialized = false;
 
     BookcaseView bookcaseView;
     RecentBooksView recentBooksView;
@@ -103,8 +109,6 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         locationItems = new ArrayList<String>();
-        locationItems.add(getString(R.string.nav_label_recent));  // position 0: current (always selected)
-        locationItems.add(getString(R.string.menu_show_files));   // position 1: navigate to Browser
 
         locationAdapter = new ArrayAdapter<String>(this, R.layout.browser_spinner_item, locationItems);
         locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
@@ -114,16 +118,17 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
+                if (!spinnerInitialized) return;
                 if (position == 1) {
                     getController().goFileBrowserFromSpinner();
                 }
+                // position 0 = "Recent" = current, no-op
             }
 
             @Override
             public void onNothingSelected(final AdapterView<?> parent) {
             }
         });
-        locationSpinner.setSelection(0);
     }
 
     /**
@@ -133,9 +138,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
      */
     @Override
     protected void onResumeImpl() {
-        if (locationSpinner != null) {
-            locationSpinner.setSelection(0);
-        }
+        rebuildLocationSpinner();
         UIManagerAppCompat.invalidateOptionsMenu(this);
 
         // HACK: invalidating the adapter when the tab view is not visible seems to leave
@@ -403,5 +406,23 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         }
 
         return viewflipper;
+    }
+
+    private void rebuildLocationSpinner() {
+        if (locationSpinner == null) return;
+        spinnerInitialized = false;
+
+        locationItems.clear();
+        locationItems.add(getString(R.string.nav_label_recent));
+        locationItems.add(getString(R.string.menu_show_files));
+
+        locationAdapter.notifyDataSetChanged();
+        locationSpinner.setSelection(0);
+        locationSpinner.post(new Runnable() {
+            @Override
+            public void run() {
+                spinnerInitialized = true;
+            }
+        });
     }
 }

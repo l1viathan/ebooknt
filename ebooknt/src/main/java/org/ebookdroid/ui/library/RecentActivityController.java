@@ -30,6 +30,7 @@ import org.ebookdroid.ui.viewer.ViewerActivity;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
+import org.ebookdroid.ui.viewer.OpenBooksManager;
 import android.net.Uri;
 import android.support.v7.widget.AppCompatEditText;
 import android.text.Editable;
@@ -404,6 +405,9 @@ public class RecentActivityController extends AbstractActivityController<RecentA
             intent.putExtra("pageIndex", "" + b.page.viewIndex);
             intent.putExtra("offsetX", "" + b.offsetX);
             intent.putExtra("offsetY", "" + b.offsetY);
+        }
+        if (OpenBooksManager.get().isOpen(uri.getPath())) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         }
         getManagedComponent().startActivity(intent);
     }

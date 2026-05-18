@@ -8,6 +8,8 @@ import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.ui.library.views.FileBrowserView;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.ContextMenu;
@@ -35,6 +37,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.ebookdroid.ui.viewer.OpenBooksManager;
+import org.ebookdroid.ui.viewer.ViewerActivity;
+
 import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.AbstractActionActivity;
 import org.emdev.ui.actions.ActionMenuHelper;
@@ -52,6 +57,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     private ArrayList<String> locationItems;
     private ArrayAdapter<String> locationAdapter;
     private boolean spinnerInitialized = false;
+    private ArrayList<String> openBookPaths = new ArrayList<String>();
 
     public BrowserActivity() {
         super(false, ON_CREATE, ON_RESUME);
@@ -81,8 +87,6 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         locationItems = new ArrayList<String>();
-        locationItems.add(getString(R.string.menu_show_recent));  // position 0: navigate to Recent (top of dropdown)
-        locationItems.add("");  // position 1: current directory (always selected)
 
         locationAdapter = new ArrayAdapter<String>(this, R.layout.browser_spinner_item, locationItems);
         locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
@@ -93,20 +97,26 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
             @Override
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
                 if (!spinnerInitialized) return;
-                if (position == 0) {
+                final int size = locationItems.size();
+                if (size < 2) return;
+                if (position == size - 2) {
+                    // "Show Recent" item
                     getController().goRecent(null);
+                } else if (position < size - 2) {
+                    // open book item
+                    final String path = openBookPaths.get(position);
+                    if (path != null) {
+                        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new java.io.File(path)));
+                        intent.setClass(BrowserActivity.this, ViewerActivity.class);
+                        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                        startActivity(intent);
+                    }
                 }
+                // last item = current dir, no-op
             }
 
             @Override
             public void onNothingSelected(final AdapterView<?> parent) {
-            }
-        });
-        locationSpinner.setSelection(1);
-        locationSpinner.post(new Runnable() {
-            @Override
-            public void run() {
-                spinnerInitialized = true;
             }
         });
 
@@ -118,9 +128,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     @Override
     protected void onResumeImpl() {
-        if (locationSpinner != null) {
-            locationSpinner.setSelection(1);
-        }
+        rebuildLocationSpinner();
     }
 
     /**
@@ -157,14 +165,42 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     void setTitle(final File dir) {
         UIManagerAppCompat.invalidateOptionsMenu(this);
-        if (locationItems != null && locationSpinner != null) {
+        if (locationItems != null && locationSpinner != null && !locationItems.isEmpty()) {
             final String path = dir.getAbsolutePath();
-            locationItems.set(1, path);
+            locationItems.set(locationItems.size() - 1, path);
             final View selectedView = locationSpinner.getSelectedView();
             if (selectedView instanceof TextView) {
                 ((TextView) selectedView).setText(path);
             }
         }
+    }
+
+    private void rebuildLocationSpinner() {
+        if (locationSpinner == null) return;
+        spinnerInitialized = false;
+
+        final String currentDir = getController().adapter != null
+            && getController().adapter.getCurrentDirectory() != null
+            ? getController().adapter.getCurrentDirectory().getAbsolutePath() : "";
+
+        openBookPaths.clear();
+        openBookPaths.addAll(OpenBooksManager.get().getOpenBooks());
+
+        locationItems.clear();
+        for (final String path : openBookPaths) {
+            locationItems.add(OpenBooksManager.getDisplayTitle(path));
+        }
+        locationItems.add(getString(R.string.menu_show_recent));
+        locationItems.add(currentDir);
+
+        locationAdapter.notifyDataSetChanged();
+        locationSpinner.setSelection(locationItems.size() - 1);
+        locationSpinner.post(new Runnable() {
+            @Override
+            public void run() {
+                spinnerInitialized = true;
+            }
+        });
     }
 
     /**
