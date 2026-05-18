@@ -68,8 +68,14 @@ public class BookSettingsTemplate {
         this.tint = obj.optBoolean("tint", false);
         this.tintColor = obj.optInt("tintColor", 0);
         this.contrast = obj.optInt("contrast", AppPreferences.CONTRAST.defValue);
+        final int settingsVersion = obj.optInt("settingsVersion", 0);
+        final int rawExposure = obj.optInt("exposure", AppPreferences.EXPOSURE.defValue);
+        if (settingsVersion < 1 && rawExposure == -128) {
+            this.exposure = 0;
+        } else {
+            this.exposure = rawExposure;
+        }
         this.gamma = obj.optInt("gamma", AppPreferences.GAMMA.defValue);
-        this.exposure = obj.optInt("exposure", AppPreferences.EXPOSURE.defValue);
         this.autoLevels = obj.optBoolean("autoLevels", false);
         this.threshold = obj.optInt("threshold", AppPreferences.THRESHOLD.defValue);
         this.smoothness = obj.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
@@ -93,6 +99,7 @@ public class BookSettingsTemplate {
         obj.put("contrast", contrast);
         obj.put("gamma", gamma);
         obj.put("exposure", exposure);
+        obj.put("settingsVersion", 1);
         obj.put("autoLevels", autoLevels);
         obj.put("threshold", threshold);
         obj.put("smoothness", smoothness);

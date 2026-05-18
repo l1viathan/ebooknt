@@ -72,20 +72,14 @@ public final class ByteBufferBitmap {
         return part;
     }
 
-    // Native neutral points (no image change):
-    //   nativeGamma(100)    = gamma 1.0 = no change
-    //   nativeExposure(0)   = no change; stored -128 maps to native 0 via exposure+128
-    //   nativeContrast(256) = no change; stored 0 maps to native 256 via contrast+256
-    private static final int GAMMA_NEUTRAL = 100;
-    private static final int EXPOSURE_NEUTRAL = -128;
-
     public void applyEffects(final BookSettings bs) {
         final boolean correctContrast = bs.contrast != AppPreferences.CONTRAST.defValue;
-        final boolean correctGamma = bs.gamma != GAMMA_NEUTRAL;
-        final boolean correctExposure = bs.exposure != EXPOSURE_NEUTRAL;
+        final boolean correctGamma = bs.gamma != AppPreferences.GAMMA.defValue;
+        final boolean correctExposure = bs.exposure != AppPreferences.EXPOSURE.defValue;
         final boolean applyThreshold = bs.threshold > AppPreferences.THRESHOLD.defValue;
+        final boolean applySmoothness = bs.smoothness > AppPreferences.SMOOTHNESS.defValue;
 
-        if (correctContrast || correctGamma || correctExposure || bs.autoLevels || applyThreshold) {
+        if (correctContrast || correctGamma || correctExposure || bs.autoLevels || applyThreshold || applySmoothness) {
             if (correctGamma) {
                 gamma(bs.gamma);
             }
@@ -97,6 +91,9 @@ public final class ByteBufferBitmap {
             }
             if (bs.autoLevels) {
                 autoLevels();
+            }
+            if (applySmoothness) {
+                smoothness(bs.smoothness);
             }
             if (applyThreshold) {
                 threshold(bs.threshold);
@@ -163,19 +160,15 @@ public final class ByteBufferBitmap {
     }
 
     public void contrast(final int contrast) {
-        // nativeContrast expects 256 = neutral; stored range is -255..255 with 0 = neutral
         nativeContrast(pixels, width, height, contrast + 256);
     }
 
     public void gamma(final int gamma) {
-        // nativeGamma expects 100 = neutral; stored range is 0..200 passed directly
         nativeGamma(pixels, width, height, gamma);
     }
 
     public void exposure(final int exposure) {
-        // stored -128..128 where -128=no change; native expects -128..128 where 0=no change
-        // formula: native = exposure + 128; clamp to native max 128
-        nativeExposure(pixels, width, height, Math.min(128, exposure + 128));
+        nativeExposure(pixels, width, height, exposure);
     }
 
     public void threshold(final int threshold) {
@@ -193,6 +186,10 @@ public final class ByteBufferBitmap {
             buf.put(i + 1, (byte) out);
             buf.put(i + 2, (byte) out);
         }
+    }
+
+    public void smoothness(final int smoothness) {
+        nativeSmoothness(pixels, width, height, smoothness);
     }
 
     public void autoLevels() {
@@ -232,6 +229,8 @@ public final class ByteBufferBitmap {
     private static native void nativeAutoLevels2(ByteBuffer src, int width, int height);
 
     private static native int nativeAvgLum(ByteBuffer src, int width, int height);
+
+    private static native void nativeSmoothness(ByteBuffer src, int width, int height, int smoothness);
 
     private static native void nativeFillRect(ByteBuffer src, int srcWidth, ByteBuffer dst, int dstWidth, int x,
             int y, int width, int height);

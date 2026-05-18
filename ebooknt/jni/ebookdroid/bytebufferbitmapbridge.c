@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <jni.h>
 #include <stdint.h>
@@ -417,6 +418,90 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeAutoLevels2(JNIEnv* en
         src[i + 1] = MIN(MAX((src[i+1] - minG) * 255 / (maxG - minG), 0), 255);
         src[i + 2] = MIN(MAX((src[i+2] - minB) * 255 / (maxB - minB), 0), 255);
     }
+}
+
+static void min3x3_filter(const uint8_t* src, uint8_t* dst, int width, int height)
+{
+    int x, y, dx, dy;
+    for (y = 0; y < height; y++)
+    {
+        for (x = 0; x < width; x++)
+        {
+            int idx = (y * width + x) * 4;
+            uint8_t m0 = 255, m1 = 255, m2 = 255;
+
+            for (dy = -1; dy <= 1; dy++)
+            {
+                int ny = y + dy;
+                if (ny < 0 || ny >= height) continue;
+                for (dx = -1; dx <= 1; dx++)
+                {
+                    int nx = x + dx;
+                    if (nx < 0 || nx >= width) continue;
+                    int nidx = (ny * width + nx) * 4;
+                    if (src[nidx]     < m0) m0 = src[nidx];
+                    if (src[nidx + 1] < m1) m1 = src[nidx + 1];
+                    if (src[nidx + 2] < m2) m2 = src[nidx + 2];
+                }
+            }
+
+            dst[idx]     = m0;
+            dst[idx + 1] = m1;
+            dst[idx + 2] = m2;
+            dst[idx + 3] = src[idx + 3];
+        }
+    }
+}
+
+JNIEXPORT void JNICALL
+Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeSmoothness(JNIEnv* env, jclass classObject, jobject srcBuffer,
+                                                                     jint width, jint height, jint smoothness)
+{
+    if (smoothness <= 10 || width < 1 || height < 1) return;
+
+    uint8_t* src;
+    src = (uint8_t*) ((*env)->GetDirectBufferAddress(env, srcBuffer));
+    if (!src)
+    {
+        ERROR("Can not get direct buffer");
+        return;
+    }
+
+    int bufSize = width * height * 4;
+    uint8_t* tmp = (uint8_t*) malloc(bufSize);
+    if (!tmp)
+    {
+        ERROR("Cannot allocate smoothness buffer");
+        return;
+    }
+
+    int strength_x10 = smoothness - 10;
+    int fullPasses = strength_x10 / 10;
+    int blend_x10 = strength_x10 % 10;
+    int p, i;
+
+    for (p = 0; p < fullPasses; p++)
+    {
+        min3x3_filter(src, tmp, width, height);
+        memcpy(src, tmp, bufSize);
+    }
+
+    if (blend_x10 > 0)
+    {
+        int alpha = blend_x10 * 256 / 10;
+        int inv_alpha = 256 - alpha;
+
+        min3x3_filter(src, tmp, width, height);
+
+        for (i = 0; i < bufSize; i += 4)
+        {
+            src[i]     = (uint8_t)((src[i]     * inv_alpha + tmp[i]     * alpha) >> 8);
+            src[i + 1] = (uint8_t)((src[i + 1] * inv_alpha + tmp[i + 1] * alpha) >> 8);
+            src[i + 2] = (uint8_t)((src[i + 2] * inv_alpha + tmp[i + 2] * alpha) >> 8);
+        }
+    }
+
+    free(tmp);
 }
 
 JNIEXPORT void JNICALL

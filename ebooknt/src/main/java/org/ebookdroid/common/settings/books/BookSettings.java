@@ -182,8 +182,14 @@ public class BookSettings implements CurrentPageListener {
         this.tint = object.optBoolean("tint", false);
         this.tintColor = object.optInt("tintColor", 0);
         this.contrast = object.optInt("contrast", AppPreferences.CONTRAST.defValue);
+        final int settingsVersion = object.optInt("settingsVersion", 0);
+        final int rawExposure = object.optInt("exposure", AppPreferences.EXPOSURE.defValue);
+        if (settingsVersion < 1 && rawExposure == -128) {
+            this.exposure = 0;
+        } else {
+            this.exposure = rawExposure;
+        }
         this.gamma = object.optInt("gamma", AppPreferences.GAMMA.defValue);
-        this.exposure = object.optInt("exposure", AppPreferences.EXPOSURE.defValue);
         this.autoLevels = object.optBoolean("autoLevels", false);
         this.threshold = object.optInt("threshold", AppPreferences.THRESHOLD.defValue);
         this.smoothness = object.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
@@ -224,6 +230,7 @@ public class BookSettings implements CurrentPageListener {
         obj.put("contrast", contrast);
         obj.put("gamma", gamma);
         obj.put("exposure", exposure);
+        obj.put("settingsVersion", 1);
         obj.put("autoLevels", autoLevels);
         obj.put("threshold", threshold);
         obj.put("smoothness", smoothness);
@@ -295,7 +302,7 @@ public class BookSettings implements CurrentPageListener {
         private static final int D_Smoothness = 0x0001 << 17;
 
         private static final int D_Effects = D_Contrast | D_Exposure | D_NightMode | D_PositiveImagesInNightMode
-                | D_AutoLevels | D_Gamma | D_Tint | D_Threshold;
+                | D_AutoLevels | D_Gamma | D_Tint | D_Threshold | D_Smoothness;
 
         private int mask;
         private final boolean firstTime;
