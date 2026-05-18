@@ -8,7 +8,6 @@
         <item>actions_openOptionsMenu</item>
 
         <item>mainmenu_outline</item>
-        <item>mainmenu_open_library</item>
         <item>mainmenu_search</item>
         <item>mainmenu_bookmark</item>
         <item>mainmenu_goto_page</item>
@@ -51,7 +50,6 @@
         <item>@string/menu_show_options_menu</item>
 
         <item>@string/menu_outline</item>
-        <item>@string/menu_show_library</item>
         <item>@string/menu_searchtext</item>
         <item>@string/menu_add_bookmark</item>
         <item>@string/menu_goto_page</item>

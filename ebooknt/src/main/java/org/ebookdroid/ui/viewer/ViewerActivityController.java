@@ -1062,12 +1062,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         getOrCreateAction(R.id.mainmenu_close).run();
     }
 
-    @ActionMethod(ids = R.id.mainmenu_open_library)
-    public void openLibrary(final ActionEx action) {
-        getOrCreateAction(android.R.id.home).run();
-    }
-
-    @ActionMethod(ids = R.id.actions_showSaveDlg)
+@ActionMethod(ids = R.id.actions_showSaveDlg)
     public void showSaveDlg(final ActionEx action) {
         final FolderDlg dlg = new FolderDlg(this);
         dlg.show(BaseDroidApp.EXT_STORAGE, R.string.confirmclose_title, R.id.actions_doSaveAndClose, R.id.actions_doClose);
