@@ -20,7 +20,11 @@ import org.ebookdroid.ui.viewer.views.SearchControls;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
@@ -31,6 +35,7 @@ import android.view.MenuItem;
 import android.view.SubMenu;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.emdev.common.android.AndroidVersion;
@@ -48,9 +53,12 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     IView view;
 
-    private Toast pageNumberToast;
-
-    private Toast zoomToast;
+    private FrameLayout rootView;
+    private TextView pageOverlay;
+    private TextView zoomOverlay;
+    private final Handler overlayHandler = new Handler(Looper.getMainLooper());
+    private final Runnable hidePageOverlay = () -> pageOverlay.setVisibility(View.GONE);
+    private final Runnable hideZoomOverlay = () -> zoomOverlay.setVisibility(View.GONE);
 
     private PageViewZoomControls zoomControls;
 
@@ -104,9 +112,9 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         getWindowManager().getDefaultDisplay().getMetrics(DM);
         LCTX.i("XDPI=" + DM.xdpi + ", YDPI=" + DM.ydpi);
 
-        View rootLayout = getLayoutInflater().inflate(R.layout.viewer, null);
+        rootView = (FrameLayout) getLayoutInflater().inflate(R.layout.viewer, null);
 
-        frameLayout = (FrameLayout) rootLayout.findViewById(R.id.framelayout);
+        frameLayout = (FrameLayout) rootView.findViewById(R.id.framelayout);
 
         view = ViewStub.STUB;
 
@@ -132,7 +140,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             builder.show();
         }
 
-        setContentView(rootLayout);
+        setContentView(rootView);
+        initOverlays();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -168,6 +177,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
      */
     @Override
     protected void onDestroyImpl(final boolean finishing) {
+        overlayHandler.removeCallbacksAndMessages(null);
         view.onDestroy();
     }
 
@@ -183,6 +193,46 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         }
     }
 
+    private void initOverlays() {
+        final float dp = getResources().getDisplayMetrics().density;
+        pageOverlay = createOverlay(dp);
+        rootView.addView(pageOverlay);
+        zoomOverlay = createOverlay(dp);
+        rootView.addView(zoomOverlay);
+    }
+
+    private TextView createOverlay(final float dp) {
+        final TextView tv = new TextView(this);
+        tv.setTextColor(0xFFFFFFFF);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        final int ph = (int) (12 * dp);
+        final int pv = (int) (8 * dp);
+        tv.setPadding(ph, pv, ph, pv);
+        final GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0xCC000000);
+        bg.setCornerRadius(pv);
+        tv.setBackground(bg);
+        tv.setVisibility(View.GONE);
+        final int margin = (int) (8 * dp);
+        final FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(margin, margin, margin, margin);
+        tv.setLayoutParams(lp);
+        return tv;
+    }
+
+    private void showOverlay(final TextView tv, final String text, final int gravity, final Runnable hideTask) {
+        final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tv.getLayoutParams();
+        if (lp.gravity != gravity) {
+            lp.gravity = gravity;
+            tv.setLayoutParams(lp);
+        }
+        tv.setText(text);
+        tv.setVisibility(View.VISIBLE);
+        overlayHandler.removeCallbacks(hideTask);
+        overlayHandler.postDelayed(hideTask, 2000);
+    }
+
     public TouchManagerView getTouchView() {
         if (touchView == null) {
             touchView = new TouchManagerView(getController());
@@ -194,46 +244,31 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         if (LengthUtils.isEmpty(pageText)) {
             return;
         }
-
         final AppSettings app = AppSettings.current();
         if (UIManagerAppCompat.isToolbarVisible(this) && app.pageInTitle) {
             return;
         }
-
-        if (app.pageNumberToastPosition == ToastPosition.Invisible) {
+        final ToastPosition pos = app.pageNumberToastPosition;
+        if (pos == ToastPosition.Invisible) {
+            overlayHandler.removeCallbacks(hidePageOverlay);
+            pageOverlay.setVisibility(View.GONE);
             return;
         }
-        if (pageNumberToast != null) {
-            pageNumberToast.setText(pageText);
-        } else {
-            pageNumberToast = Toast.makeText(this, pageText, Toast.LENGTH_SHORT);
-        }
-
-        pageNumberToast.setGravity(app.pageNumberToastPosition.position, 0, 0);
-        pageNumberToast.show();
+        showOverlay(pageOverlay, pageText, pos.position, hidePageOverlay);
     }
 
     public void zoomChanged(final float zoom) {
         if (getZoomControls().isShown()) {
             return;
         }
-
         final AppSettings app = AppSettings.current();
-
-        if (app.zoomToastPosition == ToastPosition.Invisible) {
+        final ToastPosition pos = app.zoomToastPosition;
+        if (pos == ToastPosition.Invisible) {
+            overlayHandler.removeCallbacks(hideZoomOverlay);
+            zoomOverlay.setVisibility(View.GONE);
             return;
         }
-
-        final String zoomText = String.format("%.2f", zoom) + "x";
-
-        if (zoomToast != null) {
-            zoomToast.setText(zoomText);
-        } else {
-            zoomToast = Toast.makeText(this, zoomText, Toast.LENGTH_SHORT);
-        }
-
-        zoomToast.setGravity(app.zoomToastPosition.position, 0, 0);
-        zoomToast.show();
+        showOverlay(zoomOverlay, String.format("%.2f", zoom) + "x", pos.position, hideZoomOverlay);
     }
 
     public PageViewZoomControls getZoomControls() {
