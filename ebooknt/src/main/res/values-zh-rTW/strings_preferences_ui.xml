@@ -14,7 +14,7 @@
     <string name="list_lang_nl">"荷蘭語 (Nederlands)"</string>
     <string name="list_lang_ru">"俄語 (Русский)"</string>
     <string name="list_lang_uk">"烏克蘭語 (Український)"</string>
-    <string name="list_lang_zh">"中文簡體"</string>
+    <string name="list_lang_zh">Chinese Simplified (中文簡體)</string>
     <string name="list_lang_iw">"希伯來語 (עברית)"</string>
     <string name="list_lang_ko">"韓語 (한국어)"</string>    
     <string name="pref_loadrecent_title">"最近載入"</string>
