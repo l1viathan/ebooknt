@@ -104,9 +104,10 @@ public class BrowserActivityController extends AbstractActivityController<Browse
     public boolean onKeyUp(final int keyCode, final KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && !event.isCanceled()) {
             final File dir = adapter.getCurrentDirectory();
-            final File parent = dir != null ? dir.getParentFile() : null;
-            if (parent != null) {
-                setCurrentDir(parent);
+            final File home = getHomeDirectory();
+            final boolean atHome = dir != null && dir.getAbsolutePath().equals(home.getAbsolutePath());
+            if (!atHome && dir != null && dir.getParentFile() != null) {
+                setCurrentDir(dir.getParentFile());
             } else {
                 getManagedComponent().finish();
             }
@@ -115,16 +116,20 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         return false;
     }
 
-    @ActionMethod(ids = R.id.browserhome)
-    public void goHome(final ActionEx action) {
+    private File getHomeDirectory() {
         final Set<String> dirs = LibSettings.current().scanDirs;
         if (LengthUtils.isNotEmpty(dirs)) {
-            setCurrentDir(new File(dirs.iterator().next()));
+            return new File(dirs.iterator().next());
         } else if (BaseDroidApp.EXT_STORAGE.exists()) {
-            setCurrentDir(BaseDroidApp.EXT_STORAGE);
+            return BaseDroidApp.EXT_STORAGE;
         } else {
-            setCurrentDir(new File("/"));
+            return new File("/");
         }
+    }
+
+    @ActionMethod(ids = R.id.browserhome)
+    public void goHome(final ActionEx action) {
+        setCurrentDir(getHomeDirectory());
     }
 
     @ActionMethod(ids = R.id.mainmenu_settings)
