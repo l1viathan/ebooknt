@@ -243,6 +243,8 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         if (bookshelfAdapter.startSearch(searchQuery)) {
             if (LibSettings.current().useBookcase) {
                 getManagedComponent().showBookshelf(BooksAdapter.SEARCH_INDEX);
+            } else {
+                changeLibraryView(RecentActivity.VIEW_LIBRARY);
             }
         }
     }

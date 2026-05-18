@@ -20,12 +20,6 @@
             style="@style/action_bar_title"
             android:textSize="12sp" />
 
-        <ImageView
-            android:id="@+id/browserupfolder"
-            style="@style/action_bar_action"
-            android:onClick="onButtonClick"
-            android:src="@drawable/browser_actionbar_nav_up_enabled" />
-
     </LinearLayout>
 
     <ListView

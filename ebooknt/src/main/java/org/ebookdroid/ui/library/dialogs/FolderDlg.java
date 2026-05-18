@@ -42,7 +42,6 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
     private final Context context;
 
     private File selected;
-    private ImageView upButton;
     private ImageView homeButton;
 
     public FolderDlg(final IActionController<? extends Activity> controller) {
@@ -58,10 +57,8 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
 
         header = (TextView) view.findViewById(R.id.browsertext);
         filesView = (ListView) view.findViewById(R.id.browserview);
-        upButton = (ImageView) view.findViewById(R.id.browserupfolder);
         homeButton = (ImageView) view.findViewById(R.id.browserhome);
 
-        upButton.setOnClickListener(controller.getOrCreateAction(R.id.browserupfolder));
         homeButton.setOnClickListener(controller.getOrCreateAction(R.id.browserhome));
 
         filesView.setAdapter(adapter);
@@ -88,10 +85,8 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
 
         header = (TextView) view.findViewById(R.id.browsertext);
         filesView = (ListView) view.findViewById(R.id.browserview);
-        upButton = (ImageView) view.findViewById(R.id.browserupfolder);
         homeButton = (ImageView) view.findViewById(R.id.browserhome);
 
-        upButton.setOnClickListener(controller.getOrCreateAction(R.id.browserupfolder));
         homeButton.setOnClickListener(controller.getOrCreateAction(R.id.browserhome));
 
         filesView.setAdapter(adapter);
@@ -123,19 +118,7 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
         }
     }
 
-    @ActionMethod(ids = R.id.browserupfolder)
-    public void goUp(final ActionEx action) {
-        final File dir = adapter.getCurrentDirectory();
-        final File parent = dir != null ? dir.getParentFile() : null;
-        if (parent != null) {
-            setCurrentDir(parent);
-        }
-    }
-
     public void setCurrentDir(final File newDir) {
-        final boolean hasParent = newDir.getParentFile() != null;
-        upButton.setImageResource(hasParent ? R.drawable.browser_actionbar_nav_up_enabled : R.drawable.browser_actionbar_nav_up_disabled);
-
         selected = newDir;
         header.setText(newDir.getAbsolutePath());
         adapter.setCurrentDirectory(newDir);

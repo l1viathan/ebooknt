@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/recent_showbrowser"
+        android:alphabeticShortcut="l"
+        android:icon="@drawable/browser_actionbar_nav_home"
+        app:showAsAction="always"
+        android:title="@string/menu_show_files"/>
+    <item
         android:id="@+id/recentmenu_searchBook"
         android:alphabeticShortcut="s"
         android:icon="@drawable/recent_actionbar_searchbook"
@@ -19,7 +25,7 @@
         android:id="@+id/recent_showrecent"
         android:alphabeticShortcut="l"
         android:icon="@drawable/recent_actionbar_recent"
-        app:showAsAction="always"
+        app:showAsAction="ifRoom"
         android:title="@string/menu_show_recent"/>
     <item
         android:id="@+id/recent_storage_menu"

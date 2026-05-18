@@ -127,15 +127,6 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         }
     }
 
-    @ActionMethod(ids = R.id.browserupfolder)
-    public void goUp(final ActionEx action) {
-        final File dir = adapter.getCurrentDirectory();
-        final File parent = dir != null ? dir.getParentFile() : null;
-        if (parent != null) {
-            setCurrentDir(parent);
-        }
-    }
-
     @ActionMethod(ids = R.id.mainmenu_settings)
     public void showSettings(final ActionEx action) {
         SettingsUI.showAppSettings(getManagedComponent(), null);

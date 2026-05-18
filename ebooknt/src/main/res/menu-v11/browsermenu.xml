@@ -9,12 +9,6 @@
         app:showAsAction="always"
         android:title="Home"/>
     <item
-        android:id="@+id/browserupfolder"
-        android:alphabeticShortcut="u"
-        android:icon="@drawable/browser_actionbar_nav_up_enabled"
-        app:showAsAction="always"
-        android:title="Up"/>
-    <item
         android:id="@+id/mainmenu_settings"
         android:alphabeticShortcut="s"
         android:icon="@drawable/common_actionbar_allsettings"

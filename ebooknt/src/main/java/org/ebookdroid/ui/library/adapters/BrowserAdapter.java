@@ -34,6 +34,7 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
     private final FileFilter filter;
 
     private File currentDirectory;
+    private File parentEntry = null;
     private List<File> files = Collections.emptyList();
 
     public BrowserAdapter(final Context context, final FileFilter filter) {
@@ -65,6 +66,14 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
         final File file = getItem(i);
         String ap = file.getAbsolutePath();
 
+        if (file == parentEntry) {
+            holder.textView.setText("..");
+            holder.imageView.setImageResource(R.drawable.browser_item_folder_open);
+            holder.info.setText("");
+            holder.fileSize.setText("");
+            return holder.getView();
+        }
+
         holder.textView.setText(file.getName());
 
         if (file.isDirectory()) {
@@ -92,11 +101,15 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
 
         File[] files = currentDirectory.listFiles(filter);
 
+        boolean isVirtualRoot = false;
         if (files == null && "/".equals(currentDirectory.getAbsolutePath())) {
             // File("/").listFiles() returns null on modern Android even with storage permission.
             // Use Android storage APIs to enumerate accessible storage volumes instead.
             files = getStorageRoots();
+            isVirtualRoot = true;
         }
+
+        parentEntry = isVirtualRoot ? null : currentDirectory.getParentFile();
 
         if (LengthUtils.isNotEmpty(files)) {
             Arrays.sort(files, this);
@@ -134,7 +147,13 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
     }
 
     private void setFiles(final File[] files) {
-        final List<File> ff = LengthUtils.isNotEmpty(files) ? new ArrayList<File>(Arrays.asList(files)) : new ArrayList<File>();
+        final List<File> ff = new ArrayList<File>();
+        if (parentEntry != null) {
+            ff.add(parentEntry);
+        }
+        if (LengthUtils.isNotEmpty(files)) {
+            ff.addAll(Arrays.asList(files));
+        }
         this.files = ff;
         notifyDataSetChanged();
     }

@@ -184,6 +184,18 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
                         return false;
                     }
                 });
+                searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+                    @Override
+                    public boolean onMenuItemActionExpand(MenuItem item) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onMenuItemActionCollapse(MenuItem item) {
+                        getController().changeLibraryView(RecentActivity.VIEW_RECENT);
+                        return true;
+                    }
+                });
             }
         }
 
