@@ -26,9 +26,9 @@
     <string name="dialog_backup_restore">"恢复…"</string>
     <string name="dialog_backup_remove">"删除…"</string>
     <string name="add_bookmark_name">"输入书签描述"</string>
-    <string name="bookmark_start">"启动"</string>
+    <string name="bookmark_start">"起始页"</string>
     <string name="bookmark_current">"当前书签位置"</string>
-    <string name="bookmark_end">"结束"</string>
+    <string name="bookmark_end">"结束页"</string>
     <string name="bookmark_invalid_page">"无效的页码。有效的页码范围是: %1$d-%2$d"</string>
     <string name="bookmarks_title">"书签"</string>
     <string name="clear_bookmarks_title">"删除书签"</string>

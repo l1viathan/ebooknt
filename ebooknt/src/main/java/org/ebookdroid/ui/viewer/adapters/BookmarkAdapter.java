@@ -5,7 +5,6 @@ import org.ebookdroid.common.settings.SettingsManager;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.core.Page;
-import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.ui.viewer.views.BookmarkView;
 
 import android.content.Context;
@@ -25,9 +24,6 @@ public final class BookmarkAdapter extends BaseAdapter {
     public final BookSettings bookSettings;
     final IActionController<?> actions;
     final Page lastPage;
-
-    final Bookmark start;
-    final Bookmark end;
     final Context context;
 
     public BookmarkAdapter(final Context context, final IActionController<?> actions, final Page lastPage,
@@ -36,9 +32,6 @@ public final class BookmarkAdapter extends BaseAdapter {
         this.actions = actions;
         this.lastPage = lastPage;
         this.bookSettings = bookSettings;
-
-        this.start = new Bookmark(true, context.getString(R.string.bookmark_start), PageIndex.FIRST, 0, 0);
-        this.end = new Bookmark(true, context.getString(R.string.bookmark_end), PageIndex.LAST, 0, 1);
 
         Collections.sort(bookSettings.bookmarks);
     }
@@ -74,7 +67,7 @@ public final class BookmarkAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return 2 + bookSettings.bookmarks.size();
+        return bookSettings.bookmarks.size();
     }
 
     public boolean hasUserBookmarks() {
@@ -87,13 +80,7 @@ public final class BookmarkAdapter extends BaseAdapter {
     }
 
     public Bookmark getBookmark(final int index) {
-        if (index == 0) {
-            return start;
-        }
-        if (index - 1 < bookSettings.bookmarks.size()) {
-            return bookSettings.bookmarks.get(index - 1);
-        }
-        return end;
+        return bookSettings.bookmarks.get(index);
     }
 
     @Override

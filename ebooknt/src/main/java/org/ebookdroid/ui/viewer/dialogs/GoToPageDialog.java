@@ -101,6 +101,24 @@ public class GoToPageDialog extends Dialog {
         final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
         seekbar.setMax(max);
 
+        final View firstBtn = findViewById(R.id.gotoFirstButton);
+        if (firstBtn != null) {
+            firstBtn.setOnClickListener(v -> {
+                base.jumpToPage(0, 0, 0, AppSettings.current().storeGotoHistory);
+                dismiss();
+            });
+        }
+
+        final View lastBtn = findViewById(R.id.gotoLastButton);
+        if (lastBtn != null) {
+            lastBtn.setOnClickListener(v -> {
+                if (lastPage != null) {
+                    base.jumpToPage(lastPage.index.viewIndex, 0, 1, AppSettings.current().storeGotoHistory);
+                }
+                dismiss();
+            });
+        }
+
         updateControls(current, true);
     }
 

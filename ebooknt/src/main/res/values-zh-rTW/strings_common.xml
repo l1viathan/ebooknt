@@ -26,9 +26,9 @@
     <string name="dialog_backup_restore">"恢復…"</string>
     <string name="dialog_backup_remove">"刪除…"</string>
     <string name="add_bookmark_name">"輸入書籤描述"</string>
-    <string name="bookmark_start">"啟動"</string>
+    <string name="bookmark_start">"起始頁"</string>
     <string name="bookmark_current">"當前書籤位置"</string>
-    <string name="bookmark_end">"結束"</string>
+    <string name="bookmark_end">"結束頁"</string>
     <string name="bookmark_invalid_page">"無效的頁碼。有效的頁碼範圍是: %1$d-%2$d"</string>
     <string name="bookmarks_title">"書籤"</string>
     <string name="clear_bookmarks_title">"刪除書籤"</string>
