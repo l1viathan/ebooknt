@@ -16,6 +16,7 @@ public final class WidgetUtils {
     public static final String ATTR_MIN_VALUE = "minValue";
     public static final String ATTR_MAX_VALUE = "maxValue";
     public static final String ATTR_DEFAULT_VALUE = "defaultValue";
+    public static final String ATTR_DISPLAY_DIVISOR = "displayDivisor";
 
     private WidgetUtils() {
     }

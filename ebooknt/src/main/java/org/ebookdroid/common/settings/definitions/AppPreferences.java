@@ -153,6 +153,12 @@ public interface AppPreferences {
     BooleanPreferenceDefinition AUTO_LEVELS = new BooleanPreferenceDefinition(pref_autolevels_id,
             pref_autolevels_defvalue);
 
+    IntegerPreferenceDefinition THRESHOLD = new IntegerPreferenceDefinition(pref_threshold_id, pref_threshold_defvalue,
+            pref_threshold_minvalue, pref_threshold_maxvalue);
+
+    IntegerPreferenceDefinition SMOOTHNESS = new IntegerPreferenceDefinition(pref_smoothness_id, pref_smoothness_defvalue,
+            pref_smoothness_minvalue, pref_smoothness_maxvalue);
+
     BooleanPreferenceDefinition SPLIT_PAGES = new BooleanPreferenceDefinition(pref_splitpages_id,
             pref_splitpages_defvalue);
 

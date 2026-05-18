@@ -6,6 +6,14 @@ import static org.ebooknt.viewer.R.string.pref_autolevels_defvalue;
 import static org.ebooknt.viewer.R.string.pref_book_align_id;
 import static org.ebooknt.viewer.R.string.pref_book_animation_type_id;
 import static org.ebooknt.viewer.R.string.pref_book_autolevels_id;
+import static org.ebooknt.viewer.R.string.pref_book_threshold_id;
+import static org.ebooknt.viewer.R.string.pref_book_smoothness_id;
+import static org.ebooknt.viewer.R.string.pref_threshold_defvalue;
+import static org.ebooknt.viewer.R.string.pref_threshold_minvalue;
+import static org.ebooknt.viewer.R.string.pref_threshold_maxvalue;
+import static org.ebooknt.viewer.R.string.pref_smoothness_defvalue;
+import static org.ebooknt.viewer.R.string.pref_smoothness_minvalue;
+import static org.ebooknt.viewer.R.string.pref_smoothness_maxvalue;
 import static org.ebooknt.viewer.R.string.pref_book_contrast_id;
 import static org.ebooknt.viewer.R.string.pref_book_gamma_id;
 import static org.ebooknt.viewer.R.string.pref_book_croppages_id;
@@ -81,6 +89,12 @@ public interface BookPreferences {
             pref_exposure_defvalue, pref_exposure_minvalue, pref_exposure_maxvalue);
 
     BooleanPreferenceDefinition BOOK_AUTO_LEVELS = new BooleanPreferenceDefinition(pref_book_autolevels_id, pref_autolevels_defvalue);
+
+    IntegerPreferenceDefinition BOOK_THRESHOLD = new IntegerPreferenceDefinition(pref_book_threshold_id,
+            pref_threshold_defvalue, pref_threshold_minvalue, pref_threshold_maxvalue);
+
+    IntegerPreferenceDefinition BOOK_SMOOTHNESS = new IntegerPreferenceDefinition(pref_book_smoothness_id,
+            pref_smoothness_defvalue, pref_smoothness_minvalue, pref_smoothness_maxvalue);
 
     BooleanPreferenceDefinition BOOK_SPLIT_PAGES = new BooleanPreferenceDefinition(pref_book_splitpages_id,
             pref_splitpages_defvalue);

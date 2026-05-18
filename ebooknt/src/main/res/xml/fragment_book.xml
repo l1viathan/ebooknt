@@ -134,6 +134,24 @@
             android:summary="@string/pref_autolevels_summary"
             android:title="@string/pref_autolevels_title" />
 
+        <org.emdev.ui.preference.SeekBarPreference
+            android:defaultValue="@string/pref_threshold_defvalue"
+            android:key="@string/pref_book_threshold_id"
+            ebookdroid:minValue="@string/pref_threshold_minvalue"
+            ebookdroid:maxValue="@string/pref_threshold_maxvalue"
+            ebookdroid:displayDivisor="100"
+            android:summary="@string/pref_threshold_summary"
+            android:title="@string/pref_threshold_title" />
+
+        <org.emdev.ui.preference.SeekBarPreference
+            android:defaultValue="@string/pref_smoothness_defvalue"
+            android:key="@string/pref_book_smoothness_id"
+            ebookdroid:minValue="@string/pref_smoothness_minvalue"
+            ebookdroid:maxValue="@string/pref_smoothness_maxvalue"
+            ebookdroid:displayDivisor="10"
+            android:summary="@string/pref_smoothness_summary"
+            android:title="@string/pref_smoothness_title" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

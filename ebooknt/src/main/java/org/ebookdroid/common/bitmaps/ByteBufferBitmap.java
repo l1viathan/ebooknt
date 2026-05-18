@@ -72,12 +72,20 @@ public final class ByteBufferBitmap {
         return part;
     }
 
+    // Native neutral points (no image change):
+    //   nativeGamma(100)    = gamma 1.0 = no change
+    //   nativeExposure(0)   = no change; stored -128 maps to native 0 via exposure+128
+    //   nativeContrast(256) = no change; stored 0 maps to native 256 via contrast+256
+    private static final int GAMMA_NEUTRAL = 100;
+    private static final int EXPOSURE_NEUTRAL = -128;
+
     public void applyEffects(final BookSettings bs) {
         final boolean correctContrast = bs.contrast != AppPreferences.CONTRAST.defValue;
-        final boolean correctGamma = bs.gamma != AppPreferences.GAMMA.defValue;
-        final boolean correctExposure = bs.exposure != AppPreferences.EXPOSURE.defValue;
+        final boolean correctGamma = bs.gamma != GAMMA_NEUTRAL;
+        final boolean correctExposure = bs.exposure != EXPOSURE_NEUTRAL;
+        final boolean applyThreshold = bs.threshold > AppPreferences.THRESHOLD.defValue;
 
-        if (correctContrast || correctGamma || correctExposure || bs.autoLevels) {
+        if (correctContrast || correctGamma || correctExposure || bs.autoLevels || applyThreshold) {
             if (correctGamma) {
                 gamma(bs.gamma);
             }
@@ -85,10 +93,13 @@ public final class ByteBufferBitmap {
                 contrast(bs.contrast);
             }
             if (correctExposure) {
-                exposure(bs.exposure - AppPreferences.EXPOSURE.defValue);
+                exposure(bs.exposure);
             }
             if (bs.autoLevels) {
                 autoLevels();
+            }
+            if (applyThreshold) {
+                threshold(bs.threshold);
             }
         }
     }
@@ -152,15 +163,36 @@ public final class ByteBufferBitmap {
     }
 
     public void contrast(final int contrast) {
-        nativeContrast(pixels, width, height, contrast * 256 / 100);
+        // nativeContrast expects 256 = neutral; stored range is -255..255 with 0 = neutral
+        nativeContrast(pixels, width, height, contrast + 256);
     }
 
     public void gamma(final int gamma) {
+        // nativeGamma expects 100 = neutral; stored range is 0..200 passed directly
         nativeGamma(pixels, width, height, gamma);
     }
 
     public void exposure(final int exposure) {
-        nativeExposure(pixels, width, height, exposure * 128 / 100);
+        // stored -128..128 where -128=no change; native expects -128..128 where 0=no change
+        // formula: native = exposure + 128; clamp to native max 128
+        nativeExposure(pixels, width, height, Math.min(128, exposure + 128));
+    }
+
+    public void threshold(final int threshold) {
+        // threshold stored 0..50 (0.00..0.50); binarize pixels below cutoff→black, above→white
+        final int cutoff = threshold * 255 / 100;
+        final ByteBuffer buf = pixels;
+        final int n = width * height * 4;
+        for (int i = 0; i < n; i += 4) {
+            final int b = buf.get(i) & 0xFF;
+            final int g = buf.get(i + 1) & 0xFF;
+            final int r = buf.get(i + 2) & 0xFF;
+            final int lum = (r * 77 + g * 150 + b * 29) >> 8;
+            final int out = (byte)(lum < cutoff ? 0 : 255);
+            buf.put(i, (byte) out);
+            buf.put(i + 1, (byte) out);
+            buf.put(i + 2, (byte) out);
+        }
     }
 
     public void autoLevels() {
@@ -193,6 +225,7 @@ public final class ByteBufferBitmap {
 
     /* Exposure correction values -128...+128 */
     private static native void nativeExposure(ByteBuffer src, int width, int height, int exposure);
+
 
     private static native void nativeAutoLevels(ByteBuffer src, int width, int height);
 

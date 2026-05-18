@@ -27,6 +27,7 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
     private final int defaultValue;
     private final int maxValue;
     private final int minValue;
+    private final int displayDivisor;
     private int currentValue;
 
     private SeekBar seekBar;
@@ -44,10 +45,20 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
                 DEFAULT_MAX_VALUE);
         defaultValue = WidgetUtils.getIntAttribute(context, attrs, WidgetUtils.ANDROID_NS,
                 WidgetUtils.ATTR_DEFAULT_VALUE, DEFAULT_DEFAULT_VALUE);
+        displayDivisor = WidgetUtils.getIntAttribute(context, attrs, WidgetUtils.EBOOKDROID_NS,
+                WidgetUtils.ATTR_DISPLAY_DIVISOR, 1);
     }
 
     public int getValue() {
         return currentValue;
+    }
+
+    private String formatValue(final int value) {
+        if (displayDivisor <= 1) {
+            return Integer.toString(value);
+        }
+        final int decimals = (int) Math.ceil(Math.log10(displayDivisor));
+        return String.format("%." + decimals + "f", value / (float) displayDivisor);
     }
 
     @Override
@@ -70,8 +81,8 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
             currentValue = minValue;
         }
 
-        ((TextView) view.findViewById(R.id.pref_seek_min_value)).setText(Integer.toString(minValue));
-        ((TextView) view.findViewById(R.id.pref_seek_max_value)).setText(Integer.toString(maxValue));
+        ((TextView) view.findViewById(R.id.pref_seek_min_value)).setText(formatValue(minValue));
+        ((TextView) view.findViewById(R.id.pref_seek_max_value)).setText(formatValue(maxValue));
 
         seekBar = (SeekBar) view.findViewById(R.id.pref_seek_bar);
         seekBar.setMax(maxValue - minValue);
@@ -80,7 +91,7 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
         seekBar.setOnSeekBarChangeListener(this);
 
         text = (TextView) view.findViewById(R.id.pref_seek_current_value);
-        text.setText(Integer.toString(currentValue));
+        text.setText(formatValue(currentValue));
 
         handler.init(new IViewContainer.ViewBridge(view), seekBar, R.id.pref_seek_bar_minus, R.id.pref_seek_bar_plus);
         return view;
@@ -108,7 +119,7 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
         } catch (NumberFormatException ex) {
         }
         try {
-            return String.format(summary, value);
+            return String.format(summary, formatValue(value));
         } catch (IllegalFormatException ex) {
             System.err.println("Error on summary formatting for " + getKey()+": " + ex.getMessage());
         }
@@ -118,7 +129,7 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
     @Override
     public void onProgressChanged(final SeekBar seek, final int value, final boolean fromTouch) {
         currentValue = value + minValue;
-        text.setText(Integer.toString(currentValue));
+        text.setText(formatValue(currentValue));
     }
 
     @Override

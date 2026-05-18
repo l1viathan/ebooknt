@@ -125,6 +125,10 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     final boolean autoLevels;
 
+    final int threshold;
+
+    final int smoothness;
+
     final boolean splitPages;
 
     final boolean splitRTL;
@@ -208,6 +212,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         gamma = GAMMA.getPreferenceValue(prefs);
         exposure = EXPOSURE.getPreferenceValue(prefs);
         autoLevels = AUTO_LEVELS.getPreferenceValue(prefs);
+        threshold = THRESHOLD.getPreferenceValue(prefs);
+        smoothness = SMOOTHNESS.getPreferenceValue(prefs);
         splitPages = SPLIT_PAGES.getPreferenceValue(prefs);
         splitRTL = SPLIT_RTL.getPreferenceValue(prefs);
         cropPages = CROP_PAGES.getPreferenceValue(prefs);
@@ -316,6 +322,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.gamma = current.gamma;
         bs.exposure = current.exposure;
         bs.autoLevels = current.autoLevels;
+        bs.threshold = current.threshold;
+        bs.smoothness = current.smoothness;
         bs.splitPages = current.splitPages;
         bs.splitRTL = current.splitRTL;
         bs.cropPages = current.cropPages;
@@ -335,6 +343,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.gamma = BOOK_GAMMA.getPreferenceValue(prefs, current.gamma);
         bs.exposure = BOOK_EXPOSURE.getPreferenceValue(prefs, current.exposure);
         bs.autoLevels = BOOK_AUTO_LEVELS.getPreferenceValue(prefs, current.autoLevels);
+        bs.threshold = BOOK_THRESHOLD.getPreferenceValue(prefs, current.threshold);
+        bs.smoothness = BOOK_SMOOTHNESS.getPreferenceValue(prefs, current.smoothness);
         bs.splitPages = BOOK_SPLIT_PAGES.getPreferenceValue(prefs, current.splitPages);
         bs.splitRTL = BOOK_SPLIT_RTL.getPreferenceValue(prefs, current.splitRTL);
         bs.cropPages = BOOK_CROP_PAGES.getPreferenceValue(prefs, current.cropPages);
@@ -358,6 +368,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         edit.remove(BOOK_GAMMA.key);
         edit.remove(BOOK_EXPOSURE.key);
         edit.remove(BOOK_AUTO_LEVELS.key);
+        edit.remove(BOOK_THRESHOLD.key);
+        edit.remove(BOOK_SMOOTHNESS.key);
         edit.remove(BOOK_SPLIT_PAGES.key);
         edit.remove(BOOK_SPLIT_RTL.key);
         edit.remove(BOOK_CROP_PAGES.key);
@@ -382,6 +394,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         BOOK_GAMMA.setPreferenceValue(edit, bs.gamma);
         BOOK_EXPOSURE.setPreferenceValue(edit, bs.exposure);
         BOOK_AUTO_LEVELS.setPreferenceValue(edit, bs.autoLevels);
+        BOOK_THRESHOLD.setPreferenceValue(edit, bs.threshold);
+        BOOK_SMOOTHNESS.setPreferenceValue(edit, bs.smoothness);
         BOOK_SPLIT_PAGES.setPreferenceValue(edit, bs.splitPages);
         BOOK_SPLIT_RTL.setPreferenceValue(edit, bs.splitRTL);
         BOOK_CROP_PAGES.setPreferenceValue(edit, bs.cropPages);

@@ -24,6 +24,10 @@
 
     <string translatable="false" name="pref_book_autolevels_id">book_autolevels</string>
 
+    <string translatable="false" name="pref_book_threshold_id">book_threshold</string>
+
+    <string translatable="false" name="pref_book_smoothness_id">book_smoothness</string>
+
     <string translatable="false" name="pref_book_splitpages_id">book_splitpages</string>
 
     <string translatable="false" name="pref_book_splitpages_rtl_id">book_splitpages_rtl</string>

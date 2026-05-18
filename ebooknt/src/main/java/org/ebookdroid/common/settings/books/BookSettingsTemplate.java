@@ -28,6 +28,8 @@ public class BookSettingsTemplate {
     public int gamma;
     public int exposure;
     public boolean autoLevels;
+    public int threshold;
+    public int smoothness;
     public boolean rtl;
 
     public BookSettingsTemplate(final String name, final BookSettings bs) {
@@ -47,6 +49,8 @@ public class BookSettingsTemplate {
         this.gamma = bs.gamma;
         this.exposure = bs.exposure;
         this.autoLevels = bs.autoLevels;
+        this.threshold = bs.threshold;
+        this.smoothness = bs.smoothness;
         this.rtl = bs.rtl;
     }
 
@@ -66,7 +70,9 @@ public class BookSettingsTemplate {
         this.contrast = obj.optInt("contrast", AppPreferences.CONTRAST.defValue);
         this.gamma = obj.optInt("gamma", AppPreferences.GAMMA.defValue);
         this.exposure = obj.optInt("exposure", AppPreferences.EXPOSURE.defValue);
-        this.autoLevels = obj.getBoolean("autoLevels");
+        this.autoLevels = obj.optBoolean("autoLevels", false);
+        this.threshold = obj.optInt("threshold", AppPreferences.THRESHOLD.defValue);
+        this.smoothness = obj.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
         this.rtl = obj.optBoolean("rtl", false);
     }
 
@@ -88,6 +94,8 @@ public class BookSettingsTemplate {
         obj.put("gamma", gamma);
         obj.put("exposure", exposure);
         obj.put("autoLevels", autoLevels);
+        obj.put("threshold", threshold);
+        obj.put("smoothness", smoothness);
         obj.put("rtl", rtl);
         return obj;
     }
@@ -108,6 +116,8 @@ public class BookSettingsTemplate {
         bs.gamma = this.gamma;
         bs.exposure = this.exposure;
         bs.autoLevels = this.autoLevels;
+        bs.threshold = this.threshold;
+        bs.smoothness = this.smoothness;
         bs.rtl = this.rtl;
         bs.lastChanged = System.currentTimeMillis();
     }
