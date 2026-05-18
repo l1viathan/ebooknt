@@ -15,17 +15,11 @@
         app:showAsAction="always|collapseActionView"
         app:actionViewClass="android.support.v7.widget.SearchView"
         android:title="@string/menu_searchbook"/>
-    <item
-        android:id="@+id/recent_showlibrary"
-        android:alphabeticShortcut="l"
-        android:icon="@drawable/recent_actionbar_library"
-        app:showAsAction="always"
-        android:title="@string/menu_show_library"/>
-    <item
+<item
         android:id="@+id/recent_showrecent"
         android:alphabeticShortcut="l"
         android:icon="@drawable/recent_actionbar_recent"
-        app:showAsAction="ifRoom"
+        app:showAsAction="always"
         android:title="@string/menu_show_recent"/>
     <item
         android:id="@+id/recent_storage_menu"

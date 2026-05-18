@@ -425,7 +425,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         getManagedComponent().showBookshelf(item);
     }
 
-    @ActionMethod(ids = { R.id.recent_showlibrary, R.id.recent_showrecent })
+    @ActionMethod(ids = R.id.recent_showrecent)
     public void goLibrary(final ActionEx action) {
         if (!LibSettings.current().useBookcase) {
             final int viewMode = getManagedComponent().getViewMode();

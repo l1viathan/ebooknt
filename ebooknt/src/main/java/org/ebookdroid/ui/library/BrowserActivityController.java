@@ -132,18 +132,18 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         setCurrentDir(getHomeDirectory());
     }
 
-    @ActionMethod(ids = R.id.mainmenu_settings)
-    public void showSettings(final ActionEx action) {
-        SettingsUI.showAppSettings(getManagedComponent(), null);
-    }
-
-    @ActionMethod(ids = R.id.browserrecent)
     public void goRecent(final ActionEx action) {
         final BrowserActivity activity = getManagedComponent();
         final Intent myIntent = new Intent(activity, RecentActivity.class);
         myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(myIntent);
     }
+
+    @ActionMethod(ids = R.id.mainmenu_settings)
+    public void showSettings(final ActionEx action) {
+        SettingsUI.showAppSettings(getManagedComponent(), null);
+    }
+
 
 /**
      * {@inheritDoc}
