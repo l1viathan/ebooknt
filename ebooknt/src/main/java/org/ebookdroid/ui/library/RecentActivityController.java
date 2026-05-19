@@ -20,6 +20,7 @@ import org.ebookdroid.ui.library.adapters.BookShelfAdapter;
 import org.ebookdroid.ui.library.adapters.BooksAdapter;
 import org.ebookdroid.ui.library.adapters.LibraryAdapter;
 import org.ebookdroid.ui.library.adapters.RecentAdapter;
+import org.ebookdroid.ui.library.adapters.SearchResultsAdapter;
 import org.ebookdroid.ui.library.dialogs.BackupDlg;
 import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebookdroid.ui.library.tasks.CopyBookTask;
@@ -74,6 +75,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     private RecentAdapter recentAdapter;
     private LibraryAdapter libraryAdapter;
     private BooksAdapter bookshelfAdapter;
+    private SearchResultsAdapter searchResultsAdapter;
 
     private final ThumbnailFile def = CacheManager.getThumbnailFile(".");
 
@@ -96,6 +98,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         recentAdapter = new RecentAdapter(this);
         bookshelfAdapter = new BooksAdapter(this, recentAdapter);
         libraryAdapter = new LibraryAdapter(bookshelfAdapter);
+        searchResultsAdapter = new SearchResultsAdapter(bookshelfAdapter.getSearchShelf());
 
         CacheManager.listeners.addListener(this);
         MediaManager.listeners.addListener(this);
@@ -124,7 +127,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
             EBookDroidApp.checkInstalledFonts(getManagedComponent());
         }
 
-        changeLibraryView(recent != null ? RecentActivity.VIEW_RECENT : RecentActivity.VIEW_LIBRARY);
+        changeLibraryView(RecentActivity.VIEW_RECENT);
     }
 
     protected boolean checkAutoLoad(final LibSettings libSettings, final BookSettings recent) {
@@ -245,7 +248,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
             if (LibSettings.current().useBookcase) {
                 getManagedComponent().showBookshelf(BooksAdapter.SEARCH_INDEX);
             } else {
-                changeLibraryView(RecentActivity.VIEW_LIBRARY);
+                changeLibraryView(RecentActivity.VIEW_SEARCH);
             }
         }
     }
@@ -543,7 +546,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
                 if (newSettings.useBookcase) {
                     getManagedComponent().showBookcase(bookshelfAdapter, recentAdapter);
                 } else {
-                    getManagedComponent().showLibrary(libraryAdapter, recentAdapter);
+                    getManagedComponent().showLibrary(libraryAdapter, recentAdapter, searchResultsAdapter);
                 }
                 return;
             }

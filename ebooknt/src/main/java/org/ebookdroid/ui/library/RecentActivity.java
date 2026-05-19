@@ -13,9 +13,11 @@ import org.ebookdroid.ui.library.adapters.BookShelfAdapter;
 import org.ebookdroid.ui.library.adapters.BooksAdapter;
 import org.ebookdroid.ui.library.adapters.LibraryAdapter;
 import org.ebookdroid.ui.library.adapters.RecentAdapter;
+import org.ebookdroid.ui.library.adapters.SearchResultsAdapter;
 import org.ebookdroid.ui.library.views.BookcaseView;
 import org.ebookdroid.ui.library.views.LibraryView;
 import org.ebookdroid.ui.library.views.RecentBooksView;
+import org.ebookdroid.ui.library.views.SearchResultsView;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -69,6 +71,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
     public static final int VIEW_RECENT = 0;
     public static final int VIEW_LIBRARY = 1;
+    public static final int VIEW_SEARCH = 2;
 
     private ViewFlipper viewflipper;
 
@@ -80,6 +83,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     BookcaseView bookcaseView;
     RecentBooksView recentBooksView;
     LibraryView libraryView;
+    SearchResultsView searchResultsView;
 
     public RecentActivity() {
         super(true, ON_CREATE, ON_RESUME);
@@ -342,6 +346,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         final ViewFlipper vf = getViewflipper();
         if (view == VIEW_LIBRARY) {
             vf.setDisplayedChild(VIEW_LIBRARY);
+        } else if (view == VIEW_SEARCH) {
+            vf.setDisplayedChild(VIEW_SEARCH);
         } else {
             vf.setDisplayedChild(VIEW_RECENT);
         }
@@ -380,7 +386,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         vf.addView(bookcaseView, 0);
     }
 
-    void showLibrary(final LibraryAdapter libraryAdapter, final RecentAdapter recentAdapter) {
+    void showLibrary(final LibraryAdapter libraryAdapter, final RecentAdapter recentAdapter,
+            final SearchResultsAdapter searchResultsAdapter) {
         if (recentBooksView == null) {
             recentBooksView = new RecentBooksView(getController(), recentAdapter);
             registerForContextMenu(recentBooksView);
@@ -389,15 +396,16 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             libraryView = new LibraryView(getController(), libraryAdapter);
             registerForContextMenu(libraryView);
         }
+        if (searchResultsView == null) {
+            searchResultsView = new SearchResultsView(getController(), searchResultsAdapter);
+            registerForContextMenu(searchResultsView);
+        }
 
         final ViewFlipper vf = getViewflipper();
         vf.removeAllViews();
         vf.addView(recentBooksView, VIEW_RECENT);
         vf.addView(libraryView, VIEW_LIBRARY);
-
-        if (recentAdapter.getCount() == 0) {
-            changeLibraryView(VIEW_LIBRARY);
-        }
+        vf.addView(searchResultsView, VIEW_SEARCH);
     }
 
     ViewFlipper getViewflipper() {

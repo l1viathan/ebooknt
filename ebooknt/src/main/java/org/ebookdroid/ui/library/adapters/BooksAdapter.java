@@ -395,6 +395,10 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
         return true;
     }
 
+    public BookShelfAdapter getSearchShelf() {
+        return getService(SEARCH_INDEX);
+    }
+
     public String getSearchQuery() {
         return searchQuery;
     }
