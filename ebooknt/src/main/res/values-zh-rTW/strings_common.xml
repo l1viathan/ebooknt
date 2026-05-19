@@ -41,7 +41,7 @@
     <string name="recent_title">"最近瀏覽"</string>
     <string name="list_clear_recent_mode_clear_recent_list">"清除最近的瀏覽記錄"</string>
     <string name="list_clear_recent_mode_delete_bookmarks">"刪除所有書籤"</string>
-    <string name="list_clear_recent_mode_delete_book_settings">"刪除所有設定"</string>
+    <string name="list_clear_recent_mode_delete_book_settings">"刪除所有書籍設定"</string>
     <string name="list_clear_recent_mode_delete_cached_data">"刪除所有快取的資料"</string>
     <string name="about_prefix">zh</string>
     <string name="about_title">"EBookDroid"</string>
