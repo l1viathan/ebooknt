@@ -12,9 +12,12 @@ import org.ebookdroid.ui.viewer.adapters.BookmarkAdapter;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.text.Editable;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -86,7 +89,15 @@ public class GoToPageDialog extends Dialog {
     protected void onStart() {
         super.onStart();
 
-        LayoutUtils.maximizeWindow(getWindow());
+        final android.view.Window win = getWindow();
+        if (getContext().getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE) {
+            LayoutUtils.maximizeWindow(win);
+        } else {
+            win.setGravity(Gravity.BOTTOM);
+            win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                          WindowManager.LayoutParams.WRAP_CONTENT);
+        }
 
         final DocumentModel dm = base.getDocumentModel();
         final Page lastPage = dm != null ? dm.getLastPageObject() : null;

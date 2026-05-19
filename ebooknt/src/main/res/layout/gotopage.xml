@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/gotopageView"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <!-- Bookmarks header -->
     <LinearLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dip"
         android:layout_marginBottom="4dip"
@@ -22,7 +22,7 @@
             android:background="@drawable/viewer_goto_dlg_bookmark_add"/>
 
         <TextView
-            android:layout_width="fill_parent"
+            android:layout_width="0dip"
             android:layout_height="48dip"
             android:layout_gravity="center"
             android:layout_marginLeft="2dip"
@@ -43,12 +43,11 @@
             android:background="@drawable/viewer_goto_dlg_bookmark_remove_all"/>
     </LinearLayout>
 
-    <!-- Bookmarks list (user bookmarks only, fills available space) -->
+    <!-- Bookmarks list (fixed height so it doesn't dominate the screen) -->
     <ListView
         android:id="@+id/bookmarks"
         android:layout_width="match_parent"
-        android:layout_height="0dip"
-        android:layout_weight="1"
+        android:layout_height="180dip"
         android:layout_marginLeft="4dip"
         android:layout_marginRight="4dip"
         android:layout_marginTop="2dip"
@@ -56,7 +55,7 @@
 
     <!-- 起始页 / 结束页 buttons -->
     <LinearLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:layout_marginLeft="4dip"
@@ -105,7 +104,7 @@
 
     <!-- Minus / SeekBar / Plus -->
     <RelativeLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dip"
         android:layout_marginBottom="8dip">
@@ -130,7 +129,7 @@
 
         <SeekBar
             android:id="@+id/seekbar"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="48dip"
             android:layout_toRightOf="@id/seekbar_minus"
             android:layout_toLeftOf="@id/seekbar_plus"
@@ -141,7 +140,7 @@
             android:maxHeight="48dip"/>
     </RelativeLayout>
 
-    <!-- Page number input + Go button (bottom — most thumb-accessible) -->
+    <!-- Page number input + Go button -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="52dip"
