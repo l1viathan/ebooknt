@@ -106,13 +106,13 @@ fz_locks_context * jni_new_locks()
 }
 
 /**
- * Free lock object
+ * Free lock user data (the mutex array)
  */
-void jni_free_locks(fz_locks_context *locks)
+void jni_free_lock_obj(void *user)
 {
-    if (locks && locks->user)
+    if (user)
     {
-        jni_locks *obj = (jni_locks*) locks->user;
+        jni_locks *obj = (jni_locks*) user;
         int i = 0;
         for (i = 0; i < JNI_MAX_LOCKS; i++)
         {
@@ -123,6 +123,17 @@ void jni_free_locks(fz_locks_context *locks)
             }
         }
         free(obj);
+    }
+}
+
+/**
+ * Free the heap-allocated fz_locks_context struct.
+ * Call this right after fz_new_context copies it.
+ */
+void jni_free_locks(fz_locks_context *locks)
+{
+    if (locks)
+    {
         free(locks);
     }
 }
@@ -132,7 +143,7 @@ void jni_free_locks(fz_locks_context *locks)
  */
 void jni_lock(fz_context *ctx)
 {
-    jni_lock_internal(ctx->locks->user, JNI_LOCK_INTERNAL);
+    jni_lock_internal(ctx->locks.user, JNI_LOCK_INTERNAL);
 }
 
 /**
@@ -140,5 +151,5 @@ void jni_lock(fz_context *ctx)
  */
 void jni_unlock(fz_context *ctx)
 {
-    jni_unlock_internal(ctx->locks->user, JNI_LOCK_INTERNAL);
+    jni_unlock_internal(ctx->locks.user, JNI_LOCK_INTERNAL);
 }

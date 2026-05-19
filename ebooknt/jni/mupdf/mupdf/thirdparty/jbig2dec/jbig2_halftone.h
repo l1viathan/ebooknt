@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -47,23 +47,13 @@ typedef struct {
     bool HMMR;
     int HTEMPLATE;
     bool HENABLESKIP;
-    Jbig2ComposeOp op;
+    Jbig2ComposeOp HCOMBOP;
     bool HDEFPIXEL;
 } Jbig2HalftoneRegionParams;
 
-Jbig2PatternDict *jbig2_hd_new(Jbig2Ctx *ctx, const Jbig2PatternDictParams *params, Jbig2Image *image);
-
 void jbig2_hd_release(Jbig2Ctx *ctx, Jbig2PatternDict *dict);
 
-uint8_t **jbig2_decode_gray_scale_image(Jbig2Ctx *ctx, Jbig2Segment *segment,
-                                        const byte *data, const size_t size,
-                                        bool GSMMR, uint32_t GSW, uint32_t GSH,
-                                        uint32_t GSBPP, bool GSUSESKIP, Jbig2Image *GSKIP, int GSTEMPLATE, Jbig2ArithCx *GB_stats);
-
-Jbig2PatternDict *jbig2_decode_ht_region_get_hpats(Jbig2Ctx *ctx, Jbig2Segment *segment);
-
-int
-jbig2_decode_halftone_region(Jbig2Ctx *ctx, Jbig2Segment *segment,
-                             Jbig2HalftoneRegionParams *params, const byte *data, const size_t size, Jbig2Image *image, Jbig2ArithCx *GB_stats);
+int jbig2_halftone_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
+int jbig2_pattern_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
 
 #endif /* _JBIG2_HALFTONE_H */

@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -59,7 +59,7 @@ jbig2_png_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 
     check = fwrite(data, 1, length, f);
     if (check != length) {
-        png_error(png_ptr, "Write Error");
+        png_error(png_ptr, "write error");
     }
 }
 
@@ -76,29 +76,12 @@ jbig2_png_flush(png_structp png_ptr)
         fflush(f);
 }
 
-int
-jbig2_image_write_png_file(Jbig2Image *image, char *filename)
-{
-    FILE *out;
-    int error;
-
-    if ((out = fopen(filename, "wb")) == NULL) {
-        fprintf(stderr, "unable to open '%s' for writing\n", filename);
-        return 1;
-    }
-
-    error = jbig2_image_write_png(image, out);
-
-    fclose(out);
-    return (error);
-}
-
 /* write out an image struct in png format to an open file pointer */
 
 int
 jbig2_image_write_png(Jbig2Image *image, FILE *out)
 {
-    int i;
+    uint32_t i;
     png_structp png;
     png_infop info;
     png_bytep rowpointer;
@@ -134,7 +117,7 @@ jbig2_image_write_png(Jbig2Image *image, FILE *out)
     png_set_IHDR(png, info, image->width, image->height, 1, PNG_COLOR_TYPE_GRAY, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
     png_write_info(png, info);
 
-    /* png natively treates 0 as black. This will convert for us */
+    /* png natively treats 0 as black. This will convert for us */
     png_set_invert_mono(png);
 
     /* write out each row in turn */
@@ -149,4 +132,21 @@ jbig2_image_write_png(Jbig2Image *image, FILE *out)
     png_destroy_write_struct(&png, &info);
 
     return 0;
+}
+
+int
+jbig2_image_write_png_file(Jbig2Image *image, char *filename)
+{
+    FILE *out;
+    int code;
+
+    if ((out = fopen(filename, "wb")) == NULL) {
+        fprintf(stderr, "unable to open '%s' for writing\n", filename);
+        return 1;
+    }
+
+    code = jbig2_image_write_png(image, out);
+
+    fclose(out);
+    return (code);
 }

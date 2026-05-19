@@ -1,4 +1,8 @@
-#include "mupdf/html.h"
+#include "mupdf/fitz.h"
+#include "html-imp.h"
+
+#include <string.h>
+#include <math.h>
 
 enum { T, R, B, L };
 
@@ -52,8 +56,9 @@ static int
 htdoc_count_pages(fz_context *ctx, fz_document *doc_)
 {
 	html_document *doc = (html_document*)doc_;
-	int count = ceilf(doc->html->root->h / doc->html->page_h);
-	return count;
+	if (doc->html->root->b > 0)
+		return ceilf(doc->html->root->b / doc->html->page_h);
+	return 1;
 }
 
 static void
@@ -69,20 +74,21 @@ htdoc_drop_page(fz_context *ctx, fz_page *page_)
 {
 }
 
-static fz_rect *
-htdoc_bound_page(fz_context *ctx, fz_page *page_, fz_rect *bbox)
+static fz_rect
+htdoc_bound_page(fz_context *ctx, fz_page *page_)
 {
 	html_page *page = (html_page*)page_;
 	html_document *doc = page->doc;
-	bbox->x0 = 0;
-	bbox->y0 = 0;
-	bbox->x1 = doc->html->page_w + doc->html->page_margin[L] + doc->html->page_margin[R];
-	bbox->y1 = doc->html->page_h + doc->html->page_margin[T] + doc->html->page_margin[B];
+	fz_rect bbox;
+	bbox.x0 = 0;
+	bbox.y0 = 0;
+	bbox.x1 = doc->html->page_w + doc->html->page_margin[L] + doc->html->page_margin[R];
+	bbox.y1 = doc->html->page_h + doc->html->page_margin[T] + doc->html->page_margin[B];
 	return bbox;
 }
 
 static void
-htdoc_run_page(fz_context *ctx, fz_page *page_, fz_device *dev, const fz_matrix *ctm, fz_cookie *cookie)
+htdoc_run_page(fz_context *ctx, fz_page *page_, fz_device *dev, fz_matrix ctm, fz_cookie *cookie)
 {
 	html_page *page = (html_page*)page_;
 	html_document *doc = page->doc;
@@ -167,7 +173,7 @@ static fz_document *
 htdoc_open_document(fz_context *ctx, const char *filename)
 {
 	char dirname[2048];
-	fz_buffer *buf;
+	fz_buffer *buf = NULL;
 	html_document *doc;
 
 	fz_dirname(dirname, filename, sizeof dirname);
@@ -183,40 +189,49 @@ htdoc_open_document(fz_context *ctx, const char *filename)
 	doc->super.lookup_metadata = htdoc_lookup_metadata;
 	doc->super.is_reflowable = 1;
 
-	doc->zip = fz_open_directory(ctx, dirname);
-	doc->set = fz_new_html_font_set(ctx);
-
-	buf = fz_read_file(ctx, filename);
 	fz_try(ctx)
+	{
+		doc->zip = fz_open_directory(ctx, dirname);
+		doc->set = fz_new_html_font_set(ctx);
+
+		buf = fz_read_file(ctx, filename);
 		doc->html = fz_parse_html(ctx, doc->set, doc->zip, ".", buf, fz_user_css(ctx));
+	}
 	fz_always(ctx)
 		fz_drop_buffer(ctx, buf);
 	fz_catch(ctx)
+	{
+		fz_drop_document(ctx, &doc->super);
 		fz_rethrow(ctx);
+	}
 
 	return (fz_document*)doc;
 }
 
-static int
-htdoc_recognize(fz_context *doc, const char *magic)
+static const char *htdoc_extensions[] =
 {
-	char *ext = strrchr(magic, '.');
+	"fb2",
+	"htm",
+	"html",
+	"xhtml",
+	"xml",
+	NULL
+};
 
-	if (ext)
-	{
-		if (!fz_strcasecmp(ext, ".xml") || !fz_strcasecmp(ext, ".xhtml") ||
-				!fz_strcasecmp(ext, ".html") || !fz_strcasecmp(ext, ".htm") ||
-				!fz_strcasecmp(ext, ".fb2"))
-			return 100;
-	}
-	if (!strcmp(magic, "application/html+xml") || !strcmp(magic, "application/xml") || !strcmp(magic, "text/xml"))
-		return 100;
-	return 0;
-}
+static const char *htdoc_mimetypes[] =
+{
+	"application/html+xml",
+	"application/x-fictionbook",
+	"application/xml",
+	"text/xml",
+	NULL
+};
 
 fz_document_handler html_document_handler =
 {
-	htdoc_recognize,
+	NULL,
 	htdoc_open_document,
-	htdoc_open_document_with_stream
+	htdoc_open_document_with_stream,
+	htdoc_extensions,
+	htdoc_mimetypes
 };

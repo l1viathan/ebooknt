@@ -3,16 +3,21 @@
 #define FZ_CONFIG_H
 
 /*
+	Enable the following for spot (and hence overprint/overprint
+	simulation) capable rendering. This forces FZ_PLOTTERS_N on.
+*/
+#define FZ_ENABLE_SPOT_RENDERING 1
+
+/*
 	Choose which plotters we need.
-	By default we build the greyscale, RGB and CMYK plotters in,
-	but omit the arbitrary plotters. To avoid building
+	By default we build all the plotters in. To avoid building
 	plotters in that aren't needed, define the unwanted
 	FZ_PLOTTERS_... define to 0.
 */
 /* #define FZ_PLOTTERS_G 1 */
 /* #define FZ_PLOTTERS_RGB 1 */
 /* #define FZ_PLOTTERS_CMYK 1 */
-/* #define FZ_PLOTTERS_N 0 */
+/* #define FZ_PLOTTERS_N 1 */
 
 /*
 	Choose which document agents to include.
@@ -24,7 +29,6 @@
 /* #define FZ_ENABLE_SVG 1 */
 /* #define FZ_ENABLE_CBZ 1 */
 /* #define FZ_ENABLE_IMG 1 */
-/* #define FZ_ENABLE_TIFF 1 */
 /* #define FZ_ENABLE_HTML 1 */
 /* #define FZ_ENABLE_EPUB 1 */
 /* #define FZ_ENABLE_GPRF 1 */
@@ -75,11 +79,19 @@
 /* To skip the SIL fonts, enable: */
 /* #define TOFU_SIL */
 
+/* To skip the ICC profiles, enable: */
+/* #define NO_ICC */
+
 /* To skip the Base14 fonts, enable: */
 /* #define TOFU_BASE14 */
 /* (You probably really don't want to do that except for measurement purposes!) */
 
 /* ---------- DO NOT EDIT ANYTHING UNDER THIS LINE ---------- */
+
+#ifndef FZ_ENABLE_SPOT_RENDERING
+#undef FZ_PLOTTERS_N
+#define FZ_PLOTTERS_N 1
+#endif /* FZ_ENABLE_SPOT_RENDERING */
 
 #ifndef FZ_PLOTTERS_G
 #define FZ_PLOTTERS_G 1
@@ -94,7 +106,7 @@
 #endif /* FZ_PLOTTERS_CMYK */
 
 #ifndef FZ_PLOTTERS_N
-#define FZ_PLOTTERS_N 0
+#define FZ_PLOTTERS_N 1
 #endif /* FZ_PLOTTERS_N */
 
 /* We need at least 1 plotter defined */
@@ -122,10 +134,6 @@
 #ifndef FZ_ENABLE_IMG
 #define FZ_ENABLE_IMG 1
 #endif /* FZ_ENABLE_IMG */
-
-#ifndef FZ_ENABLE_TIFF
-#define FZ_ENABLE_TIFF 1
-#endif /* FZ_ENABLE_TIFF */
 
 #ifndef FZ_ENABLE_HTML
 #define FZ_ENABLE_HTML 1

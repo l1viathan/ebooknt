@@ -352,6 +352,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\java\src\com\artifex\mupdf\fitz\ColorParams.java"
+				>
+			</File>
+			<File
 				RelativePath="..\java\src\com\artifex\mupdf\fitz\ColorSpace.java"
 				>
 			</File>
@@ -456,6 +460,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\java\src\com\artifex\mupdf\fitz\Separations.java"
+				>
+			</File>
+			<File
 				RelativePath="..\java\src\com\artifex\mupdf\fitz\Shade.java"
 				>
 			</File>
@@ -465,6 +473,10 @@
 			</File>
 			<File
 				RelativePath="..\java\src\com\artifex\mupdf\fitz\StructuredText.java"
+				>
+			</File>
+			<File
+				RelativePath="..\java\src\com\artifex\mupdf\fitz\StructuredTextWalker.java"
 				>
 			</File>
 			<File

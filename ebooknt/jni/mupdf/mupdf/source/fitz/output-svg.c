@@ -1,5 +1,11 @@
 #include "mupdf/fitz.h"
 
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 typedef struct fz_svg_writer_s fz_svg_writer;
 
 struct fz_svg_writer_s
@@ -21,13 +27,13 @@ const char *fz_svg_write_options_usage =
 	;
 
 static fz_device *
-svg_begin_page(fz_context *ctx, fz_document_writer *wri_, const fz_rect *mediabox)
+svg_begin_page(fz_context *ctx, fz_document_writer *wri_, fz_rect mediabox)
 {
 	fz_svg_writer *wri = (fz_svg_writer*)wri_;
 	char path[PATH_MAX];
 
-	float w = mediabox->x1 - mediabox->x0;
-	float h = mediabox->y1 - mediabox->y0;
+	float w = mediabox.x1 - mediabox.x0;
+	float h = mediabox.y1 - mediabox.y0;
 
 	wri->count += 1;
 
@@ -41,10 +47,19 @@ svg_end_page(fz_context *ctx, fz_document_writer *wri_, fz_device *dev)
 {
 	fz_svg_writer *wri = (fz_svg_writer*)wri_;
 
-	fz_close_device(ctx, dev);
-	fz_drop_device(ctx, dev);
-	fz_drop_output(ctx, wri->out);
-	wri->out = NULL;
+	fz_try(ctx)
+	{
+		fz_close_device(ctx, dev);
+		fz_close_output(ctx, wri->out);
+	}
+	fz_always(ctx)
+	{
+		fz_drop_device(ctx, dev);
+		fz_drop_output(ctx, wri->out);
+		wri->out = NULL;
+	}
+	fz_catch(ctx)
+		fz_rethrow(ctx);
 }
 
 static void

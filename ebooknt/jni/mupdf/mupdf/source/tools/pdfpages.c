@@ -3,7 +3,11 @@
  * Print information about pages of a pdf.
  */
 
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
+
+#include <stdlib.h>
+#include <stdio.h>
 
 static void
 infousage(void)
@@ -29,7 +33,7 @@ showbox(fz_context *ctx, fz_output *out, pdf_obj *page, char *text, pdf_obj *nam
 		if (!pdf_is_array(ctx, obj))
 			break;
 
-		pdf_to_rect(ctx, obj, &bbox);
+		bbox = pdf_to_rect(ctx, obj);
 
 		fz_write_printf(ctx, out, "<%s l=\"%g\" b=\"%g\" r=\"%g\" t=\"%g\" />\n", text, bbox.x0, bbox.y0, bbox.x1, bbox.y1);
 	}
@@ -84,13 +88,13 @@ showpage(fz_context *ctx, pdf_document *doc, fz_output *out, int page)
 
 	if (!failed)
 	{
-		failed |= showbox(ctx, out, pageref, "MediaBox", PDF_NAME_MediaBox);
-		failed |= showbox(ctx, out, pageref, "CropBox", PDF_NAME_CropBox);
-		failed |= showbox(ctx, out, pageref, "ArtBox", PDF_NAME_ArtBox);
-		failed |= showbox(ctx, out, pageref, "BleedBox", PDF_NAME_BleedBox);
-		failed |= showbox(ctx, out, pageref, "TrimBox", PDF_NAME_TrimBox);
-		failed |= shownum(ctx, out, pageref, "Rotate", PDF_NAME_Rotate);
-		failed |= shownum(ctx, out, pageref, "UserUnit", PDF_NAME_UserUnit);
+		failed |= showbox(ctx, out, pageref, "MediaBox", PDF_NAME(MediaBox));
+		failed |= showbox(ctx, out, pageref, "CropBox", PDF_NAME(CropBox));
+		failed |= showbox(ctx, out, pageref, "ArtBox", PDF_NAME(ArtBox));
+		failed |= showbox(ctx, out, pageref, "BleedBox", PDF_NAME(BleedBox));
+		failed |= showbox(ctx, out, pageref, "TrimBox", PDF_NAME(TrimBox));
+		failed |= shownum(ctx, out, pageref, "Rotate", PDF_NAME(Rotate));
+		failed |= shownum(ctx, out, pageref, "UserUnit", PDF_NAME(UserUnit));
 	}
 
 	fz_write_printf(ctx, out, "</page>\n");
@@ -171,7 +175,6 @@ int pdfpages_main(int argc, char **argv)
 	char *filename = "";
 	char *password = "";
 	int c;
-	fz_output *out = NULL;
 	int ret;
 	fz_context *ctx;
 
@@ -196,19 +199,11 @@ int pdfpages_main(int argc, char **argv)
 		exit(1);
 	}
 
-	fz_var(out);
-
 	ret = 0;
 	fz_try(ctx)
-	{
-		out = fz_stdout(ctx);
-		ret = pdfpages_pages(ctx, out, filename, password, &argv[fz_optind], argc-fz_optind);
-	}
+		ret = pdfpages_pages(ctx, fz_stdout(ctx), filename, password, &argv[fz_optind], argc-fz_optind);
 	fz_catch(ctx)
-	{
 		ret = 1;
-	}
-	fz_drop_output(ctx, out);
 	fz_drop_context(ctx);
 	return ret;
 }

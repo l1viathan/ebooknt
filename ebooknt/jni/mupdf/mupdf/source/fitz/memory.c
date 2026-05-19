@@ -1,4 +1,10 @@
 #include "mupdf/fitz.h"
+#include "fitz-imp.h"
+
+#include <limits.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 /* Enable FITZ_DEBUG_LOCKING_TIMES below if you want to check the times
  * for which locks are held too. */
@@ -56,13 +62,16 @@ fz_malloc(fz_context *ctx, size_t size)
 
 	p = do_scavenging_malloc(ctx, size);
 	if (!p)
-		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of " FMT_zu " bytes failed", size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of %zu bytes failed", size);
 	return p;
 }
 
 void *
 fz_malloc_no_throw(fz_context *ctx, size_t size)
 {
+	if (size == 0)
+		return NULL;
+
 	return do_scavenging_malloc(ctx, size);
 }
 
@@ -75,11 +84,11 @@ fz_malloc_array(fz_context *ctx, size_t count, size_t size)
 		return 0;
 
 	if (count > SIZE_MAX / size)
-		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of array (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of array (%zu x %zu bytes) failed (size_t overflow)", count, size);
 
 	p = do_scavenging_malloc(ctx, count * size);
 	if (!p)
-		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of array (" FMT_zu " x " FMT_zu " bytes) failed", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "malloc of array (%zu x %zu bytes) failed", count, size);
 	return p;
 }
 
@@ -91,7 +100,9 @@ fz_malloc_array_no_throw(fz_context *ctx, size_t count, size_t size)
 
 	if (count > SIZE_MAX / size)
 	{
-		fprintf(stderr, "error: malloc of array (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)", count, size);
+		char buf[100];
+		fz_snprintf(buf, sizeof buf, "error: malloc of array (%zu x %zu bytes) failed (size_t overflow)", count, size);
+		fprintf(stderr, "%s\n", buf);
 		return NULL;
 	}
 
@@ -108,13 +119,13 @@ fz_calloc(fz_context *ctx, size_t count, size_t size)
 
 	if (count > SIZE_MAX / size)
 	{
-		fz_throw(ctx, FZ_ERROR_MEMORY, "calloc (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "calloc (%zu x %zu bytes) failed (size_t overflow)", count, size);
 	}
 
 	p = do_scavenging_malloc(ctx, count * size);
 	if (!p)
 	{
-		fz_throw(ctx, FZ_ERROR_MEMORY, "calloc (" FMT_zu " x " FMT_zu " bytes) failed", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "calloc (%zu x %zu bytes) failed", count, size);
 	}
 	memset(p, 0, count*size);
 	return p;
@@ -130,7 +141,9 @@ fz_calloc_no_throw(fz_context *ctx, size_t count, size_t size)
 
 	if (count > SIZE_MAX / size)
 	{
-		fprintf(stderr, "error: calloc (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)\n", count, size);
+		char buf[100];
+		fz_snprintf(buf, sizeof buf, "error: calloc of array (%zu x %zu bytes) failed (size_t overflow)", count, size);
+		fprintf(stderr, "%s\n", buf);
 		return NULL;
 	}
 
@@ -154,11 +167,11 @@ fz_resize_array(fz_context *ctx, void *p, size_t count, size_t size)
 	}
 
 	if (count > SIZE_MAX / size)
-		fz_throw(ctx, FZ_ERROR_MEMORY, "resize array (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "resize array (%zu x %zu bytes) failed (size_t overflow)", count, size);
 
 	np = do_scavenging_realloc(ctx, p, count * size);
 	if (!np)
-		fz_throw(ctx, FZ_ERROR_MEMORY, "resize array (" FMT_zu " x " FMT_zu " bytes) failed", count, size);
+		fz_throw(ctx, FZ_ERROR_MEMORY, "resize array (%zu x %zu bytes) failed", count, size);
 	return np;
 }
 
@@ -173,7 +186,9 @@ fz_resize_array_no_throw(fz_context *ctx, void *p, size_t count, size_t size)
 
 	if (count > SIZE_MAX / size)
 	{
-		fprintf(stderr, "error: resize array (" FMT_zu " x " FMT_zu " bytes) failed (size_t overflow)\n", count, size);
+		char buf[100];
+		fz_snprintf(buf, sizeof buf, "error: resize array (%zu x %zu bytes) failed (size_t overflow)", count, size);
+		fprintf(stderr, "%s\n", buf);
 		return NULL;
 	}
 
@@ -183,9 +198,12 @@ fz_resize_array_no_throw(fz_context *ctx, void *p, size_t count, size_t size)
 void
 fz_free(fz_context *ctx, void *p)
 {
-	fz_lock(ctx, FZ_LOCK_ALLOC);
-	ctx->alloc->free(ctx->alloc->user, p);
-	fz_unlock(ctx, FZ_LOCK_ALLOC);
+	if (p)
+	{
+		fz_lock(ctx, FZ_LOCK_ALLOC);
+		ctx->alloc->free(ctx->alloc->user, p);
+		fz_unlock(ctx, FZ_LOCK_ALLOC);
+	}
 }
 
 char *
@@ -194,16 +212,6 @@ fz_strdup(fz_context *ctx, const char *s)
 	size_t len = strlen(s) + 1;
 	char *ns = fz_malloc(ctx, len);
 	memcpy(ns, s, len);
-	return ns;
-}
-
-char *
-fz_strdup_no_throw(fz_context *ctx, const char *s)
-{
-	size_t len = strlen(s) + 1;
-	char *ns = fz_malloc_no_throw(ctx, len);
-	if (ns)
-		memcpy(ns, s, len);
 	return ns;
 }
 
@@ -269,7 +277,7 @@ int fz_lock_taken[FZ_LOCK_DEBUG_CONTEXT_MAX][FZ_LOCK_MAX] = { { 0 } };
  * when threads are involved. */
 static int ms_clock(void)
 {
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 	return (int)GetTickCount();
 #else
 	struct timeval tp;
@@ -290,9 +298,9 @@ static void dump_lock_times(void)
 		{
 			total += fz_lock_time[i][j];
 		}
-		printf("Lock %d held for %g seconds (%g%%)\n", j, ((double)total)/1000, 100.0*total/prog_time);
+		printf("Lock %d held for %g seconds (%g%%)\n", j, total / 1000.0f, 100.0f*total/prog_time);
 	}
-	printf("Total program time %g seconds\n", ((double)prog_time)/1000);
+	printf("Total program time %g seconds\n", prog_time / 1000.0f);
 }
 
 #endif
@@ -313,7 +321,7 @@ static int find_context(fz_context *ctx)
 			 * threads trying here too though so, so claim it
 			 * atomically. No one has locked on this context
 			 * before, so we are safe to take the ALLOC lock. */
-			ctx->locks->lock(ctx->locks->user, FZ_LOCK_ALLOC);
+			ctx->locks.lock(ctx->locks.user, FZ_LOCK_ALLOC);
 			/* If it's still free, then claim it as ours,
 			 * otherwise we'll keep hunting. */
 			if (fz_lock_debug_contexts[i] == NULL)
@@ -329,7 +337,7 @@ static int find_context(fz_context *ctx)
 				}
 #endif
 			}
-			ctx->locks->unlock(ctx->locks->user, FZ_LOCK_ALLOC);
+			ctx->locks.unlock(ctx->locks.user, FZ_LOCK_ALLOC);
 			if (gottit)
 				return i;
 		}
@@ -340,7 +348,12 @@ static int find_context(fz_context *ctx)
 void
 fz_assert_lock_held(fz_context *ctx, int lock)
 {
-	int idx = find_context(ctx);
+	int idx;
+
+	if (ctx->locks.lock != fz_lock_default)
+		return;
+
+	idx = find_context(ctx);
 	if (idx < 0)
 		return;
 
@@ -351,7 +364,12 @@ fz_assert_lock_held(fz_context *ctx, int lock)
 void
 fz_assert_lock_not_held(fz_context *ctx, int lock)
 {
-	int idx = find_context(ctx);
+	int idx;
+
+	if (ctx->locks.lock != fz_lock_default)
+		return;
+
+	idx = find_context(ctx);
 	if (idx < 0)
 		return;
 
@@ -361,8 +379,12 @@ fz_assert_lock_not_held(fz_context *ctx, int lock)
 
 void fz_lock_debug_lock(fz_context *ctx, int lock)
 {
-	int i;
-	int idx = find_context(ctx);
+	int i, idx;
+
+	if (ctx->locks.lock != fz_lock_default)
+		return;
+
+	idx = find_context(ctx);
 	if (idx < 0)
 		return;
 
@@ -379,13 +401,18 @@ void fz_lock_debug_lock(fz_context *ctx, int lock)
 	}
 	fz_locks_debug[idx][lock] = 1;
 #ifdef FITZ_DEBUG_LOCKING_TIMES
-	fz_lock_taken[idx][lock] = clock();
+	fz_lock_taken[idx][lock] = ms_clock();
 #endif
 }
 
 void fz_lock_debug_unlock(fz_context *ctx, int lock)
 {
-	int idx = find_context(ctx);
+	int idx;
+
+	if (ctx->locks.lock != fz_lock_default)
+		return;
+
+	idx = find_context(ctx);
 	if (idx < 0)
 		return;
 
@@ -395,7 +422,7 @@ void fz_lock_debug_unlock(fz_context *ctx, int lock)
 	}
 	fz_locks_debug[idx][lock] = 0;
 #ifdef FITZ_DEBUG_LOCKING_TIMES
-	fz_lock_time[idx][lock] += clock() - fz_lock_taken[idx][lock];
+	fz_lock_time[idx][lock] += ms_clock() - fz_lock_taken[idx][lock];
 #endif
 }
 

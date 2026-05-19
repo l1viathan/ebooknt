@@ -16,7 +16,7 @@ typedef struct fz_glyph_s fz_glyph;
 /*
 	fz_glyph_bbox: Return the bounding box for a glyph.
 */
-fz_irect *fz_glyph_bbox(fz_context *ctx, fz_glyph *glyph, fz_irect *bbox);
+fz_irect fz_glyph_bbox(fz_context *ctx, fz_glyph *glyph);
 
 /*
 	fz_glyph_width: Return the width of the glyph in pixels.
@@ -73,7 +73,7 @@ fz_glyph *fz_new_glyph_from_1bpp_data(fz_context *ctx, int x, int y, int w, int 
 
 	pix: The glyph to increment the reference for.
 
-	Returns pix. Does not throw exceptions.
+	Returns pix.
 */
 fz_glyph *fz_keep_glyph(fz_context *ctx, fz_glyph *pix);
 
@@ -82,8 +82,6 @@ fz_glyph *fz_keep_glyph(fz_context *ctx, fz_glyph *pix);
 
 	Decrement the reference count for the glyph. When no
 	references remain the glyph will be freed.
-
-	Does not throw exceptions.
 */
 void fz_drop_glyph(fz_context *ctx, fz_glyph *pix);
 
@@ -122,7 +120,7 @@ struct fz_glyph_s
 	unsigned char data[1];
 };
 
-fz_irect *fz_glyph_bbox_no_ctx(fz_glyph *src, fz_irect *bbox);
+fz_irect fz_glyph_bbox_no_ctx(fz_glyph *src);
 
 static inline size_t
 fz_glyph_size(fz_context *ctx, fz_glyph *glyph)

@@ -4,6 +4,8 @@
 #include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
+#include <time.h>
+
 /*
  * Utility object for handling a pdf application / view
  * Takes care of PDF loading and displaying and navigation,
@@ -20,6 +22,8 @@ enum { ARROW, HAND, WAIT, CARET };
 
 enum { DISCARD, SAVE, CANCEL };
 
+enum { QUERY_NO, QUERY_YES };
+
 extern void winwarn(pdfapp_t*, char *s);
 extern void winerror(pdfapp_t*, char *s);
 extern void wintitle(pdfapp_t*, char *title);
@@ -28,15 +32,18 @@ extern void winrepaint(pdfapp_t*);
 extern void winrepaintsearch(pdfapp_t*);
 extern char *winpassword(pdfapp_t*, char *filename);
 extern char *wintextinput(pdfapp_t*, char *inittext, int retry);
-extern int winchoiceinput(pdfapp_t*, int nopts, char *opts[], int *nvals, char *vals[]);
+extern int winchoiceinput(pdfapp_t*, int nopts, const char *opts[], int *nvals, const char *vals[]);
 extern void winopenuri(pdfapp_t*, char *s);
 extern void wincursor(pdfapp_t*, int curs);
 extern void windocopy(pdfapp_t*);
+extern void windrawrect(pdfapp_t*, int x0, int y0, int x1, int y1);
 extern void windrawstring(pdfapp_t*, int x, int y, char *s);
 extern void winclose(pdfapp_t*);
 extern void winhelp(pdfapp_t*);
 extern void winfullscreen(pdfapp_t*, int state);
 extern int winsavequery(pdfapp_t*);
+extern int winquery(pdfapp_t*, const char*);
+extern int wingetcertpath(char *buf, int len);
 extern int wingetsavepath(pdfapp_t*, char *buf, int len);
 extern void winalert(pdfapp_t *, pdf_alert_event *alert);
 extern void winprint(pdfapp_t *);
@@ -88,7 +95,6 @@ struct pdfapp_s
 	fz_display_list *page_list;
 	fz_display_list *annotations_list;
 	fz_stext_page *page_text;
-	fz_stext_sheet *page_sheet;
 	fz_link *page_links;
 	int errored;
 	int incomplete;
@@ -129,7 +135,7 @@ struct pdfapp_s
 	int searchdir;
 	char search[512];
 	int searchpage;
-	fz_rect hit_bbox[512];
+	fz_quad hit_bbox[512];
 	int hit_count;
 
 	/* client context storage */
@@ -162,7 +168,7 @@ void pdfapp_autozoom_horizontal(pdfapp_t *app);
 void pdfapp_autozoom_vertical(pdfapp_t *app);
 void pdfapp_autozoom(pdfapp_t *app);
 
-void pdfapp_invert(pdfapp_t *app, const fz_rect *rect);
+void pdfapp_invert(pdfapp_t *app, fz_rect rect);
 void pdfapp_inverthit(pdfapp_t *app);
 
 void pdfapp_postblit(pdfapp_t *app);

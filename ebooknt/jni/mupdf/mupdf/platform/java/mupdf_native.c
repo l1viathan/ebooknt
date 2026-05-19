@@ -5,14 +5,16 @@
 #include <pthread.h>
 #endif
 
-#ifdef NDK_PROFILER
-#include "prof.h"
-#endif
-
 #include "mupdf/fitz.h"
+#include "mupdf/ucdn.h"
 #include "mupdf/pdf.h"
 
 #include "mupdf_native.h" /* javah generated prototypes */
+
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef HAVE_ANDROID
 #include <android/log.h>
@@ -47,6 +49,9 @@ static inline jlong jlong_cast(const void *p)
 	return (jlong)(intptr_t)p;
 }
 
+/* Our vm */
+static JavaVM *jvm = NULL;
+
 /* All the cached classes/mids/fids we need. */
 
 static jclass cls_Annotation;
@@ -57,39 +62,44 @@ static jclass cls_Device;
 static jclass cls_DisplayList;
 static jclass cls_Document;
 static jclass cls_DocumentWriter;
+static jclass cls_FloatArray;
 static jclass cls_Font;
+static jclass cls_IOException;
 static jclass cls_IllegalArgumentException;
 static jclass cls_Image;
 static jclass cls_IndexOutOfBoundsException;
-static jclass cls_IOException;
+static jclass cls_IntegerArray;
 static jclass cls_Link;
 static jclass cls_Matrix;
 static jclass cls_NativeDevice;
 static jclass cls_NullPointerException;
 static jclass cls_Object;
-static jclass cls_Outline;
 static jclass cls_OutOfMemoryError;
+static jclass cls_Outline;
+static jclass cls_PDFAnnotation;
+static jclass cls_PDFDocument;
+static jclass cls_PDFGraftMap;
+static jclass cls_PDFObject;
+static jclass cls_PDFPage;
 static jclass cls_Page;
 static jclass cls_Path;
 static jclass cls_PathWalker;
-static jclass cls_PDFAnnotation;
-static jclass cls_PDFDocument;
-static jclass cls_PDFPage;
-static jclass cls_PDFGraftMap;
-static jclass cls_PDFObject;
 static jclass cls_Pixmap;
 static jclass cls_Point;
+static jclass cls_Quad;
 static jclass cls_Rect;
 static jclass cls_RuntimeException;
-static jclass cls_Separation;
+static jclass cls_SeekableInputStream;
+static jclass cls_SeekableOutputStream;
+static jclass cls_SeekableStream;
 static jclass cls_Shade;
 static jclass cls_StrokeState;
 static jclass cls_StructuredText;
+static jclass cls_StructuredTextWalker;
 static jclass cls_Text;
 static jclass cls_TextBlock;
 static jclass cls_TextChar;
 static jclass cls_TextLine;
-static jclass cls_TextSpan;
 static jclass cls_TextWalker;
 static jclass cls_TryLaterException;
 
@@ -99,8 +109,8 @@ static jfieldID fid_ColorSpace_pointer;
 static jfieldID fid_Cookie_pointer;
 static jfieldID fid_Device_pointer;
 static jfieldID fid_DisplayList_pointer;
-static jfieldID fid_Document_pointer;
 static jfieldID fid_DocumentWriter_pointer;
+static jfieldID fid_Document_pointer;
 static jfieldID fid_Font_pointer;
 static jfieldID fid_Image_pointer;
 static jfieldID fid_Link_bounds;
@@ -114,15 +124,25 @@ static jfieldID fid_Matrix_e;
 static jfieldID fid_Matrix_f;
 static jfieldID fid_NativeDevice_nativeInfo;
 static jfieldID fid_NativeDevice_nativeResource;
-static jfieldID fid_Page_pointer;
-static jfieldID fid_Path_pointer;
 static jfieldID fid_PDFAnnotation_pointer;
 static jfieldID fid_PDFDocument_pointer;
-static jfieldID fid_PDFPage_pointer;
 static jfieldID fid_PDFGraftMap_pointer;
-static jfieldID fid_PDFObject_pointer;
 static jfieldID fid_PDFObject_Null;
+static jfieldID fid_PDFObject_pointer;
+static jfieldID fid_PDFPage_pointer;
+static jfieldID fid_Page_pointer;
+static jfieldID fid_Path_pointer;
 static jfieldID fid_Pixmap_pointer;
+static jfieldID fid_Point_x;
+static jfieldID fid_Point_y;
+static jfieldID fid_Quad_ul_x;
+static jfieldID fid_Quad_ul_y;
+static jfieldID fid_Quad_ur_x;
+static jfieldID fid_Quad_ur_y;
+static jfieldID fid_Quad_ll_x;
+static jfieldID fid_Quad_ll_y;
+static jfieldID fid_Quad_lr_x;
+static jfieldID fid_Quad_lr_y;
 static jfieldID fid_Rect_x0;
 static jfieldID fid_Rect_x1;
 static jfieldID fid_Rect_y0;
@@ -132,18 +152,17 @@ static jfieldID fid_StrokeState_pointer;
 static jfieldID fid_StructuredText_pointer;
 static jfieldID fid_TextBlock_bbox;
 static jfieldID fid_TextBlock_lines;
-static jfieldID fid_TextChar_bbox;
+static jfieldID fid_TextChar_quad;
 static jfieldID fid_TextChar_c;
 static jfieldID fid_TextLine_bbox;
-static jfieldID fid_TextLine_spans;
+static jfieldID fid_TextLine_chars;
 static jfieldID fid_Text_pointer;
-static jfieldID fid_TextSpan_bbox;
-static jfieldID fid_TextSpan_chars;
 
 static jmethodID mid_Annotation_init;
 static jmethodID mid_ColorSpace_fromPointer;
 static jmethodID mid_ColorSpace_init;
 static jmethodID mid_Device_beginGroup;
+static jmethodID mid_Device_beginLayer;
 static jmethodID mid_Device_beginMask;
 static jmethodID mid_Device_beginTile;
 static jmethodID mid_Device_clipImageMask;
@@ -152,6 +171,7 @@ static jmethodID mid_Device_clipStrokePath;
 static jmethodID mid_Device_clipStrokeText;
 static jmethodID mid_Device_clipText;
 static jmethodID mid_Device_endGroup;
+static jmethodID mid_Device_endLayer;
 static jmethodID mid_Device_endMask;
 static jmethodID mid_Device_endTile;
 static jmethodID mid_Device_fillImage;
@@ -172,30 +192,39 @@ static jmethodID mid_Link_init;
 static jmethodID mid_Matrix_init;
 static jmethodID mid_Object_toString;
 static jmethodID mid_Outline_init;
+static jmethodID mid_PDFAnnotation_init;
+static jmethodID mid_PDFDocument_init;
+static jmethodID mid_PDFGraftMap_init;
+static jmethodID mid_PDFObject_init;
+static jmethodID mid_PDFPage_init;
 static jmethodID mid_Page_init;
-static jmethodID mid_Path_init;
 static jmethodID mid_PathWalker_closePath;
 static jmethodID mid_PathWalker_curveTo;
 static jmethodID mid_PathWalker_lineTo;
 static jmethodID mid_PathWalker_moveTo;
-static jmethodID mid_PDFAnnotation_init;
-static jmethodID mid_PDFDocument_init;
-static jmethodID mid_PDFPage_init;
-static jmethodID mid_PDFGraftMap_init;
-static jmethodID mid_PDFObject_init;
+static jmethodID mid_Path_init;
 static jmethodID mid_Pixmap_init;
 static jmethodID mid_Point_init;
+static jmethodID mid_Quad_init;
 static jmethodID mid_Rect_init;
+static jmethodID mid_SeekableInputStream_read;
+static jmethodID mid_SeekableOutputStream_write;
+static jmethodID mid_SeekableStream_position;
+static jmethodID mid_SeekableStream_seek;
 static jmethodID mid_Shade_init;
-static jmethodID mid_Separation_init;
 static jmethodID mid_StrokeState_init;
 static jmethodID mid_StructuredText_init;
+static jmethodID mid_StructuredTextWalker_onImageBlock;
+static jmethodID mid_StructuredTextWalker_beginTextBlock;
+static jmethodID mid_StructuredTextWalker_endTextBlock;
+static jmethodID mid_StructuredTextWalker_beginLine;
+static jmethodID mid_StructuredTextWalker_endLine;
+static jmethodID mid_StructuredTextWalker_onChar;
 static jmethodID mid_TextBlock_init;
 static jmethodID mid_TextChar_init;
-static jmethodID mid_Text_init;
 static jmethodID mid_TextLine_init;
-static jmethodID mid_TextSpan_init;
 static jmethodID mid_TextWalker_showGlyph;
+static jmethodID mid_Text_init;
 
 #ifdef _WIN32
 static DWORD context_key;
@@ -203,6 +232,91 @@ static DWORD context_key;
 static pthread_key_t context_key;
 #endif
 static fz_context *base_context;
+
+static int check_enums()
+{
+	int valid = 1;
+
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_NORMAL == FZ_BLEND_NORMAL;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_MULTIPLY == FZ_BLEND_MULTIPLY;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_SCREEN == FZ_BLEND_SCREEN;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_OVERLAY == FZ_BLEND_OVERLAY;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_DARKEN == FZ_BLEND_DARKEN;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_LIGHTEN == FZ_BLEND_LIGHTEN;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_COLOR_DODGE == FZ_BLEND_COLOR_DODGE;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_COLOR_BURN == FZ_BLEND_COLOR_BURN;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_HARD_LIGHT == FZ_BLEND_HARD_LIGHT;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_SOFT_LIGHT == FZ_BLEND_SOFT_LIGHT;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_DIFFERENCE == FZ_BLEND_DIFFERENCE;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_EXCLUSION == FZ_BLEND_EXCLUSION;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_HUE == FZ_BLEND_HUE;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_SATURATION == FZ_BLEND_SATURATION;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_COLOR == FZ_BLEND_COLOR;
+	valid &= com_artifex_mupdf_fitz_Device_BLEND_LUMINOSITY == FZ_BLEND_LUMINOSITY;
+
+	valid &= com_artifex_mupdf_fitz_Font_LATIN == PDF_SIMPLE_ENCODING_LATIN;
+	valid &= com_artifex_mupdf_fitz_Font_GREEK == PDF_SIMPLE_ENCODING_GREEK;
+	valid &= com_artifex_mupdf_fitz_Font_CYRILLIC == PDF_SIMPLE_ENCODING_CYRILLIC;
+
+	valid &= com_artifex_mupdf_fitz_Font_ADOBE_CNS == FZ_ADOBE_CNS;
+	valid &= com_artifex_mupdf_fitz_Font_ADOBE_GB == FZ_ADOBE_GB;
+	valid &= com_artifex_mupdf_fitz_Font_ADOBE_JAPAN == FZ_ADOBE_JAPAN;
+	valid &= com_artifex_mupdf_fitz_Font_ADOBE_KOREA == FZ_ADOBE_KOREA;
+
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_NONE == PDF_ANNOT_LE_NONE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_SQUARE == PDF_ANNOT_LE_SQUARE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_CIRCLE == PDF_ANNOT_LE_CIRCLE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_DIAMOND == PDF_ANNOT_LE_DIAMOND;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_OPEN_ARROW == PDF_ANNOT_LE_OPEN_ARROW;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_CLOSED_ARROW == PDF_ANNOT_LE_CLOSED_ARROW;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_BUTT == PDF_ANNOT_LE_BUTT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_R_OPEN_ARROW == PDF_ANNOT_LE_R_OPEN_ARROW;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_R_CLOSED_ARROW == PDF_ANNOT_LE_R_CLOSED_ARROW;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_LINE_ENDING_SLASH == PDF_ANNOT_LE_SLASH;
+
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_TEXT == PDF_ANNOT_TEXT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_LINK == PDF_ANNOT_LINK;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_FREE_TEXT == PDF_ANNOT_FREE_TEXT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_LINE == PDF_ANNOT_LINE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_SQUARE == PDF_ANNOT_SQUARE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_CIRCLE == PDF_ANNOT_CIRCLE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_POLYGON == PDF_ANNOT_POLYGON;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_POLY_LINE == PDF_ANNOT_POLY_LINE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_HIGHLIGHT == PDF_ANNOT_HIGHLIGHT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_UNDERLINE == PDF_ANNOT_UNDERLINE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_SQUIGGLY == PDF_ANNOT_SQUIGGLY;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_STRIKE_OUT == PDF_ANNOT_STRIKE_OUT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_STAMP == PDF_ANNOT_STAMP;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_CARET == PDF_ANNOT_CARET;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_INK == PDF_ANNOT_INK;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_POPUP == PDF_ANNOT_POPUP;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_FILE_ATTACHMENT == PDF_ANNOT_FILE_ATTACHMENT;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_SOUND == PDF_ANNOT_SOUND;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_MOVIE == PDF_ANNOT_MOVIE;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_WIDGET == PDF_ANNOT_WIDGET;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_SCREEN == PDF_ANNOT_SCREEN;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_PRINTER_MARK == PDF_ANNOT_PRINTER_MARK;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_TRAP_NET == PDF_ANNOT_TRAP_NET;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_WATERMARK == PDF_ANNOT_WATERMARK;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_3D == PDF_ANNOT_3D;
+	valid &= com_artifex_mupdf_fitz_PDFAnnotation_TYPE_UNKNOWN == PDF_ANNOT_UNKNOWN;
+
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_CAP_BUTT == FZ_LINECAP_BUTT;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_CAP_ROUND == FZ_LINECAP_ROUND;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_CAP_SQUARE == FZ_LINECAP_SQUARE;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_CAP_TRIANGLE == FZ_LINECAP_TRIANGLE;
+
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_JOIN_MITER == FZ_LINEJOIN_MITER;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_JOIN_ROUND == FZ_LINEJOIN_ROUND;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_JOIN_BEVEL == FZ_LINEJOIN_BEVEL;
+	valid &= com_artifex_mupdf_fitz_StrokeState_LINE_JOIN_MITER_XPS == FZ_LINEJOIN_MITER_XPS;
+
+	valid &= com_artifex_mupdf_fitz_StructuredText_SELECT_CHARS == FZ_SELECT_CHARS;
+	valid &= com_artifex_mupdf_fitz_StructuredText_SELECT_WORDS == FZ_SELECT_WORDS;
+	valid &= com_artifex_mupdf_fitz_StructuredText_SELECT_LINES == FZ_SELECT_LINES;
+
+	return valid ? 1 : 0;
+}
 
 /* Helper functions to set the java exception flag. */
 
@@ -251,8 +365,12 @@ static void fz_throw_java(fz_context *ctx, JNIEnv *env)
 	jthrowable ex = (*env)->ExceptionOccurred(env);
 	if (ex)
 	{
-		jobject msg = (*env)->CallObjectMethod(env, ex, mid_Object_toString);
-		if (!(*env)->ExceptionCheck(env) && msg)
+		jobject msg;
+		(*env)->ExceptionClear(env);
+		msg = (*env)->CallObjectMethod(env, ex, mid_Object_toString);
+		if ((*env)->ExceptionCheck(env))
+			(*env)->ExceptionClear(env);
+		else if (msg)
 		{
 			const char *p = (*env)->GetStringUTFChars(env, msg, NULL);
 			if (p)
@@ -367,6 +485,7 @@ static jmethodID get_static_method(int *failed, JNIEnv *env, const char *method,
 static int find_fids(JNIEnv *env)
 {
 	int err = 0;
+	int getvmErr;
 
 	cls_Annotation = get_class(&err, env, PKG"Annotation");
 	fid_Annotation_pointer = get_field(&err, env, "pointer", "J");
@@ -386,23 +505,25 @@ static int find_fids(JNIEnv *env)
 	cls_Device = get_class(&err, env, PKG"Device");
 	fid_Device_pointer = get_field(&err, env, "pointer", "J");
 	mid_Device_init = get_method(&err, env, "<init>", "(J)V");
-	mid_Device_fillPath = get_method(&err, env, "fillPath", "(L"PKG"Path;ZL"PKG"Matrix;L"PKG"ColorSpace;[FF)V");
-	mid_Device_strokePath = get_method(&err, env, "strokePath", "(L"PKG"Path;L"PKG"StrokeState;L"PKG"Matrix;L"PKG"ColorSpace;[FF)V");
+	mid_Device_fillPath = get_method(&err, env, "fillPath", "(L"PKG"Path;ZL"PKG"Matrix;L"PKG"ColorSpace;[FFI)V");
+	mid_Device_strokePath = get_method(&err, env, "strokePath", "(L"PKG"Path;L"PKG"StrokeState;L"PKG"Matrix;L"PKG"ColorSpace;[FFI)V");
 	mid_Device_clipPath = get_method(&err, env, "clipPath", "(L"PKG"Path;ZL"PKG"Matrix;)V");
 	mid_Device_clipStrokePath = get_method(&err, env, "clipStrokePath", "(L"PKG"Path;L"PKG"StrokeState;L"PKG"Matrix;)V");
-	mid_Device_fillText = get_method(&err, env, "fillText", "(L"PKG"Text;L"PKG"Matrix;L"PKG"ColorSpace;[FF)V");
-	mid_Device_strokeText = get_method(&err, env, "strokeText", "(L"PKG"Text;L"PKG"StrokeState;L"PKG"Matrix;L"PKG"ColorSpace;[FF)V");
+	mid_Device_fillText = get_method(&err, env, "fillText", "(L"PKG"Text;L"PKG"Matrix;L"PKG"ColorSpace;[FFI)V");
+	mid_Device_strokeText = get_method(&err, env, "strokeText", "(L"PKG"Text;L"PKG"StrokeState;L"PKG"Matrix;L"PKG"ColorSpace;[FFI)V");
 	mid_Device_clipText = get_method(&err, env, "clipText", "(L"PKG"Text;L"PKG"Matrix;)V");
 	mid_Device_clipStrokeText = get_method(&err, env, "clipStrokeText", "(L"PKG"Text;L"PKG"StrokeState;L"PKG"Matrix;)V");
 	mid_Device_ignoreText = get_method(&err, env, "ignoreText", "(L"PKG"Text;L"PKG"Matrix;)V");
-	mid_Device_fillShade = get_method(&err, env, "fillShade", "(L"PKG"Shade;L"PKG"Matrix;F)V");
-	mid_Device_fillImage = get_method(&err, env, "fillImage", "(L"PKG"Image;L"PKG"Matrix;F)V");
-	mid_Device_fillImageMask = get_method(&err, env, "fillImageMask", "(L"PKG"Image;L"PKG"Matrix;L"PKG"ColorSpace;[FF)V");
+	mid_Device_fillShade = get_method(&err, env, "fillShade", "(L"PKG"Shade;L"PKG"Matrix;FI)V");
+	mid_Device_fillImage = get_method(&err, env, "fillImage", "(L"PKG"Image;L"PKG"Matrix;FI)V");
+	mid_Device_fillImageMask = get_method(&err, env, "fillImageMask", "(L"PKG"Image;L"PKG"Matrix;L"PKG"ColorSpace;[FFI)V");
 	mid_Device_clipImageMask = get_method(&err, env, "clipImageMask", "(L"PKG"Image;L"PKG"Matrix;)V");
 	mid_Device_popClip = get_method(&err, env, "popClip", "()V");
-	mid_Device_beginMask = get_method(&err, env, "beginMask", "(L"PKG"Rect;ZL"PKG"ColorSpace;[F)V");
+	mid_Device_beginLayer = get_method(&err, env, "beginLayer", "(Ljava/lang/String;)V");
+	mid_Device_endLayer = get_method(&err, env, "endLayer", "()V");
+	mid_Device_beginMask = get_method(&err, env, "beginMask", "(L"PKG"Rect;ZL"PKG"ColorSpace;[FI)V");
 	mid_Device_endMask = get_method(&err, env, "endMask", "()V");
-	mid_Device_beginGroup = get_method(&err, env, "beginGroup", "(L"PKG"Rect;ZZIF)V");
+	mid_Device_beginGroup = get_method(&err, env, "beginGroup", "(L"PKG"Rect;L"PKG"ColorSpace;ZZIF)V");
 	mid_Device_endGroup = get_method(&err, env, "endGroup", "()V");
 	mid_Device_beginTile = get_method(&err, env, "beginTile", "(L"PKG"Rect;L"PKG"Rect;FFL"PKG"Matrix;I)I");
 	mid_Device_endTile = get_method(&err, env, "endTile", "()V");
@@ -446,7 +567,7 @@ static int find_fids(JNIEnv *env)
 	fid_NativeDevice_nativeInfo = get_field(&err, env, "nativeInfo", "J");
 
 	cls_Outline = get_class(&err, env, PKG"Outline");
-	mid_Outline_init = get_method(&err, env, "<init>", "(Ljava/lang/String;ILjava/lang/String;[L"PKG"Outline;)V");
+	mid_Outline_init = get_method(&err, env, "<init>", "(Ljava/lang/String;ILjava/lang/String;FF[L"PKG"Outline;)V");
 
 	cls_Page = get_class(&err, env, PKG"Page");
 	fid_Page_pointer = get_field(&err, env, "pointer", "J");
@@ -489,6 +610,19 @@ static int find_fids(JNIEnv *env)
 
 	cls_Point = get_class(&err, env, PKG"Point");
 	mid_Point_init = get_method(&err, env, "<init>", "(FF)V");
+	fid_Point_x = get_field(&err, env, "x", "F");
+	fid_Point_y = get_field(&err, env, "y", "F");
+
+	cls_Quad = get_class(&err, env, PKG"Quad");
+	fid_Quad_ul_x = get_field(&err, env, "ul_x", "F");
+	fid_Quad_ul_y = get_field(&err, env, "ul_y", "F");
+	fid_Quad_ur_x = get_field(&err, env, "ur_x", "F");
+	fid_Quad_ur_y = get_field(&err, env, "ur_y", "F");
+	fid_Quad_ll_x = get_field(&err, env, "ll_x", "F");
+	fid_Quad_ll_y = get_field(&err, env, "ll_y", "F");
+	fid_Quad_lr_x = get_field(&err, env, "lr_x", "F");
+	fid_Quad_lr_y = get_field(&err, env, "lr_y", "F");
+	mid_Quad_init = get_method(&err, env, "<init>", "(FFFFFFFF)V");
 
 	cls_Rect = get_class(&err, env, PKG"Rect");
 	fid_Rect_x0 = get_field(&err, env, "x0", "F");
@@ -497,12 +631,19 @@ static int find_fids(JNIEnv *env)
 	fid_Rect_y1 = get_field(&err, env, "y1", "F");
 	mid_Rect_init = get_method(&err, env, "<init>", "(FFFF)V");
 
+	cls_SeekableInputStream = get_class(&err, env, PKG"SeekableInputStream");
+	mid_SeekableInputStream_read = get_method(&err, env, "read", "([B)I");
+
+	cls_SeekableOutputStream = get_class(&err, env, PKG"SeekableOutputStream");
+	mid_SeekableOutputStream_write = get_method(&err, env, "write", "([BII)V");
+
+	cls_SeekableStream = get_class(&err, env, PKG"SeekableStream");
+	mid_SeekableStream_position = get_method(&err, env, "position", "()J");
+	mid_SeekableStream_seek = get_method(&err, env, "seek", "(JI)J");
+
 	cls_Shade = get_class(&err, env, PKG"Shade");
 	fid_Shade_pointer = get_field(&err, env, "pointer", "J");
 	mid_Shade_init = get_method(&err, env, "<init>", "(J)V");
-
-	cls_Separation = get_class(&err, env, PKG"Separation");
-	mid_Separation_init = get_method(&err, env, "<init>", "(Ljava/lang/String;II)V");
 
 	cls_StrokeState = get_class(&err, env, PKG"StrokeState");
 	fid_StrokeState_pointer = get_field(&err, env, "pointer", "J");
@@ -511,6 +652,14 @@ static int find_fids(JNIEnv *env)
 	cls_StructuredText = get_class(&err, env, PKG"StructuredText");
 	fid_StructuredText_pointer = get_field(&err, env, "pointer", "J");
 	mid_StructuredText_init = get_method(&err, env, "<init>", "(J)V");
+
+	cls_StructuredTextWalker = get_class(&err, env, PKG"StructuredTextWalker");
+	mid_StructuredTextWalker_onImageBlock = get_method(&err, env, "onImageBlock", "(L"PKG"Rect;L"PKG"Matrix;L"PKG"Image;)V");
+	mid_StructuredTextWalker_beginTextBlock = get_method(&err, env, "beginTextBlock", "(L"PKG"Rect;)V");
+	mid_StructuredTextWalker_endTextBlock = get_method(&err, env, "endTextBlock", "()V");
+	mid_StructuredTextWalker_beginLine = get_method(&err, env, "beginLine", "(L"PKG"Rect;I)V");
+	mid_StructuredTextWalker_endLine = get_method(&err, env, "endLine", "()V");
+	mid_StructuredTextWalker_onChar = get_method(&err, env, "onChar", "(IL"PKG"Point;L"PKG"Font;FL"PKG"Quad;)V");
 
 	cls_Text = get_class(&err, env, PKG"Text");
 	fid_Text_pointer = get_field(&err, env, "pointer", "J");
@@ -523,18 +672,13 @@ static int find_fids(JNIEnv *env)
 
 	cls_TextChar = get_class(&err, env, PKG"StructuredText$TextChar");
 	mid_TextChar_init = get_method(&err, env, "<init>", "(L"PKG"StructuredText;)V");
-	fid_TextChar_bbox = get_field(&err, env, "bbox", "L"PKG"Rect;");
+	fid_TextChar_quad = get_field(&err, env, "quad", "L"PKG"Quad;");
 	fid_TextChar_c = get_field(&err, env, "c", "I");
 
 	cls_TextLine = get_class(&err, env, PKG"StructuredText$TextLine");
 	mid_TextLine_init = get_method(&err, env, "<init>", "(L"PKG"StructuredText;)V");
 	fid_TextLine_bbox = get_field(&err, env, "bbox", "L"PKG"Rect;");
-	fid_TextLine_spans = get_field(&err, env, "spans", "[L"PKG"StructuredText$TextSpan;");
-
-	cls_TextSpan = get_class(&err, env, PKG"StructuredText$TextSpan");
-	mid_TextSpan_init = get_method(&err, env, "<init>", "(L"PKG"StructuredText;)V");
-	fid_TextSpan_bbox = get_field(&err, env, "bbox", "L"PKG"Rect;");
-	fid_TextSpan_chars = get_field(&err, env, "chars", "[L"PKG"StructuredText$TextChar;");
+	fid_TextLine_chars = get_field(&err, env, "chars", "[L"PKG"StructuredText$TextChar;");
 
 	cls_TextWalker = get_class(&err, env, PKG"TextWalker");
 	mid_TextWalker_showGlyph = get_method(&err, env, "showGlyph", "(L"PKG"Font;L"PKG"Matrix;IIZ)V");
@@ -542,6 +686,9 @@ static int find_fids(JNIEnv *env)
 	cls_TryLaterException = get_class(&err, env, PKG"TryLaterException");
 
 	/* Standard Java classes */
+
+	cls_FloatArray = get_class(&err, env, "[F");
+	cls_IntegerArray = get_class(&err, env, "[I");
 
 	cls_Object = get_class(&err, env, "java/lang/Object");
 	mid_Object_toString = get_method(&err, env, "toString", "()Ljava/lang/String;");
@@ -554,7 +701,47 @@ static int find_fids(JNIEnv *env)
 
 	cls_OutOfMemoryError = get_class(&err, env, "java/lang/OutOfMemoryError");
 
+	/* Get and store the main JVM pointer. We need this in order to get
+	 * JNIEnv pointers on callback threads. This is specifically
+	 * guaranteed to be safe to store in a static var. */
+
+	getvmErr = (*env)->GetJavaVM(env, &jvm);
+	if (getvmErr < 0)
+	{
+		LOGE("mupdf_native.c find_fids() GetJavaVM failed with %d", getvmErr);
+		err = 1;
+	}
+
 	return err;
+}
+
+/* When making callbacks from C to java, we may be called on threads
+ * other than the foreground. As such, we have no JNIEnv. This function
+ * handles getting us the required environment */
+static JNIEnv *jni_attach_thread(fz_context *ctx, int *detach)
+{
+	JNIEnv *env = NULL;
+	int state;
+
+	*detach = 0;
+	state = (*jvm)->GetEnv(jvm, (void*)&env, MY_JNI_VERSION);
+	if (state == JNI_EDETACHED)
+	{
+		*detach = 1;
+		state = (*jvm)->AttachCurrentThread(jvm, (void*)&env, NULL);
+	}
+
+	if (state != JNI_OK)
+		return NULL;
+
+	return env;
+}
+
+static void jni_detach_thread(int detach)
+{
+	if (!detach)
+		return;
+	(*jvm)->DetachCurrentThread(jvm);
 }
 
 static void lose_fids(JNIEnv *env)
@@ -567,10 +754,12 @@ static void lose_fids(JNIEnv *env)
 	(*env)->DeleteGlobalRef(env, cls_DisplayList);
 	(*env)->DeleteGlobalRef(env, cls_Document);
 	(*env)->DeleteGlobalRef(env, cls_DocumentWriter);
+	(*env)->DeleteGlobalRef(env, cls_FloatArray);
 	(*env)->DeleteGlobalRef(env, cls_Font);
 	(*env)->DeleteGlobalRef(env, cls_IllegalArgumentException);
 	(*env)->DeleteGlobalRef(env, cls_Image);
 	(*env)->DeleteGlobalRef(env, cls_IndexOutOfBoundsException);
+	(*env)->DeleteGlobalRef(env, cls_IntegerArray);
 	(*env)->DeleteGlobalRef(env, cls_IOException);
 	(*env)->DeleteGlobalRef(env, cls_Link);
 	(*env)->DeleteGlobalRef(env, cls_Matrix);
@@ -589,28 +778,40 @@ static void lose_fids(JNIEnv *env)
 	(*env)->DeleteGlobalRef(env, cls_PDFObject);
 	(*env)->DeleteGlobalRef(env, cls_Pixmap);
 	(*env)->DeleteGlobalRef(env, cls_Point);
+	(*env)->DeleteGlobalRef(env, cls_Quad);
 	(*env)->DeleteGlobalRef(env, cls_Rect);
 	(*env)->DeleteGlobalRef(env, cls_RuntimeException);
-	(*env)->DeleteGlobalRef(env, cls_Separation);
+	(*env)->DeleteGlobalRef(env, cls_SeekableStream);
+	(*env)->DeleteGlobalRef(env, cls_SeekableInputStream);
+	(*env)->DeleteGlobalRef(env, cls_SeekableOutputStream);
 	(*env)->DeleteGlobalRef(env, cls_Shade);
 	(*env)->DeleteGlobalRef(env, cls_StrokeState);
 	(*env)->DeleteGlobalRef(env, cls_StructuredText);
+	(*env)->DeleteGlobalRef(env, cls_StructuredTextWalker);
 	(*env)->DeleteGlobalRef(env, cls_Text);
 	(*env)->DeleteGlobalRef(env, cls_TextBlock);
 	(*env)->DeleteGlobalRef(env, cls_TextChar);
 	(*env)->DeleteGlobalRef(env, cls_TextLine);
-	(*env)->DeleteGlobalRef(env, cls_TextSpan);
 	(*env)->DeleteGlobalRef(env, cls_TextWalker);
 	(*env)->DeleteGlobalRef(env, cls_TryLaterException);
 }
 
 #ifdef HAVE_ANDROID
 
-static fz_font *load_noto(fz_context *ctx, const char *filename, int idx)
+static fz_font *load_noto(fz_context *ctx, const char *a, const char *b, const char *c, int idx)
 {
-	fz_font *font;
+	char buf[500];
+	fz_font *font = NULL;
 	fz_try(ctx)
-		font = fz_new_font_from_file(ctx, NULL, filename, idx, 0);
+	{
+		fz_snprintf(buf, sizeof buf, "/system/fonts/%s%s%s.ttf", a, b, c);
+		if (!fz_file_exists(ctx, buf))
+			fz_snprintf(buf, sizeof buf, "/system/fonts/%s%s%s.otf", a, b, c);
+		if (!fz_file_exists(ctx, buf))
+			fz_snprintf(buf, sizeof buf, "/system/fonts/%s%s%s.ttc", a, b, c);
+		if (fz_file_exists(ctx, buf))
+			font = fz_new_font_from_file(ctx, NULL, buf, idx, 0);
+	}
 	fz_catch(ctx)
 		return NULL;
 	return font;
@@ -618,25 +819,36 @@ static fz_font *load_noto(fz_context *ctx, const char *filename, int idx)
 
 static fz_font *load_noto_cjk(fz_context *ctx, int lang)
 {
-	fz_font *font = load_noto(ctx, "/system/fonts/NotoSansCJK-Regular.ttc", lang);
-	if (!font)
-		font = load_noto(ctx, "/system/fonts/DroidSansFallback.ttf", 0);
+	fz_font *font = load_noto(ctx, "NotoSerif", "CJK", "-Regular", lang);
+	if (!font) font = load_noto(ctx, "NotoSans", "CJK", "-Regular", lang);
+	if (!font) font = load_noto(ctx, "DroidSans", "Fallback", "", 0);
 	return font;
 }
 
-static fz_font *load_noto3(fz_context *ctx, const char *a, const char *b, const char *c)
+static fz_font *load_noto_arabic(fz_context *ctx)
 {
-	fz_font *font = load_noto(ctx, a, 0);
-	if (!font && b) font = load_noto(ctx, b, 0);
-	if (!font && c) font = load_noto(ctx, c, 0);
+	fz_font *font = load_noto(ctx, "Noto", "Naskh", "-Regular", 0);
+	if (!font) font = load_noto(ctx, "Noto", "NaskhArabic", "-Regular", 0);
+	if (!font) font = load_noto(ctx, "Droid", "Naskh", "-Regular", 0);
+	if (!font) font = load_noto(ctx, "NotoSerif", "Arabic", "-Regular", 0);
+	if (!font) font = load_noto(ctx, "NotoSans", "Arabic", "-Regular", 0);
+	if (!font) font = load_noto(ctx, "DroidSans", "Arabic", "-Regular", 0);
+	return font;
+}
+
+static fz_font *load_noto_try(fz_context *ctx, const char *stem)
+{
+	fz_font *font = load_noto(ctx, "NotoSerif", stem, "-Regular", 0);
+	if (!font) font = load_noto(ctx, "NotoSans", stem, "-Regular", 0);
+	if (!font) font = load_noto(ctx, "DroidSans", stem, "-Regular", 0);
 	return font;
 }
 
 enum { JP, KR, SC, TC };
 
-#define NOTO3(NAME1, NAME2, NAME3) load_noto3(ctx, "/system/fonts/" NAME1 "-Regular.ttf", "/system/fonts/" NAME2 "-Regular.ttf", "/system/fonts/" NAME3 "-Regular.ttf")
-#define NOTO2(NAME1, NAME2) load_noto3(ctx, "/system/fonts/" NAME1 "-Regular.ttf", "/system/fonts/" NAME2 "-Regular.ttf", NULL)
-#define NOTO(NAME) load_noto3(ctx, "/system/fonts/" NAME "-Regular.ttf", NULL, NULL)
+#define NOTO3(NAME1, NAME2, NAME3) load_noto3(ctx, NAME1 "-Regular", NAME2 "-Regular", NAME3 "-Regular")
+#define NOTO2(NAME1, NAME2) load_noto3(ctx, NAME1 "-Regular", NAME2 "-Regular", NULL)
+#define NOTO(NAME) load_noto_try(ctx, NAME)
 
 fz_font *load_droid_fallback_font(fz_context *ctx, int script, int language, int serif, int bold, int italic)
 {
@@ -651,106 +863,156 @@ fz_font *load_droid_fallback_font(fz_context *ctx, int script, int language, int
 	case UCDN_SCRIPT_HANGUL: return load_noto_cjk(ctx, KR);
 	case UCDN_SCRIPT_HIRAGANA: return load_noto_cjk(ctx, JP);
 	case UCDN_SCRIPT_KATAKANA: return load_noto_cjk(ctx, JP);
-	case UCDN_SCRIPT_BOPOMOFO: return load_noto_cjk(ctx, SC);
+	case UCDN_SCRIPT_BOPOMOFO: return load_noto_cjk(ctx, TC);
 	case UCDN_SCRIPT_HAN:
 		switch (language) {
 		case FZ_LANG_ja: return load_noto_cjk(ctx, JP);
 		case FZ_LANG_ko: return load_noto_cjk(ctx, KR);
-		case FZ_LANG_zh_Hant: return load_noto_cjk(ctx, TC);
-		default:
 		case FZ_LANG_zh_Hans: return load_noto_cjk(ctx, SC);
+		default:
+		case FZ_LANG_zh_Hant: return load_noto_cjk(ctx, TC);
 		}
 
-	case UCDN_SCRIPT_LATIN: return NOTO2("NotoSans", "DroidSans");
-	case UCDN_SCRIPT_GREEK: return NOTO2("NotoSans", "DroidSans");
-	case UCDN_SCRIPT_CYRILLIC: return NOTO2("NotoSans", "DroidSans");
-	case UCDN_SCRIPT_ARABIC: return NOTO3("NotoNaskh", "NotoNaskhArabic", "DroidNaskh");
+	case UCDN_SCRIPT_LATIN:
+	case UCDN_SCRIPT_GREEK:
+	case UCDN_SCRIPT_CYRILLIC:
+		return load_noto_try(ctx, "");
+	case UCDN_SCRIPT_ARABIC:
+		return load_noto_arabic(ctx);
+	case UCDN_SCRIPT_MEROITIC_CURSIVE:
+	case UCDN_SCRIPT_MEROITIC_HIEROGLYPHS:
+		return load_noto_try(ctx, "Meroitic");
+	case UCDN_SCRIPT_NKO:
+		return load_noto_try(ctx, "NKo");
+	case UCDN_SCRIPT_SYRIAC:
+		return load_noto_try(ctx, "SyriacWestern");
 
-	case UCDN_SCRIPT_ARMENIAN: return NOTO2("NotoSansArmenian", "DroidSansArmenian");
-	case UCDN_SCRIPT_BALINESE: return NOTO("NotoSansBalinese");
-	case UCDN_SCRIPT_BAMUM: return NOTO("NotoSansBamum");
-	case UCDN_SCRIPT_BATAK: return NOTO("NotoSansBatak");
-	case UCDN_SCRIPT_BENGALI: return NOTO("NotoSansBengali");
-	case UCDN_SCRIPT_CANADIAN_ABORIGINAL: return NOTO("NotoSansCanadianAboriginal");
-	case UCDN_SCRIPT_CHAM: return NOTO("NotoSansCham");
-	case UCDN_SCRIPT_CHEROKEE: return NOTO("NotoSansCherokee");
-	case UCDN_SCRIPT_DEVANAGARI: return NOTO2("NotoSansDevanagari", "DroidSansDevanagari");
-	case UCDN_SCRIPT_ETHIOPIC: return NOTO2("NotoSansEthiopic", "DroidSansEthiopic");
-	case UCDN_SCRIPT_GEORGIAN: return NOTO2("NotoSansGeorgian", "DroidSansGeorgian");
-	case UCDN_SCRIPT_GUJARATI: return NOTO("NotoSansGujarati");
-	case UCDN_SCRIPT_GURMUKHI: return NOTO("NotoSansGurmukhi");
-	case UCDN_SCRIPT_HEBREW: return NOTO2("NotoSansHebrew", "DroidSansHebrew");
-	case UCDN_SCRIPT_JAVANESE: return NOTO("NotoSansJavanese");
-	case UCDN_SCRIPT_KANNADA: return NOTO("NotoSansKannada");
-	case UCDN_SCRIPT_KAYAH_LI: return NOTO("NotoSansKayahLi");
-	case UCDN_SCRIPT_KHMER: return NOTO("NotoSansKhmer");
-	case UCDN_SCRIPT_LAO: return NOTO("NotoSansLao");
-	case UCDN_SCRIPT_LEPCHA: return NOTO("NotoSansLepcha");
-	case UCDN_SCRIPT_LIMBU: return NOTO("NotoSansLimbu");
-	case UCDN_SCRIPT_LISU: return NOTO("NotoSansLisu");
-	case UCDN_SCRIPT_MALAYALAM: return NOTO("NotoSansMalayalam");
-	case UCDN_SCRIPT_MANDAIC: return NOTO("NotoSansMandaic");
-	case UCDN_SCRIPT_MEETEI_MAYEK: return NOTO("NotoSansMeeteiMayek");
-	case UCDN_SCRIPT_MONGOLIAN: return NOTO("NotoSansMongolian");
-	case UCDN_SCRIPT_MYANMAR: return NOTO("NotoSansMyanmar");
-	case UCDN_SCRIPT_NEW_TAI_LUE: return NOTO("NotoSansNewTaiLue");
-	case UCDN_SCRIPT_NKO: return NOTO("NotoSansNKo");
-	case UCDN_SCRIPT_OL_CHIKI: return NOTO("NotoSansOlChiki");
-	case UCDN_SCRIPT_ORIYA: return NOTO("NotoSansOriya");
-	case UCDN_SCRIPT_SAURASHTRA: return NOTO("NotoSansSaurashtra");
-	case UCDN_SCRIPT_SINHALA: return NOTO("NotoSansSinhala");
-	case UCDN_SCRIPT_SUNDANESE: return NOTO("NotoSansSundanese");
-	case UCDN_SCRIPT_SYLOTI_NAGRI: return NOTO("NotoSansSylotiNagri");
-	case UCDN_SCRIPT_SYRIAC: return NOTO("NotoSansSyriacEastern");
-	case UCDN_SCRIPT_TAI_LE: return NOTO("NotoSansTaiLe");
-	case UCDN_SCRIPT_TAI_THAM: return NOTO("NotoSansTaiTham");
-	case UCDN_SCRIPT_TAI_VIET: return NOTO("NotoSansTaiViet");
-	case UCDN_SCRIPT_TAMIL: return NOTO2("NotoSansTamil", "DroidSansTamil");
-	case UCDN_SCRIPT_TELUGU: return NOTO("NotoSansTelugu");
-	case UCDN_SCRIPT_THAANA: return NOTO("NotoSansThaana");
-	case UCDN_SCRIPT_THAI: return NOTO2("NotoSansThai", "DroidSansThai");
-	case UCDN_SCRIPT_TIBETAN: return NOTO("NotoSansTibetan");
-	case UCDN_SCRIPT_TIFINAGH: return NOTO("NotoSansTifinagh");
-	case UCDN_SCRIPT_VAI: return NOTO("NotoSansVai");
-	case UCDN_SCRIPT_YI: return NOTO("NotoSansYi");
+	case UCDN_SCRIPT_ARMENIAN: return load_noto_try(ctx, "Armenian");
+	case UCDN_SCRIPT_HEBREW: return load_noto_try(ctx, "Hebrew");
+	case UCDN_SCRIPT_THAANA: return load_noto_try(ctx, "Thaana");
+	case UCDN_SCRIPT_DEVANAGARI: return load_noto_try(ctx, "Devanagari");
+	case UCDN_SCRIPT_BENGALI: return load_noto_try(ctx, "Bengali");
+	case UCDN_SCRIPT_GURMUKHI: return load_noto_try(ctx, "Gurmukhi");
+	case UCDN_SCRIPT_GUJARATI: return load_noto_try(ctx, "Gujarati");
+	case UCDN_SCRIPT_ORIYA: return load_noto_try(ctx, "Oriya");
+	case UCDN_SCRIPT_TAMIL: return load_noto_try(ctx, "Tamil");
+	case UCDN_SCRIPT_TELUGU: return load_noto_try(ctx, "Telugu");
+	case UCDN_SCRIPT_KANNADA: return load_noto_try(ctx, "Kannada");
+	case UCDN_SCRIPT_MALAYALAM: return load_noto_try(ctx, "Malayalam");
+	case UCDN_SCRIPT_SINHALA: return load_noto_try(ctx, "Sinhala");
+	case UCDN_SCRIPT_THAI: return load_noto_try(ctx, "Thai");
+	case UCDN_SCRIPT_LAO: return load_noto_try(ctx, "Lao");
+	case UCDN_SCRIPT_TIBETAN: return load_noto_try(ctx, "Tibetan");
+	case UCDN_SCRIPT_MYANMAR: return load_noto_try(ctx, "Myanmar");
+	case UCDN_SCRIPT_GEORGIAN: return load_noto_try(ctx, "Georgian");
+	case UCDN_SCRIPT_ETHIOPIC: return load_noto_try(ctx, "Ethiopic");
+	case UCDN_SCRIPT_CHEROKEE: return load_noto_try(ctx, "Cherokee");
+	case UCDN_SCRIPT_CANADIAN_ABORIGINAL: return load_noto_try(ctx, "CanadianAboriginal");
+	case UCDN_SCRIPT_OGHAM: return load_noto_try(ctx, "Ogham");
+	case UCDN_SCRIPT_RUNIC: return load_noto_try(ctx, "Runic");
+	case UCDN_SCRIPT_KHMER: return load_noto_try(ctx, "Khmer");
+	case UCDN_SCRIPT_MONGOLIAN: return load_noto_try(ctx, "Mongolian");
+	case UCDN_SCRIPT_YI: return load_noto_try(ctx, "Yi");
+	case UCDN_SCRIPT_OLD_ITALIC: return load_noto_try(ctx, "OldItalic");
+	case UCDN_SCRIPT_GOTHIC: return load_noto_try(ctx, "Gothic");
+	case UCDN_SCRIPT_DESERET: return load_noto_try(ctx, "Deseret");
+	case UCDN_SCRIPT_TAGALOG: return load_noto_try(ctx, "Tagalog");
+	case UCDN_SCRIPT_HANUNOO: return load_noto_try(ctx, "Hanunoo");
+	case UCDN_SCRIPT_BUHID: return load_noto_try(ctx, "Buhid");
+	case UCDN_SCRIPT_TAGBANWA: return load_noto_try(ctx, "Tagbanwa");
+	case UCDN_SCRIPT_LIMBU: return load_noto_try(ctx, "Limbu");
+	case UCDN_SCRIPT_TAI_LE: return load_noto_try(ctx, "TaiLe");
+	case UCDN_SCRIPT_LINEAR_B: return load_noto_try(ctx, "LinearB");
+	case UCDN_SCRIPT_UGARITIC: return load_noto_try(ctx, "Ugaritic");
+	case UCDN_SCRIPT_SHAVIAN: return load_noto_try(ctx, "Shavian");
+	case UCDN_SCRIPT_OSMANYA: return load_noto_try(ctx, "Osmanya");
+	case UCDN_SCRIPT_CYPRIOT: return load_noto_try(ctx, "Cypriot");
+	case UCDN_SCRIPT_BUGINESE: return load_noto_try(ctx, "Buginese");
+	case UCDN_SCRIPT_COPTIC: return load_noto_try(ctx, "Coptic");
+	case UCDN_SCRIPT_NEW_TAI_LUE: return load_noto_try(ctx, "NewTaiLue");
+	case UCDN_SCRIPT_GLAGOLITIC: return load_noto_try(ctx, "Glagolitic");
+	case UCDN_SCRIPT_TIFINAGH: return load_noto_try(ctx, "Tifinagh");
+	case UCDN_SCRIPT_SYLOTI_NAGRI: return load_noto_try(ctx, "SylotiNagri");
+	case UCDN_SCRIPT_OLD_PERSIAN: return load_noto_try(ctx, "OldPersian");
+	case UCDN_SCRIPT_KHAROSHTHI: return load_noto_try(ctx, "Kharoshthi");
+	case UCDN_SCRIPT_BALINESE: return load_noto_try(ctx, "Balinese");
+	case UCDN_SCRIPT_CUNEIFORM: return load_noto_try(ctx, "Cuneiform");
+	case UCDN_SCRIPT_PHOENICIAN: return load_noto_try(ctx, "Phoenician");
+	case UCDN_SCRIPT_PHAGS_PA: return load_noto_try(ctx, "PhagsPa");
+	case UCDN_SCRIPT_SUNDANESE: return load_noto_try(ctx, "Sundanese");
+	case UCDN_SCRIPT_LEPCHA: return load_noto_try(ctx, "Lepcha");
+	case UCDN_SCRIPT_OL_CHIKI: return load_noto_try(ctx, "OlChiki");
+	case UCDN_SCRIPT_VAI: return load_noto_try(ctx, "Vai");
+	case UCDN_SCRIPT_SAURASHTRA: return load_noto_try(ctx, "Saurashtra");
+	case UCDN_SCRIPT_KAYAH_LI: return load_noto_try(ctx, "KayahLi");
+	case UCDN_SCRIPT_REJANG: return load_noto_try(ctx, "Rejang");
+	case UCDN_SCRIPT_LYCIAN: return load_noto_try(ctx, "Lycian");
+	case UCDN_SCRIPT_CARIAN: return load_noto_try(ctx, "Carian");
+	case UCDN_SCRIPT_LYDIAN: return load_noto_try(ctx, "Lydian");
+	case UCDN_SCRIPT_CHAM: return load_noto_try(ctx, "Cham");
+	case UCDN_SCRIPT_TAI_THAM: return load_noto_try(ctx, "TaiTham");
+	case UCDN_SCRIPT_TAI_VIET: return load_noto_try(ctx, "TaiViet");
+	case UCDN_SCRIPT_AVESTAN: return load_noto_try(ctx, "Avestan");
+	case UCDN_SCRIPT_EGYPTIAN_HIEROGLYPHS: return load_noto_try(ctx, "EgyptianHieroglyphs");
+	case UCDN_SCRIPT_SAMARITAN: return load_noto_try(ctx, "Samaritan");
+	case UCDN_SCRIPT_LISU: return load_noto_try(ctx, "Lisu");
+	case UCDN_SCRIPT_BAMUM: return load_noto_try(ctx, "Bamum");
+	case UCDN_SCRIPT_JAVANESE: return load_noto_try(ctx, "Javanese");
+	case UCDN_SCRIPT_MEETEI_MAYEK: return load_noto_try(ctx, "MeeteiMayek");
+	case UCDN_SCRIPT_IMPERIAL_ARAMAIC: return load_noto_try(ctx, "ImperialAramaic");
+	case UCDN_SCRIPT_OLD_SOUTH_ARABIAN: return load_noto_try(ctx, "OldSouthArabian");
+	case UCDN_SCRIPT_INSCRIPTIONAL_PARTHIAN: return load_noto_try(ctx, "InscriptionalParthian");
+	case UCDN_SCRIPT_INSCRIPTIONAL_PAHLAVI: return load_noto_try(ctx, "InscriptionalPahlavi");
+	case UCDN_SCRIPT_OLD_TURKIC: return load_noto_try(ctx, "OldTurkic");
+	case UCDN_SCRIPT_KAITHI: return load_noto_try(ctx, "Kaithi");
+	case UCDN_SCRIPT_BATAK: return load_noto_try(ctx, "Batak");
+	case UCDN_SCRIPT_BRAHMI: return load_noto_try(ctx, "Brahmi");
+	case UCDN_SCRIPT_MANDAIC: return load_noto_try(ctx, "Mandaic");
+	case UCDN_SCRIPT_CHAKMA: return load_noto_try(ctx, "Chakma");
+	case UCDN_SCRIPT_MIAO: return load_noto_try(ctx, "Miao");
+	case UCDN_SCRIPT_SHARADA: return load_noto_try(ctx, "Sharada");
+	case UCDN_SCRIPT_SORA_SOMPENG: return load_noto_try(ctx, "SoraSompeng");
+	case UCDN_SCRIPT_TAKRI: return load_noto_try(ctx, "Takri");
+	case UCDN_SCRIPT_BASSA_VAH: return load_noto_try(ctx, "BassaVah");
+	case UCDN_SCRIPT_CAUCASIAN_ALBANIAN: return load_noto_try(ctx, "CaucasianAlbanian");
+	case UCDN_SCRIPT_DUPLOYAN: return load_noto_try(ctx, "Duployan");
+	case UCDN_SCRIPT_ELBASAN: return load_noto_try(ctx, "Elbasan");
+	case UCDN_SCRIPT_GRANTHA: return load_noto_try(ctx, "Grantha");
+	case UCDN_SCRIPT_KHOJKI: return load_noto_try(ctx, "Khojki");
+	case UCDN_SCRIPT_KHUDAWADI: return load_noto_try(ctx, "Khudawadi");
+	case UCDN_SCRIPT_LINEAR_A: return load_noto_try(ctx, "LinearA");
+	case UCDN_SCRIPT_MAHAJANI: return load_noto_try(ctx, "Mahajani");
+	case UCDN_SCRIPT_MANICHAEAN: return load_noto_try(ctx, "Manichaean");
+	case UCDN_SCRIPT_MENDE_KIKAKUI: return load_noto_try(ctx, "MendeKikakui");
+	case UCDN_SCRIPT_MODI: return load_noto_try(ctx, "Modi");
+	case UCDN_SCRIPT_MRO: return load_noto_try(ctx, "Mro");
+	case UCDN_SCRIPT_NABATAEAN: return load_noto_try(ctx, "Nabataean");
+	case UCDN_SCRIPT_OLD_NORTH_ARABIAN: return load_noto_try(ctx, "OldNorthArabian");
+	case UCDN_SCRIPT_OLD_PERMIC: return load_noto_try(ctx, "OldPermic");
+	case UCDN_SCRIPT_PAHAWH_HMONG: return load_noto_try(ctx, "PahawhHmong");
+	case UCDN_SCRIPT_PALMYRENE: return load_noto_try(ctx, "Palmyrene");
+	case UCDN_SCRIPT_PAU_CIN_HAU: return load_noto_try(ctx, "PauCinHau");
+	case UCDN_SCRIPT_PSALTER_PAHLAVI: return load_noto_try(ctx, "PsalterPahlavi");
+	case UCDN_SCRIPT_SIDDHAM: return load_noto_try(ctx, "Siddham");
+	case UCDN_SCRIPT_TIRHUTA: return load_noto_try(ctx, "Tirhuta");
+	case UCDN_SCRIPT_WARANG_CITI: return load_noto_try(ctx, "WarangCiti");
+	case UCDN_SCRIPT_AHOM: return load_noto_try(ctx, "Ahom");
+	case UCDN_SCRIPT_ANATOLIAN_HIEROGLYPHS: return load_noto_try(ctx, "AnatolianHieroglyphs");
+	case UCDN_SCRIPT_HATRAN: return load_noto_try(ctx, "Hatran");
+	case UCDN_SCRIPT_MULTANI: return load_noto_try(ctx, "Multani");
+	case UCDN_SCRIPT_OLD_HUNGARIAN: return load_noto_try(ctx, "OldHungarian");
+	case UCDN_SCRIPT_SIGNWRITING: return load_noto_try(ctx, "Signwriting");
+	case UCDN_SCRIPT_ADLAM: return load_noto_try(ctx, "Adlam");
+	case UCDN_SCRIPT_BHAIKSUKI: return load_noto_try(ctx, "Bhaiksuki");
+	case UCDN_SCRIPT_MARCHEN: return load_noto_try(ctx, "Marchen");
+	case UCDN_SCRIPT_NEWA: return load_noto_try(ctx, "Newa");
+	case UCDN_SCRIPT_OSAGE: return load_noto_try(ctx, "Osage");
+	case UCDN_SCRIPT_TANGUT: return load_noto_try(ctx, "Tangut");
+	case UCDN_SCRIPT_MASARAM_GONDI: return load_noto_try(ctx, "MasaramGondi");
+	case UCDN_SCRIPT_NUSHU: return load_noto_try(ctx, "Nushu");
+	case UCDN_SCRIPT_SOYOMBO: return load_noto_try(ctx, "Soyombo");
+	case UCDN_SCRIPT_ZANABAZAR_SQUARE: return load_noto_try(ctx, "ZanabazarSquare");
 
-	/* Historic */
-	case UCDN_SCRIPT_AVESTAN: return NOTO("NotoSansAvestan");
-	case UCDN_SCRIPT_BRAHMI: return NOTO("NotoSansBrahmi");
-	case UCDN_SCRIPT_BUGINESE: return NOTO("NotoSansBuginese");
-	case UCDN_SCRIPT_BUHID: return NOTO("NotoSansBuhid");
-	case UCDN_SCRIPT_CARIAN: return NOTO("NotoSansCarian");
-	case UCDN_SCRIPT_COPTIC: return NOTO("NotoSansCoptic");
-	case UCDN_SCRIPT_CUNEIFORM: return NOTO("NotoSansCuneiform");
-	case UCDN_SCRIPT_CYPRIOT: return NOTO("NotoSansCypriot");
-	case UCDN_SCRIPT_DESERET: return NOTO("NotoSansDeseret");
-	case UCDN_SCRIPT_EGYPTIAN_HIEROGLYPHS: return NOTO("NotoSansEgyptianHieroglyphs");
-	case UCDN_SCRIPT_GLAGOLITIC: return NOTO("NotoSansGlagolitic");
-	case UCDN_SCRIPT_GOTHIC: return NOTO("NotoSansGothic");
-	case UCDN_SCRIPT_HANUNOO: return NOTO("NotoSansHanunoo");
-	case UCDN_SCRIPT_IMPERIAL_ARAMAIC: return NOTO("NotoSansImperialAramaic");
-	case UCDN_SCRIPT_INSCRIPTIONAL_PAHLAVI: return NOTO("NotoSansInscriptionalPahlavi");
-	case UCDN_SCRIPT_INSCRIPTIONAL_PARTHIAN: return NOTO("NotoSansInscriptionalParthian");
-	case UCDN_SCRIPT_KAITHI: return NOTO("NotoSansKaithi");
-	case UCDN_SCRIPT_KHAROSHTHI: return NOTO("NotoSansKharoshthi");
-	case UCDN_SCRIPT_LINEAR_B: return NOTO("NotoSansLinearB");
-	case UCDN_SCRIPT_LYCIAN: return NOTO("NotoSansLycian");
-	case UCDN_SCRIPT_LYDIAN: return NOTO("NotoSansLydian");
-	case UCDN_SCRIPT_OGHAM: return NOTO("NotoSansOgham");
-	case UCDN_SCRIPT_OLD_ITALIC: return NOTO("NotoSansOldItalic");
-	case UCDN_SCRIPT_OLD_PERSIAN: return NOTO("NotoSansOldPersian");
-	case UCDN_SCRIPT_OLD_SOUTH_ARABIAN: return NOTO("NotoSansOldSouthArabian");
-	case UCDN_SCRIPT_OLD_TURKIC: return NOTO("NotoSansOldTurkic");
-	case UCDN_SCRIPT_OSMANYA: return NOTO("NotoSansOsmanya");
-	case UCDN_SCRIPT_PHAGS_PA: return NOTO("NotoSansPhagsPa");
-	case UCDN_SCRIPT_PHOENICIAN: return NOTO("NotoSansPhoenician");
-	case UCDN_SCRIPT_REJANG: return NOTO("NotoSansRejang");
-	case UCDN_SCRIPT_RUNIC: return NOTO("NotoSansRunic");
-	case UCDN_SCRIPT_SAMARITAN: return NOTO("NotoSansSamaritan");
-	case UCDN_SCRIPT_SHAVIAN: return NOTO("NotoSansShavian");
-	case UCDN_SCRIPT_TAGALOG: return NOTO("NotoSansTagalog");
-	case UCDN_SCRIPT_TAGBANWA: return NOTO("NotoSansTagbanwa");
-	case UCDN_SCRIPT_UGARITIC: return NOTO("NotoSansUgaritic");
 	}
 	return NULL;
 }
@@ -758,10 +1020,10 @@ fz_font *load_droid_fallback_font(fz_context *ctx, int script, int language, int
 fz_font *load_droid_cjk_font(fz_context *ctx, const char *name, int ros, int serif)
 {
 	switch (ros) {
-	case FZ_ADOBE_CNS_1: return load_noto_cjk(ctx, TC);
-	case FZ_ADOBE_GB_1: return load_noto_cjk(ctx, SC);
-	case FZ_ADOBE_JAPAN_1: return load_noto_cjk(ctx, JP);
-	case FZ_ADOBE_KOREA_1: return load_noto_cjk(ctx, KR);
+	case FZ_ADOBE_CNS: return load_noto_cjk(ctx, TC);
+	case FZ_ADOBE_GB: return load_noto_cjk(ctx, SC);
+	case FZ_ADOBE_JAPAN: return load_noto_cjk(ctx, JP);
+	case FZ_ADOBE_KOREA: return load_noto_cjk(ctx, KR);
 	}
 	return NULL;
 }
@@ -919,6 +1181,9 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved)
 JNIEXPORT jint JNICALL
 FUN(Context_initNative)(JNIEnv *env, jclass cls)
 {
+	if (!check_enums())
+		return -1;
+
 	/* Must init the context before find_finds, because the act of
 	 * finding the fids can cause classes to load. This causes
 	 * statics to be setup, which can in turn call JNI code, which
@@ -938,7 +1203,7 @@ FUN(Context_initNative)(JNIEnv *env, jclass cls)
 JNIEXPORT jint JNICALL
 FUN(Context_gprfSupportedNative)(JNIEnv * env, jclass class)
 {
-#ifdef FZ_ENABLE_GPRF
+#if FZ_ENABLE_GPRF
 	return JNI_TRUE;
 #else
 	return JNI_FALSE;
@@ -947,134 +1212,126 @@ FUN(Context_gprfSupportedNative)(JNIEnv * env, jclass class)
 
 /* Conversion functions: C to Java. These all throw fitz exceptions. */
 
-static inline jobject to_Annotation(fz_context *ctx, JNIEnv *env, fz_annot *annot)
-{
-	jobject jannot;
-	pdf_annot *pannot;
-
-	if (!ctx || !annot) return NULL;
-
-	fz_keep_annot(ctx, annot);
-
-	pannot = pdf_annot_from_fz_annot(ctx, annot);
-	if (pannot)
-		jannot = (*env)->NewObject(env, cls_PDFAnnotation, mid_PDFAnnotation_init, jlong_cast(annot));
-	else
-		jannot = (*env)->NewObject(env, cls_Annotation, mid_Annotation_init, jlong_cast(annot));
-	if (!jannot)
-		fz_throw_java(ctx, env);
-
-	return jannot;
-}
-
 static inline jobject to_ColorSpace(fz_context *ctx, JNIEnv *env, fz_colorspace *cs)
 {
-	jobject jobj;
+	jobject jcs;
 
 	if (!ctx || !cs) return NULL;
 
 	fz_keep_colorspace(ctx, cs);
-	jobj = (*env)->CallStaticObjectMethod(env, cls_ColorSpace, mid_ColorSpace_fromPointer, jlong_cast(cs));
-	if ((*env)->ExceptionCheck(env) || !jobj)
+	jcs = (*env)->CallStaticObjectMethod(env, cls_ColorSpace, mid_ColorSpace_fromPointer, jlong_cast(cs));
+	if (!jcs)
+		fz_drop_colorspace(ctx, cs);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jcs;
 }
 
 static inline jobject to_Image(fz_context *ctx, JNIEnv *env, fz_image *img)
 {
-	jobject jobj;
+	jobject jimg;
 
 	if (!ctx || !img) return NULL;
 
 	fz_keep_image(ctx, img);
-	jobj = (*env)->NewObject(env, cls_Image, mid_Image_init, jlong_cast(img));
-	if (!jobj)
+	jimg = (*env)->NewObject(env, cls_Image, mid_Image_init, jlong_cast(img));
+	if (!jimg)
+		fz_drop_image(ctx, img);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jimg;
 }
 
-static inline jobject to_Matrix(fz_context *ctx, JNIEnv *env, const fz_matrix *mat)
+static inline jobject to_Matrix(fz_context *ctx, JNIEnv *env, fz_matrix mat)
 {
-	jobject jobj;
+	jobject jctm;
 
 	if (!ctx) return NULL;
 
-	jobj = (*env)->NewObject(env, cls_Matrix, mid_Matrix_init, mat->a, mat->b, mat->c, mat->d, mat->e, mat->f);
-	if (!jobj)
+	jctm = (*env)->NewObject(env, cls_Matrix, mid_Matrix_init, mat.a, mat.b, mat.c, mat.d, mat.e, mat.f);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jctm;
 }
 
 static inline jobject to_Path(fz_context *ctx, JNIEnv *env, const fz_path *path)
 {
-	jobject jobj;
+	jobject jpath;
 
 	if (!ctx || !path) return NULL;
 
 	fz_keep_path(ctx, path);
-	jobj = (*env)->NewObject(env, cls_Path, mid_Path_init, jlong_cast(path));
-	if (!jobj)
+	jpath = (*env)->NewObject(env, cls_Path, mid_Path_init, jlong_cast(path));
+	if (!jpath)
+		fz_drop_path(ctx, path);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jpath;
 }
 
-static inline jobject to_Rect(fz_context *ctx, JNIEnv *env, const fz_rect *rect)
+static inline jobject to_Rect(fz_context *ctx, JNIEnv *env, fz_rect rect)
 {
-	jobject jobj;
+	jobject jrect;
 
 	if (!ctx) return NULL;
 
-	jobj = (*env)->NewObject(env, cls_Rect, mid_Rect_init, rect->x0, rect->y0, rect->x1, rect->y1);
-	if (!jobj)
+	jrect = (*env)->NewObject(env, cls_Rect, mid_Rect_init, rect.x0, rect.y0, rect.x1, rect.y1);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jrect;
 }
 
 static inline jobject to_Shade(fz_context *ctx, JNIEnv *env, fz_shade *shd)
 {
-	jobject jobj;
+	jobject jshd;
 
 	if (!ctx || !shd) return NULL;
 
 	fz_keep_shade(ctx, shd);
-	jobj = (*env)->NewObject(env, cls_Shade, mid_Shade_init, jlong_cast(shd));
-	if (!jobj)
+	jshd = (*env)->NewObject(env, cls_Shade, mid_Shade_init, jlong_cast(shd));
+	if (!jshd)
+		fz_drop_shade(ctx, shd);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jshd;
 }
 
 static inline jobject to_StrokeState(fz_context *ctx, JNIEnv *env, const fz_stroke_state *state)
 {
-	jobject jobj;
+	jobject jstate;
 
 	if (!ctx || !state) return NULL;
 
 	fz_keep_stroke_state(ctx, state);
-	jobj = (*env)->NewObject(env, cls_StrokeState, mid_StrokeState_init, jlong_cast(state));
-	if (!jobj)
+	jstate = (*env)->NewObject(env, cls_StrokeState, mid_StrokeState_init, jlong_cast(state));
+	if (!jstate)
+		fz_drop_stroke_state(ctx, state);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jstate;
 }
 
 static inline jobject to_Text(fz_context *ctx, JNIEnv *env, const fz_text *text)
 {
-	jobject jobj;
+	jobject jtext;
 
 	if (!ctx) return NULL;
 
 	fz_keep_text(ctx, text);
-	jobj = (*env)->NewObject(env, cls_Text, mid_Text_init, jlong_cast(text));
-	if (!jobj)
+	jtext = (*env)->NewObject(env, cls_Text, mid_Text_init, jlong_cast(text));
+	if (!jtext)
+		fz_drop_text(ctx, text);
+	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 
-	return jobj;
+	return jtext;
 }
 
 static inline jfloatArray to_jfloatArray(fz_context *ctx, JNIEnv *env, const float *color, jint n)
@@ -1096,6 +1353,34 @@ static inline jfloatArray to_jfloatArray(fz_context *ctx, JNIEnv *env, const flo
 
 /* Conversion functions: C to Java. None of these throw fitz exceptions. */
 
+static inline jobject to_Annotation_safe(fz_context *ctx, JNIEnv *env, fz_annot *annot)
+{
+	jobject jannot;
+	pdf_annot *pannot;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_keep_annot(ctx, annot);
+
+	pannot = pdf_annot_from_fz_annot(ctx, annot);
+	if (pannot)
+		jannot = (*env)->NewObject(env, cls_PDFAnnotation, mid_PDFAnnotation_init, jlong_cast(annot));
+	else
+		jannot = (*env)->NewObject(env, cls_Annotation, mid_Annotation_init, jlong_cast(annot));
+	if (!jannot)
+		fz_drop_annot(ctx, annot);
+
+	return jannot;
+}
+
+static inline jint to_ColorParams_safe(fz_context *ctx, JNIEnv *env, const fz_color_params *cp)
+{
+	if (!ctx || !cp)
+		return 0;
+
+	return (((int) (!!cp->bp)<<5) | ((int) (!!cp->op)<<6) | ((int) (!!cp->opm)<<7) | (cp->ri & 31));
+}
+
 static inline jobject to_ColorSpace_safe(fz_context *ctx, JNIEnv *env, fz_colorspace *cs)
 {
 	jobject jcs;
@@ -1104,6 +1389,7 @@ static inline jobject to_ColorSpace_safe(fz_context *ctx, JNIEnv *env, fz_colors
 
 	fz_keep_colorspace(ctx, cs);
 	jcs = (*env)->CallStaticObjectMethod(env, cls_ColorSpace, mid_ColorSpace_fromPointer, jlong_cast(cs));
+	if (!jcs) fz_drop_colorspace(ctx, cs);
 	if ((*env)->ExceptionCheck(env)) return NULL;
 
 	return jcs;
@@ -1117,16 +1403,31 @@ static inline jobject to_Font_safe(fz_context *ctx, JNIEnv *env, fz_font *font)
 
 	fz_keep_font(ctx, font);
 	jfont = (*env)->NewObject(env, cls_Font, mid_Font_init, jlong_cast(font));
+	if (!jfont)
+		fz_drop_font(ctx, font);
 
 	return jfont;
 }
 
 static inline jobject to_Image_safe(fz_context *ctx, JNIEnv *env, fz_image *img)
 {
+	jobject jimg;
+
 	if (!ctx || !img) return NULL;
 
 	fz_keep_image(ctx, img);
-	return (*env)->NewObject(env, cls_Image, mid_Image_init, jlong_cast(img));
+	jimg = (*env)->NewObject(env, cls_Image, mid_Image_init, jlong_cast(img));
+	if (!jimg)
+		fz_drop_image(ctx, img);
+
+	return jimg;
+}
+
+static inline jobject to_Matrix_safe(fz_context *ctx, JNIEnv *env, fz_matrix mat)
+{
+	if (!ctx) return NULL;
+
+	return (*env)->NewObject(env, cls_Matrix, mid_Matrix_init, mat.a, mat.b, mat.c, mat.d, mat.e, mat.f);
 }
 
 static inline jobject to_Outline_safe(fz_context *ctx, JNIEnv *env, fz_document *doc, fz_outline *outline)
@@ -1154,6 +1455,8 @@ static inline jobject to_Outline_safe(fz_context *ctx, JNIEnv *env, fz_document 
 		jint jpage = -1;
 		jstring juri = NULL;
 		jobject jdown = NULL;
+		float x = 0;
+		float y = 0;
 
 		if (outline->title)
 		{
@@ -1169,7 +1472,7 @@ static inline jobject to_Outline_safe(fz_context *ctx, JNIEnv *env, fz_document 
 				if (!juri) return NULL;
 			}
 			else
-				jpage = fz_resolve_link(ctx, doc, outline->uri, NULL, NULL);
+				jpage = fz_resolve_link(ctx, doc, outline->uri, &x, &y);
 		}
 
 		if (outline->down)
@@ -1178,7 +1481,7 @@ static inline jobject to_Outline_safe(fz_context *ctx, JNIEnv *env, fz_document 
 			if (!jdown) return NULL;
 		}
 
-		joutline = (*env)->NewObject(env, cls_Outline, mid_Outline_init, jtitle, jpage, juri, jdown);
+		joutline = (*env)->NewObject(env, cls_Outline, mid_Outline_init, jtitle, jpage, juri, x, y, jdown);
 		if (!joutline) return NULL;
 
 		if (jdown)
@@ -1200,12 +1503,19 @@ static inline jobject to_Outline_safe(fz_context *ctx, JNIEnv *env, fz_document 
 
 static inline jobject to_PDFObject_safe(fz_context *ctx, JNIEnv *env, jobject pdf, pdf_obj *obj)
 {
+	jobject jobj;
+
 	if (!ctx || !pdf) return NULL;
 
 	if (obj == NULL)
 		return (*env)->GetStaticObjectField(env, cls_PDFObject, fid_PDFObject_Null);
+
 	pdf_keep_obj(ctx, obj);
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), pdf);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), pdf);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+
+	return jobj;
 }
 
 static inline jobject to_Point_safe(fz_context *ctx, JNIEnv *env, fz_point point)
@@ -1215,32 +1525,43 @@ static inline jobject to_Point_safe(fz_context *ctx, JNIEnv *env, fz_point point
 	return (*env)->NewObject(env, cls_Point, mid_Point_init, point.x, point.y);
 }
 
-static inline jobject to_Rect_safe(fz_context *ctx, JNIEnv *env, const fz_rect *rect)
+static inline jobject to_Rect_safe(fz_context *ctx, JNIEnv *env, fz_rect rect)
 {
-	if (!ctx || !rect) return NULL;
+	if (!ctx) return NULL;
 
-	return (*env)->NewObject(env, cls_Rect, mid_Rect_init, rect->x0, rect->y0, rect->x1, rect->y1);
+	return (*env)->NewObject(env, cls_Rect, mid_Rect_init, rect.x0, rect.y0, rect.x1, rect.y1);
 }
 
-static inline jobjectArray to_jRectArray_safe(fz_context *ctx, JNIEnv *env, const fz_rect *rects, jint n)
+static inline jobject to_Quad_safe(fz_context *ctx, JNIEnv *env, fz_quad quad)
+{
+	if (!ctx) return NULL;
+
+	return (*env)->NewObject(env, cls_Quad, mid_Quad_init,
+		quad.ul.x, quad.ul.y,
+		quad.ur.x, quad.ur.y,
+		quad.ll.x, quad.ll.y,
+		quad.lr.x, quad.lr.y);
+}
+
+static inline jobjectArray to_jQuadArray_safe(fz_context *ctx, JNIEnv *env, const fz_quad *quads, jint n)
 {
 	jobjectArray arr;
 	int i;
 
-	if (!ctx || !rects) return NULL;
+	if (!ctx || !quads) return NULL;
 
-	arr = (*env)->NewObjectArray(env, n, cls_Rect, NULL);
+	arr = (*env)->NewObjectArray(env, n, cls_Quad, NULL);
 	if (!arr) return NULL;
 
 	for (i = 0; i < n; i++)
 	{
-		jobject jrect = to_Rect_safe(ctx, env, &rects[i]);
-		if (!jrect) return NULL;
+		jobject jquad = to_Quad_safe(ctx, env, quads[i]);
+		if (!jquad) return NULL;
 
-		(*env)->SetObjectArrayElement(env, arr, i, jrect);
+		(*env)->SetObjectArrayElement(env, arr, i, jquad);
 		if ((*env)->ExceptionCheck(env)) return NULL;
 
-		(*env)->DeleteLocalRef(env, jrect);
+		(*env)->DeleteLocalRef(env, jquad);
 	}
 
 	return arr;
@@ -1472,6 +1793,15 @@ static inline fz_path *from_Path(JNIEnv *env, jobject jobj)
 	return path;
 }
 
+static inline pdf_annot *from_PDFAnnotation(JNIEnv *env, jobject jobj)
+{
+	pdf_annot *annot;
+	if (!jobj) return NULL;
+	annot = CAST(pdf_annot *, (*env)->GetLongField(env, jobj, fid_PDFAnnotation_pointer));
+	if (!annot) jni_throw_null(env, "cannot use already destroyed PDFAnnotation");
+	return annot;
+}
+
 static inline pdf_document *from_PDFDocument(JNIEnv *env, jobject jobj)
 {
 	pdf_document *pdf;
@@ -1497,6 +1827,15 @@ static inline pdf_obj *from_PDFObject(JNIEnv *env, jobject jobj)
 	obj = CAST(pdf_obj *, (*env)->GetLongField(env, jobj, fid_PDFObject_pointer));
 	if (!obj) jni_throw_null(env, "cannot use already destroyed PDFObject");
 	return obj;
+}
+
+static inline pdf_page *from_PDFPage(JNIEnv *env, jobject jobj)
+{
+	pdf_page *page;
+	if (!jobj) return NULL;
+	page = CAST(pdf_page *, (*env)->GetLongField(env, jobj, fid_PDFPage_pointer));
+	if (!page) jni_throw_null(env, "cannot use already destroyed PDFPage");
+	return page;
 }
 
 static inline fz_pixmap *from_Pixmap(JNIEnv *env, jobject jobj)
@@ -1582,6 +1921,22 @@ static inline fz_matrix from_Matrix(JNIEnv *env, jobject jmat)
 	return mat;
 }
 
+static inline fz_point from_Point(JNIEnv *env, jobject jpt)
+{
+	fz_point pt;
+
+	if (!jpt)
+	{
+		pt.x = pt.y = 0;
+		return pt;
+	}
+
+	pt.x = (*env)->GetFloatField(env, jpt, fid_Point_x);
+	pt.y = (*env)->GetFloatField(env, jpt, fid_Point_y);
+
+	return pt;
+}
+
 static inline fz_rect from_Rect(JNIEnv *env, jobject jrect)
 {
 	fz_rect rect;
@@ -1609,6 +1964,18 @@ static inline fz_buffer *from_Buffer_safe(JNIEnv *env, jobject jobj)
 {
 	if (!jobj) return NULL;
 	return CAST(fz_buffer *, (*env)->GetLongField(env, jobj, fid_Buffer_pointer));
+}
+
+static inline fz_color_params from_ColorParams_safe(JNIEnv *env, jint params)
+{
+	fz_color_params p;
+
+	p.bp = (params>>5) & 1;
+	p.op = (params>>6) & 1;
+	p.opm = (params>>7) & 1;
+	p.ri = (params & 31);
+
+	return p;
 }
 
 static inline fz_colorspace *from_ColorSpace_safe(JNIEnv *env, jobject jobj)
@@ -1719,6 +2086,191 @@ static inline fz_text *from_Text_safe(JNIEnv *env, jobject jobj)
 	return CAST(fz_text *, (*env)->GetLongField(env, jobj, fid_Text_pointer));
 }
 
+/* Callbacks to implement fz_stream and fz_output using Java classes */
+
+typedef struct
+{
+	jobject stream;
+	jbyteArray array;
+	jbyte buffer[8192];
+}
+SeekableStreamState;
+
+static int call_SeekableInputStream_next(fz_context *ctx, fz_stream *stm, size_t max)
+{
+	SeekableStreamState *state = stm->state;
+	JNIEnv *env;
+	int detach;
+	int n, ch;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in call_SeekableInputStream_next");
+
+	n = (*env)->CallIntMethod(env, state->stream, mid_SeekableInputStream_read, state->array);
+	if ((*env)->ExceptionCheck(env)) {
+		jni_detach_thread(detach);
+		fz_throw_java(ctx, env);
+	}
+
+	if (n > 0)
+	{
+		(*env)->GetByteArrayRegion(env, state->array, 0, n, state->buffer);
+
+		/* update stm->pos so fz_tell knows the current position */
+		stm->rp = (unsigned char *)state->buffer;
+		stm->wp = stm->rp + n;
+		stm->pos += n;
+
+		ch = *stm->rp++;
+	}
+	else if (n < 0)
+	{
+		ch = EOF;
+	}
+	else
+	{
+		jni_detach_thread(detach);
+		fz_throw(ctx, FZ_ERROR_GENERIC, "no bytes read");
+	}
+
+	jni_detach_thread(detach);
+	return ch;
+}
+
+static void call_SeekableOutputStream_write(fz_context *ctx, void *streamState_, const void *buffer_, size_t count)
+{
+	SeekableStreamState *state = streamState_;
+	const jbyte *buffer = buffer_;
+	JNIEnv *env;
+	int detach;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in call_SeekableOutputStream_write");
+
+	while (count > 0)
+	{
+		size_t n = fz_minz(count, sizeof(state->buffer));
+
+		(*env)->SetByteArrayRegion(env, state->array, 0, n, buffer);
+		buffer += n;
+		count -= n;
+
+		(*env)->CallVoidMethod(env, state->stream, mid_SeekableOutputStream_write, state->array, 0, n);
+		if ((*env)->ExceptionCheck(env)) {
+			jni_detach_thread(detach);
+			fz_throw_java(ctx, env);
+		}
+	}
+
+	jni_detach_thread(detach);
+}
+
+static int64_t call_SeekableOutputStream_tell(fz_context *ctx, void *streamState_)
+{
+	SeekableStreamState *state = streamState_;
+	JNIEnv *env;
+	int detach;
+	int64_t pos = 0;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in call_SeekableOutputStream_tell");
+
+	pos = (*env)->CallLongMethod(env, state->stream, mid_SeekableStream_position);
+	if ((*env)->ExceptionCheck(env)) {
+		jni_detach_thread(detach);
+		fz_throw_java(ctx, env);
+	}
+
+	jni_detach_thread(detach);
+
+	return pos;
+}
+
+static void call_SeekableInputStream_seek(fz_context *ctx, fz_stream *stm, int64_t offset, int whence)
+{
+	SeekableStreamState *state = stm->state;
+	JNIEnv *env;
+	int detach;
+	int64_t pos;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in call_SeekableInputStream_seek");
+
+	pos = (*env)->CallLongMethod(env, state->stream, mid_SeekableStream_seek, offset, whence);
+	if ((*env)->ExceptionCheck(env)) {
+		jni_detach_thread(detach);
+		fz_throw_java(ctx, env);
+	}
+
+	stm->pos = pos;
+	stm->rp = stm->wp = (unsigned char *)state->buffer;
+
+	jni_detach_thread(detach);
+}
+
+static void call_SeekableOutputStream_seek(fz_context *ctx, void *streamState_, int64_t offset, int whence)
+{
+	SeekableStreamState *state = streamState_;
+	JNIEnv *env;
+	int detach;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL)
+		fz_throw(ctx, FZ_ERROR_GENERIC, "cannot attach to JVM in call_SeekableOutputStream_seek");
+
+	(void) (*env)->CallLongMethod(env, state->stream, mid_SeekableStream_seek, offset, whence);
+	if ((*env)->ExceptionCheck(env)) {
+		jni_detach_thread(detach);
+		fz_throw_java(ctx, env);
+	}
+
+	jni_detach_thread(detach);
+}
+
+static void call_SeekableInputStream_drop(fz_context *ctx, void *streamState_)
+{
+	SeekableStreamState *state = streamState_;
+	JNIEnv *env;
+	int detach;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL) {
+		fz_warn(ctx, "cannot attach to JVM in call_SeekableInputStream_drop; leaking input stream");
+		return;
+	}
+
+	(*env)->DeleteGlobalRef(env, state->stream);
+	(*env)->DeleteGlobalRef(env, state->array);
+
+	fz_free(ctx, state);
+
+	jni_detach_thread(detach);
+}
+
+static void call_SeekableOutputStream_drop(fz_context *ctx, void *streamState_)
+{
+	SeekableStreamState *state = streamState_;
+	JNIEnv *env;
+	int detach;
+
+	env = jni_attach_thread(ctx, &detach);
+	if (env == NULL) {
+		fz_warn(ctx, "cannot attach to JVM in call_SeekableOutputStream_drop; leaking output stream");
+		return;
+	}
+
+	(*env)->DeleteGlobalRef(env, state->stream);
+	(*env)->DeleteGlobalRef(env, state->array);
+
+	fz_free(ctx, state);
+
+	jni_detach_thread(detach);
+}
+
 /*
 	Devices can either be implemented in C, or in Java.
 	We therefore have to think about 4 possible call combinations.
@@ -1748,7 +2300,7 @@ typedef struct
 fz_java_device;
 
 static void
-fz_java_device_fill_path(fz_context *ctx, fz_device *dev, const fz_path *path, int even_odd, const fz_matrix *ctm, fz_colorspace *cs, const float *color, float alpha)
+fz_java_device_fill_path(fz_context *ctx, fz_device *dev, const fz_path *path, int even_odd, fz_matrix ctm, fz_colorspace *cs, const float *color, float alpha, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1756,14 +2308,15 @@ fz_java_device_fill_path(fz_context *ctx, fz_device *dev, const fz_path *path, i
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jobject jctm = to_Matrix(ctx, env, ctm);
 	jfloatArray jcolor = to_jfloatArray(ctx, env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillPath, jpath, (jboolean)even_odd, jctm, jcs, jcolor, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillPath, jpath, (jboolean)even_odd, jctm, jcs, jcolor, alpha, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
 
 static void
-fz_java_device_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *path, const fz_stroke_state *state, const fz_matrix *ctm, fz_colorspace *cs, const float *color, float alpha)
+fz_java_device_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *path, const fz_stroke_state *state, fz_matrix ctm, fz_colorspace *cs, const float *color, float alpha, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1772,14 +2325,15 @@ fz_java_device_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *path,
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jobject jctm = to_Matrix(ctx, env, ctm);
 	jfloatArray jcolor = to_jfloatArray(ctx, env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_strokePath, jpath, jstate, jctm, jcs, jcolor, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_strokePath, jpath, jstate, jctm, jcs, jcolor, alpha, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
 
 static void
-fz_java_device_clip_path(fz_context *ctx, fz_device *dev, const fz_path *path, int even_odd, const fz_matrix *ctm, const fz_rect *scissor)
+fz_java_device_clip_path(fz_context *ctx, fz_device *dev, const fz_path *path, int even_odd, fz_matrix ctm, fz_rect scissor)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1792,7 +2346,7 @@ fz_java_device_clip_path(fz_context *ctx, fz_device *dev, const fz_path *path, i
 }
 
 static void
-fz_java_device_clip_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *path, const fz_stroke_state *state, const fz_matrix *ctm, const fz_rect *scissor)
+fz_java_device_clip_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *path, const fz_stroke_state *state, fz_matrix ctm, fz_rect scissor)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1806,7 +2360,7 @@ fz_java_device_clip_stroke_path(fz_context *ctx, fz_device *dev, const fz_path *
 }
 
 static void
-fz_java_device_fill_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_matrix *ctm, fz_colorspace *cs, const float *color, float alpha)
+fz_java_device_fill_text(fz_context *ctx, fz_device *dev, const fz_text *text, fz_matrix ctm, fz_colorspace *cs, const float *color, float alpha, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1814,14 +2368,15 @@ fz_java_device_fill_text(fz_context *ctx, fz_device *dev, const fz_text *text, c
 	jobject jctm = to_Matrix(ctx, env, ctm);
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jfloatArray jcolor = to_jfloatArray(ctx, env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillText, jtext, jctm, jcs, jcolor, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillText, jtext, jctm, jcs, jcolor, alpha, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
 
 static void
-fz_java_device_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_stroke_state *state, const fz_matrix *ctm, fz_colorspace *cs, const float *color, float alpha)
+fz_java_device_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_stroke_state *state, fz_matrix ctm, fz_colorspace *cs, const float *color, float alpha, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1830,14 +2385,15 @@ fz_java_device_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *text,
 	jobject jctm = to_Matrix(ctx, env, ctm);
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jfloatArray jcolor = to_jfloatArray(ctx, env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_strokeText, jtext, jstate, jctm, jcs, jcolor, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_strokeText, jtext, jstate, jctm, jcs, jcolor, alpha, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
 
 static void
-fz_java_device_clip_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_matrix *ctm, const fz_rect *scissor)
+fz_java_device_clip_text(fz_context *ctx, fz_device *dev, const fz_text *text, fz_matrix ctm, fz_rect scissor)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1850,7 +2406,7 @@ fz_java_device_clip_text(fz_context *ctx, fz_device *dev, const fz_text *text, c
 }
 
 static void
-fz_java_device_clip_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_stroke_state *state, const fz_matrix *ctm, const fz_rect *scissor)
+fz_java_device_clip_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_stroke_state *state, fz_matrix ctm, fz_rect scissor)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1864,7 +2420,7 @@ fz_java_device_clip_stroke_text(fz_context *ctx, fz_device *dev, const fz_text *
 }
 
 static void
-fz_java_device_ignore_text(fz_context *ctx, fz_device *dev, const fz_text *text, const fz_matrix *ctm)
+fz_java_device_ignore_text(fz_context *ctx, fz_device *dev, const fz_text *text, fz_matrix ctm)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1877,7 +2433,7 @@ fz_java_device_ignore_text(fz_context *ctx, fz_device *dev, const fz_text *text,
 }
 
 static void
-fz_java_device_fill_shade(fz_context *ctx, fz_device *dev, fz_shade *shd, const fz_matrix *ctm, float alpha)
+fz_java_device_fill_shade(fz_context *ctx, fz_device *dev, fz_shade *shd, fz_matrix ctm, float alpha, const fz_color_params *color_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1890,7 +2446,7 @@ fz_java_device_fill_shade(fz_context *ctx, fz_device *dev, fz_shade *shd, const 
 }
 
 static void
-fz_java_device_fill_image(fz_context *ctx, fz_device *dev, fz_image *img, const fz_matrix *ctm, float alpha)
+fz_java_device_fill_image(fz_context *ctx, fz_device *dev, fz_image *img, fz_matrix ctm, float alpha, const fz_color_params *color_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1903,7 +2459,7 @@ fz_java_device_fill_image(fz_context *ctx, fz_device *dev, fz_image *img, const 
 }
 
 static void
-fz_java_device_fill_image_mask(fz_context *ctx, fz_device *dev, fz_image *img, const fz_matrix *ctm, fz_colorspace *cs, const float *color, float alpha)
+fz_java_device_fill_image_mask(fz_context *ctx, fz_device *dev, fz_image *img, fz_matrix ctm, fz_colorspace *cs, const float *color, float alpha, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1911,14 +2467,15 @@ fz_java_device_fill_image_mask(fz_context *ctx, fz_device *dev, fz_image *img, c
 	jobject jctm = to_Matrix(ctx, env, ctm);
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jfloatArray jcolor = to_jfloatArray(ctx, env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillImageMask, jimg, jctm, jcs, jcolor, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_fillImageMask, jimg, jctm, jcs, jcolor, alpha, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
 
 static void
-fz_java_device_clip_image_mask(fz_context *ctx, fz_device *dev, fz_image *img, const fz_matrix *ctm, const fz_rect *scissor)
+fz_java_device_clip_image_mask(fz_context *ctx, fz_device *dev, fz_image *img, fz_matrix ctm, fz_rect scissor)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -1942,15 +2499,41 @@ fz_java_device_pop_clip(fz_context *ctx, fz_device *dev)
 }
 
 static void
-fz_java_device_begin_mask(fz_context *ctx, fz_device *dev, const fz_rect *rect, int luminosity, fz_colorspace *cs, const float *bc)
+fz_java_device_begin_layer(fz_context *ctx, fz_device *dev, const char *name)
+{
+	fz_java_device *jdev = (fz_java_device *)dev;
+	JNIEnv *env = jdev->env;
+	jstring jname;
+
+	jname = (*env)->NewStringUTF(env, name);
+
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_beginLayer, jname);
+	if ((*env)->ExceptionCheck(env))
+		fz_throw_java(ctx, env);
+}
+
+static void
+fz_java_device_end_layer(fz_context *ctx, fz_device *dev)
+{
+	fz_java_device *jdev = (fz_java_device *)dev;
+	JNIEnv *env = jdev->env;
+
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_endLayer);
+	if ((*env)->ExceptionCheck(env))
+		fz_throw_java(ctx, env);
+}
+
+static void
+fz_java_device_begin_mask(fz_context *ctx, fz_device *dev, fz_rect rect, int luminosity, fz_colorspace *cs, const float *bc, const fz_color_params *cs_params)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
 	jobject jrect = to_Rect(ctx, env, rect);
 	jobject jcs = to_ColorSpace(ctx, env, cs);
 	jfloatArray jbc = to_jfloatArray(ctx, env, bc, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS);
+	int jcp = to_ColorParams_safe(ctx, env, cs_params);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_beginMask, jrect, (jint)luminosity, jcs, jbc);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_beginMask, jrect, (jint)luminosity, jcs, jbc, jcp);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
@@ -1967,13 +2550,14 @@ fz_java_device_end_mask(fz_context *ctx, fz_device *dev)
 }
 
 static void
-fz_java_device_begin_group(fz_context *ctx, fz_device *dev, const fz_rect *rect, int isolated, int knockout, int blendmode, float alpha)
+fz_java_device_begin_group(fz_context *ctx, fz_device *dev, fz_rect rect, fz_colorspace *cs, int isolated, int knockout, int blendmode, float alpha)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
 	jobject jrect = to_Rect(ctx, env, rect);
+	jobject jcs = to_ColorSpace(ctx, env, cs);
 
-	(*env)->CallVoidMethod(env, jdev->self, mid_Device_beginGroup, jrect, (jboolean)isolated, (jboolean)knockout, (jint)blendmode, alpha);
+	(*env)->CallVoidMethod(env, jdev->self, mid_Device_beginGroup, jrect, jcs, (jboolean)isolated, (jboolean)knockout, (jint)blendmode, alpha);
 	if ((*env)->ExceptionCheck(env))
 		fz_throw_java(ctx, env);
 }
@@ -1990,7 +2574,7 @@ fz_java_device_end_group(fz_context *ctx, fz_device *dev)
 }
 
 static int
-fz_java_device_begin_tile(fz_context *ctx, fz_device *dev, const fz_rect *area, const fz_rect *view, float xstep, float ystep, const fz_matrix *ctm, int id)
+fz_java_device_begin_tile(fz_context *ctx, fz_device *dev, fz_rect area, fz_rect view, float xstep, float ystep, fz_matrix ctm, int id)
 {
 	fz_java_device *jdev = (fz_java_device *)dev;
 	JNIEnv *env = jdev->env;
@@ -2067,6 +2651,9 @@ static fz_device *fz_new_java_device(fz_context *ctx, JNIEnv *env, jobject self)
 
 		dev->super.begin_tile = fz_java_device_begin_tile;
 		dev->super.end_tile = fz_java_device_end_tile;
+
+		dev->super.begin_layer = fz_java_device_begin_layer;
+		dev->super.end_layer = fz_java_device_end_layer;
 	}
 	fz_catch(ctx)
 	{
@@ -2112,7 +2699,7 @@ FUN(Device_finalize)(JNIEnv *env, jobject self)
 
 typedef struct NativeDeviceInfo NativeDeviceInfo;
 
-typedef void (NativeDeviceLockFn)(JNIEnv *env, NativeDeviceInfo *info);
+typedef int (NativeDeviceLockFn)(JNIEnv *env, NativeDeviceInfo *info);
 typedef void (NativeDeviceUnlockFn)(JNIEnv *env, NativeDeviceInfo *info);
 
 struct NativeDeviceInfo
@@ -2136,12 +2723,14 @@ struct NativeDeviceInfo
 	int xOffset;
 	int yOffset;
 	int width;
+	int height;
 };
 
-static NativeDeviceInfo *lockNativeDevice(JNIEnv *env, jobject self)
+static NativeDeviceInfo *lockNativeDevice(JNIEnv *env, jobject self, int *err)
 {
 	NativeDeviceInfo *info = NULL;
 
+	*err = 0;
 	if (!(*env)->IsInstanceOf(env, self, cls_NativeDevice))
 		return NULL;
 
@@ -2153,7 +2742,11 @@ static NativeDeviceInfo *lockNativeDevice(JNIEnv *env, jobject self)
 	}
 	info->object = (*env)->GetObjectField(env, self, fid_NativeDevice_nativeResource);
 
-	info->lock(env, info);
+	if (info->lock(env, info))
+	{
+		*err = 1;
+		return NULL;
+	}
 
 	return info;
 }
@@ -2188,10 +2781,13 @@ FUN(NativeDevice_close)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
 		fz_close_device(ctx, dev);
 	fz_always(ctx)
@@ -2201,7 +2797,7 @@ FUN(NativeDevice_close)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_fillPath)(JNIEnv *env, jobject self, jobject jpath, jboolean even_odd, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha)
+FUN(NativeDevice_fillPath)(JNIEnv *env, jobject self, jobject jpath, jboolean even_odd, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
@@ -2210,14 +2806,18 @@ FUN(NativeDevice_fillPath)(JNIEnv *env, jobject self, jobject jpath, jboolean ev
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!path) { jni_throw_arg(env, "path must not be null"); return; }
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_fill_path(ctx, dev, path, even_odd, &ctm, cs, color, alpha);
+		fz_fill_path(ctx, dev, path, even_odd, ctm, cs, color, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2225,7 +2825,7 @@ FUN(NativeDevice_fillPath)(JNIEnv *env, jobject self, jobject jpath, jboolean ev
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_strokePath)(JNIEnv *env, jobject self, jobject jpath, jobject jstroke, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha)
+FUN(NativeDevice_strokePath)(JNIEnv *env, jobject self, jobject jpath, jobject jstroke, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
@@ -2233,17 +2833,21 @@ FUN(NativeDevice_strokePath)(JNIEnv *env, jobject self, jobject jpath, jobject j
 	fz_stroke_state *stroke = from_StrokeState(env, jstroke);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!path) { jni_throw_arg(env, "path must not be null"); return; }
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return; }
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_stroke_path(ctx, dev, path, stroke, &ctm, cs, color, alpha);
+		fz_stroke_path(ctx, dev, path, stroke, ctm, cs, color, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2258,13 +2862,16 @@ FUN(NativeDevice_clipPath)(JNIEnv *env, jobject self, jobject jpath, jboolean ev
 	fz_path *path = from_Path(env, jpath);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!path) { jni_throw_arg(env, "path must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_clip_path(ctx, dev, path, even_odd, &ctm, NULL);
+		fz_clip_path(ctx, dev, path, even_odd, ctm, fz_infinite_rect);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2280,14 +2887,17 @@ FUN(NativeDevice_clipStrokePath)(JNIEnv *env, jobject self, jobject jpath, jobje
 	fz_stroke_state *stroke = from_StrokeState(env, jstroke);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!path) { jni_throw_arg(env, "path must not be null"); return; }
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_clip_stroke_path(ctx, dev, path, stroke, &ctm, NULL);
+		fz_clip_stroke_path(ctx, dev, path, stroke, ctm, fz_infinite_rect);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2295,23 +2905,27 @@ FUN(NativeDevice_clipStrokePath)(JNIEnv *env, jobject self, jobject jpath, jobje
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_fillText)(JNIEnv *env, jobject self, jobject jtext, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha)
+FUN(NativeDevice_fillText)(JNIEnv *env, jobject self, jobject jtext, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_text *text = from_Text(env, jtext);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!text) { jni_throw_arg(env, "text must not be null"); return; }
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_fill_text(ctx, dev, text, &ctm, cs, color, alpha);
+		fz_fill_text(ctx, dev, text, ctm, cs, color, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2319,7 +2933,7 @@ FUN(NativeDevice_fillText)(JNIEnv *env, jobject self, jobject jtext, jobject jct
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_strokeText)(JNIEnv *env, jobject self, jobject jtext, jobject jstroke, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha)
+FUN(NativeDevice_strokeText)(JNIEnv *env, jobject self, jobject jtext, jobject jstroke, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
@@ -2327,17 +2941,21 @@ FUN(NativeDevice_strokeText)(JNIEnv *env, jobject self, jobject jtext, jobject j
 	fz_stroke_state *stroke = from_StrokeState(env, jstroke);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!text) { jni_throw_arg(env, "text must not be null"); return; }
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return; }
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_stroke_text(ctx, dev, text, stroke, &ctm, cs, color, alpha);
+		fz_stroke_text(ctx, dev, text, stroke, ctm, cs, color, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2352,13 +2970,16 @@ FUN(NativeDevice_clipText)(JNIEnv *env, jobject self, jobject jtext, jobject jct
 	fz_text *text = from_Text(env, jtext);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!text) { jni_throw_arg(env, "text must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_clip_text(ctx, dev, text, &ctm, NULL);
+		fz_clip_text(ctx, dev, text, ctm, fz_infinite_rect);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2374,14 +2995,17 @@ FUN(NativeDevice_clipStrokeText)(JNIEnv *env, jobject self, jobject jtext, jobje
 	fz_stroke_state *stroke = from_StrokeState(env, jstroke);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!text) { jni_throw_arg(env, "text must not be null"); return; }
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_clip_stroke_text(ctx, dev, text, stroke, &ctm, NULL);
+		fz_clip_stroke_text(ctx, dev, text, stroke, ctm, fz_infinite_rect);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2396,13 +3020,16 @@ FUN(NativeDevice_ignoreText)(JNIEnv *env, jobject self, jobject jtext, jobject j
 	fz_text *text = from_Text(env, jtext);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!text) { jni_throw_arg(env, "text must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_ignore_text(ctx, dev, text, &ctm);
+		fz_ignore_text(ctx, dev, text, ctm);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2410,20 +3037,24 @@ FUN(NativeDevice_ignoreText)(JNIEnv *env, jobject self, jobject jtext, jobject j
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_fillShade)(JNIEnv *env, jobject self, jobject jshd, jobject jctm, jfloat alpha)
+FUN(NativeDevice_fillShade)(JNIEnv *env, jobject self, jobject jshd, jobject jctm, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_shade *shd = from_Shade(env, jshd);
 	fz_matrix ctm = from_Matrix(env, jctm);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!shd) { jni_throw_arg(env, "shade must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_fill_shade(ctx, dev, shd, &ctm, alpha);
+		fz_fill_shade(ctx, dev, shd, ctm, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2431,20 +3062,24 @@ FUN(NativeDevice_fillShade)(JNIEnv *env, jobject self, jobject jshd, jobject jct
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_fillImage)(JNIEnv *env, jobject self, jobject jimg, jobject jctm, jfloat alpha)
+FUN(NativeDevice_fillImage)(JNIEnv *env, jobject self, jobject jimg, jobject jctm, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_image *img = from_Image(env, jimg);
 	fz_matrix ctm = from_Matrix(env, jctm);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!img) { jni_throw_arg(env, "image must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_fill_image(ctx, dev, img, &ctm, alpha);
+		fz_fill_image(ctx, dev, img, ctm, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2452,23 +3087,27 @@ FUN(NativeDevice_fillImage)(JNIEnv *env, jobject self, jobject jimg, jobject jct
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_fillImageMask)(JNIEnv *env, jobject self, jobject jimg, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha)
+FUN(NativeDevice_fillImageMask)(JNIEnv *env, jobject self, jobject jimg, jobject jctm, jobject jcs, jfloatArray jcolor, jfloat alpha, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_image *img = from_Image(env, jimg);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!img) { jni_throw_arg(env, "image must not be null"); return; }
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_fill_image_mask(ctx, dev, img, &ctm, cs, color, alpha);
+		fz_fill_image_mask(ctx, dev, img, ctm, cs, color, alpha, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2483,13 +3122,16 @@ FUN(NativeDevice_clipImageMask)(JNIEnv *env, jobject self, jobject jimg, jobject
 	fz_image *img = from_Image(env, jimg);
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!img) { jni_throw_arg(env, "image must not be null"); return; }
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_clip_image_mask(ctx, dev, img, &ctm, NULL);
+		fz_clip_image_mask(ctx, dev, img, ctm, fz_infinite_rect);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2502,10 +3144,13 @@ FUN(NativeDevice_popClip)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
 		fz_pop_clip(ctx, dev);
 	fz_always(ctx)
@@ -2515,21 +3160,78 @@ FUN(NativeDevice_popClip)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_beginMask)(JNIEnv *env, jobject self, jobject jrect, jboolean luminosity, jobject jcs, jfloatArray jcolor)
+FUN(NativeDevice_beginLayer)(JNIEnv *env, jobject self, jstring jname)
+{
+	fz_context *ctx = get_context(env);
+	fz_device *dev = from_Device(env, self);
+	NativeDeviceInfo *info;
+	const char *name;
+	int err;
+
+	if (!ctx || !dev) return;
+
+	if (jname)
+	{
+		name = (*env)->GetStringUTFChars(env, jname, NULL);
+		if (!name) return;
+	}
+
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
+	fz_try(ctx)
+		fz_begin_layer(ctx, dev, name);
+	fz_always(ctx)
+	{
+		(*env)->ReleaseStringUTFChars(env, jname, name);
+		unlockNativeDevice(env, info);
+	}
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT void JNICALL
+FUN(NativeDevice_endLayer)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	fz_device *dev = from_Device(env, self);
+	NativeDeviceInfo *info;
+	int err;
+
+	if (!ctx || !dev) return;
+
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
+	fz_try(ctx)
+		fz_end_layer(ctx, dev);
+	fz_always(ctx)
+		unlockNativeDevice(env, info);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+
+JNIEXPORT void JNICALL
+FUN(NativeDevice_beginMask)(JNIEnv *env, jobject self, jobject jrect, jboolean luminosity, jobject jcs, jfloatArray jcolor, jint jcp)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_rect rect = from_Rect(env, jrect);
 	fz_colorspace *cs = from_ColorSpace(env, jcs);
+	fz_color_params cp = from_ColorParams_safe(env, jcp);
 	float color[FZ_MAX_COLORS];
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 	if (!from_jfloatArray(env, color, cs ? fz_colorspace_n(ctx, cs) : FZ_MAX_COLORS, jcolor)) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_begin_mask(ctx, dev, &rect, luminosity, cs, color);
+		fz_begin_mask(ctx, dev, rect, luminosity, cs, color, &cp);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2542,10 +3244,13 @@ FUN(NativeDevice_endMask)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
 		fz_end_mask(ctx, dev);
 	fz_always(ctx)
@@ -2555,18 +3260,22 @@ FUN(NativeDevice_endMask)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT void JNICALL
-FUN(NativeDevice_beginGroup)(JNIEnv *env, jobject self, jobject jrect, jboolean isolated, jboolean knockout, jint blendmode, jfloat alpha)
+FUN(NativeDevice_beginGroup)(JNIEnv *env, jobject self, jobject jrect, jobject jcs, jboolean isolated, jboolean knockout, jint blendmode, jfloat alpha)
 {
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	fz_rect rect = from_Rect(env, jrect);
+	fz_colorspace *cs = from_ColorSpace(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_begin_group(ctx, dev, &rect, isolated, knockout, blendmode, alpha);
+		fz_begin_group(ctx, dev, rect, cs, isolated, knockout, blendmode, alpha);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2579,10 +3288,13 @@ FUN(NativeDevice_endGroup)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
 		fz_end_group(ctx, dev);
 	fz_always(ctx)
@@ -2601,12 +3313,15 @@ FUN(NativeDevice_beginTile)(JNIEnv *env, jobject self, jobject jarea, jobject jv
 	fz_matrix ctm = from_Matrix(env, jctm);
 	NativeDeviceInfo *info;
 	int i = 0;
+	int err;
 
 	if (!ctx || !dev) return 0;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return 0;
 	fz_try(ctx)
-		i = fz_begin_tile_id(ctx, dev, &area, &view, xstep, ystep, &ctm, id);
+		i = fz_begin_tile_id(ctx, dev, area, view, xstep, ystep, ctm, id);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -2624,10 +3339,13 @@ FUN(NativeDevice_endTile)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	fz_device *dev = from_Device(env, self);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !dev) return;
 
-	info = lockNativeDevice(env, self);
+	info = lockNativeDevice(env, self, &err);
+	if (err)
+		return;
 	fz_try(ctx)
 		fz_end_tile(ctx, dev);
 	fz_always(ctx)
@@ -2647,7 +3365,7 @@ FUN(DrawDevice_newNative)(JNIEnv *env, jclass self, jobject jpixmap)
 	if (!pixmap) { jni_throw_arg(env, "pixmap must not be null"); return 0; }
 
 	fz_try(ctx)
-		device = fz_new_draw_device(ctx, NULL, pixmap);
+		device = fz_new_draw_device(ctx, fz_identity, pixmap);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -2688,7 +3406,9 @@ newNativeAndroidDrawDevice(JNIEnv *env, jobject self, fz_context *ctx, jobject o
 	fz_pixmap *pixmap = NULL;
 	unsigned char dummy;
 	NativeDeviceInfo *ninfo = NULL;
+	NativeDeviceInfo *info;
 	fz_irect bbox;
+	int err;
 
 	if (!ctx) return 0;
 
@@ -2708,7 +3428,7 @@ newNativeAndroidDrawDevice(JNIEnv *env, jobject self, fz_context *ctx, jobject o
 
 	fz_try(ctx)
 	{
-		pixmap = fz_new_pixmap_with_bbox_and_data(ctx, fz_device_rgb(ctx), &bbox, 1, &dummy);
+		pixmap = fz_new_pixmap_with_bbox_and_data(ctx, fz_device_rgb(ctx), bbox, NULL, 1, &dummy);
 		pixmap->stride = width * sizeof(int32_t);
 		ninfo = fz_malloc(ctx, sizeof(*ninfo));
 		ninfo->pixmap = pixmap;
@@ -2717,13 +3437,17 @@ newNativeAndroidDrawDevice(JNIEnv *env, jobject self, fz_context *ctx, jobject o
 		ninfo->xOffset = patchX0;
 		ninfo->yOffset = patchY0;
 		ninfo->width = width;
+		ninfo->height = height;
 		ninfo->object = obj;
 		(*env)->SetLongField(env, self, fid_NativeDevice_nativeInfo, jlong_cast(ninfo));
 		(*env)->SetObjectField(env, self, fid_NativeDevice_nativeResource, obj);
-		lockNativeDevice(env,self);
-		fz_clear_pixmap_with_value(ctx, pixmap, 0xff);
-		unlockNativeDevice(env,ninfo);
-		device = fz_new_draw_device(ctx, NULL, pixmap);
+		info = lockNativeDevice(env,self,&err);
+		if (!err)
+		{
+			fz_clear_pixmap_with_value(ctx, pixmap, 0xff);
+			unlockNativeDevice(env,ninfo);
+			device = fz_new_draw_device(ctx, fz_identity, pixmap);
+		}
 	}
 	fz_catch(ctx)
 	{
@@ -2733,26 +3457,48 @@ newNativeAndroidDrawDevice(JNIEnv *env, jobject self, fz_context *ctx, jobject o
 		return 0;
 	}
 
+	/* lockNativeDevice will already have raised a JNI error if there was one. */
+	if (err)
+	{
+		fz_drop_pixmap(ctx, pixmap);
+		fz_free(ctx, ninfo);
+		return 0;
+	}
+
 	return jlong_cast(device);
 }
 
-static void androidDrawDevice_lock(JNIEnv *env, NativeDeviceInfo *info)
+static int androidDrawDevice_lock(JNIEnv *env, NativeDeviceInfo *info)
 {
 	uint8_t *pixels;
+	int ret;
+	int phase = 0;
+	fz_context *ctx = get_context(env);
+	size_t size = info->width * info->height * 4;
 
 	assert(info);
 	assert(info->object);
 
-	if (AndroidBitmap_lockPixels(env, info->object, (void **)&pixels) != ANDROID_BITMAP_RESULT_SUCCESS)
+	while (1) {
+		ret = AndroidBitmap_lockPixels(env, info->object, (void **)&pixels);
+		if (ret == ANDROID_BITMAP_RESULT_SUCCESS)
+			break;
+		if (!fz_store_scavenge_external(ctx, size, &phase))
+			break; /* Failed to free any */
+	}
+	if (ret != ANDROID_BITMAP_RESULT_SUCCESS)
 	{
+		info->pixmap->samples = NULL;
 		jni_throw(env, FZ_ERROR_GENERIC, "bitmap lock failed in DrawDevice call");
-		return;
+		return 1;
 	}
 
 	/* Now offset pixels to allow for the page offsets */
 	pixels += sizeof(int32_t) * (info->xOffset + info->width * info->yOffset);
 
 	info->pixmap->samples = pixels;
+
+	return 0;
 }
 
 static void androidDrawDevice_unlock(JNIEnv *env, NativeDeviceInfo *info)
@@ -2760,6 +3506,7 @@ static void androidDrawDevice_unlock(JNIEnv *env, NativeDeviceInfo *info)
 	assert(info);
 	assert(info->object);
 
+	info->pixmap->samples = NULL;
 	if (AndroidBitmap_unlockPixels(env, info->object) != ANDROID_BITMAP_RESULT_SUCCESS)
 		jni_throw(env, FZ_ERROR_GENERIC, "bitmap unlock failed in DrawDevice call");
 }
@@ -2820,8 +3567,18 @@ FUN(AndroidImage_newImageFromBitmap)(JNIEnv *env, jobject self, jobject jbitmap,
 
 	fz_try(ctx)
 	{
-		pixmap = fz_new_pixmap(ctx, fz_device_rgb(ctx), info.width, info.height, 1);
-		if (AndroidBitmap_lockPixels(env, jbitmap, &pixels) != ANDROID_BITMAP_RESULT_SUCCESS)
+		int ret;
+		int phase = 0;
+		size_t size = info.width * info.height * 4;
+		pixmap = fz_new_pixmap(ctx, fz_device_rgb(ctx), info.width, info.height, NULL, 1);
+		while (1) {
+			ret = AndroidBitmap_lockPixels(env, jbitmap, (void **)&pixels);
+			if (ret == ANDROID_BITMAP_RESULT_SUCCESS)
+				break;
+			if (!fz_store_scavenge_external(ctx, size, &phase))
+				break; /* Failed to free any */
+		}
+		if (ret != ANDROID_BITMAP_RESULT_SUCCESS)
 			fz_throw(ctx, FZ_ERROR_GENERIC, "bitmap lock failed in new Image");
 		memcpy(pixmap->samples, pixels, info.width * info.height * 4);
 		if (AndroidBitmap_unlockPixels(env, jbitmap) != ANDROID_BITMAP_RESULT_SUCCESS)
@@ -2921,7 +3678,7 @@ FUN(Font_newNative)(JNIEnv *env, jobject self, jstring jname, jint index)
 
 	fz_try(ctx)
 	{
-		const char *data;
+		const unsigned char *data;
 		int size;
 
 		data = fz_lookup_base14_font(ctx, name, &size);
@@ -3017,7 +3774,7 @@ FUN(Pixmap_newNative)(JNIEnv *env, jobject self, jobject jcs, jint x, jint y, ji
 
 	fz_try(ctx)
 	{
-		pixmap = fz_new_pixmap(ctx, cs, w, h, alpha);
+		pixmap = fz_new_pixmap(ctx, cs, w, h, NULL, alpha);
 		pixmap->x = x;
 		pixmap->y = y;
 	}
@@ -3054,6 +3811,27 @@ FUN(Pixmap_clearWithValue)(JNIEnv *env, jobject self, jint value)
 
 	fz_try(ctx)
 		fz_clear_pixmap_with_value(ctx, pixmap, value);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT void JNICALL
+FUN(Pixmap_saveAsPNG)(JNIEnv *env, jobject self, jstring jfilename)
+{
+	fz_context *ctx = get_context(env);
+	fz_pixmap *pixmap = from_Pixmap(env, self);
+	const char *filename = "null";
+
+	if (!ctx) return;
+	if (!jfilename) { jni_throw_arg(env, "filename must not be null"); return; }
+
+	filename = (*env)->GetStringUTFChars(env, jfilename, NULL);
+	if (!filename) return;
+
+	fz_try(ctx)
+		fz_save_pixmap_as_png(ctx, pixmap, filename);
+	fz_always(ctx)
+		(*env)->ReleaseStringUTFChars(env, jfilename, filename);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -3204,6 +3982,34 @@ FUN(Pixmap_getYResolution)(JNIEnv *env, jobject self)
 {
 	fz_pixmap *pixmap = from_Pixmap(env, self);
 	return pixmap ? pixmap->yres : 0;
+}
+
+JNIEXPORT void JNICALL
+FUN(Pixmap_invert)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	fz_pixmap *pixmap = from_Pixmap(env, self);
+
+	if (!ctx || !pixmap) return;
+
+	fz_try(ctx)
+		fz_invert_pixmap(ctx, pixmap);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT void JNICALL
+FUN(Pixmap_gamma)(JNIEnv *env, jobject self, jfloat gamma)
+{
+	fz_context *ctx = get_context(env);
+	fz_pixmap *pixmap = from_Pixmap(env, self);
+
+	if (!ctx || !pixmap) return;
+
+	fz_try(ctx)
+		fz_gamma_pixmap(ctx, pixmap, gamma);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
 }
 
 /* Path Interface */
@@ -3366,7 +4172,7 @@ FUN(Path_transform)(JNIEnv *env, jobject self, jobject jctm)
 	if (!ctx || !path) return;
 
 	fz_try(ctx)
-		fz_transform_path(ctx, path, &ctm);
+		fz_transform_path(ctx, path, ctm);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -3404,14 +4210,14 @@ FUN(Path_getBounds)(JNIEnv *env, jobject self, jobject jstroke, jobject jctm)
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return NULL; }
 
 	fz_try(ctx)
-		fz_bound_path(ctx, path, stroke, &ctm, &rect);
+		rect = fz_bound_path(ctx, path, stroke, ctm);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return to_Rect_safe(ctx, env, &rect);
+	return to_Rect_safe(ctx, env, rect);
 }
 
 typedef struct
@@ -3491,6 +4297,33 @@ FUN(Path_walk)(JNIEnv *env, jobject self, jobject obj)
 		jni_rethrow(env, ctx);
 }
 
+/* Rect interface */
+
+JNIEXPORT void JNICALL
+FUN(Rect_adjustForStroke)(JNIEnv *env, jobject self, jobject jstroke, jobject jctm)
+{
+	fz_context *ctx = get_context(env);
+	fz_rect rect = from_Rect(env, self);
+	fz_stroke_state *stroke = from_StrokeState(env, jstroke);
+	fz_matrix ctm = from_Matrix(env, jctm);
+
+	if (!ctx) return;
+	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return; }
+
+	fz_try(ctx)
+		rect = fz_adjust_rect_for_stroke(ctx, rect, stroke, ctm);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return;
+	}
+
+	(*env)->SetFloatField(env, self, fid_Rect_x0, rect.x0);
+	(*env)->SetFloatField(env, self, fid_Rect_x1, rect.x1);
+	(*env)->SetFloatField(env, self, fid_Rect_y0, rect.y0);
+	(*env)->SetFloatField(env, self, fid_Rect_y1, rect.y1);
+}
+
 /* StrokeState interface */
 
 JNIEXPORT void JNICALL
@@ -3505,7 +4338,7 @@ FUN(StrokeState_finalize)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT jlong JNICALL
-FUN(Path_newStrokeState)(JNIEnv *env, jobject self, jint startCap, jint dashCap, jint endCap, jint lineJoin, jfloat lineWidth, jfloat miterLimit, jfloat dashPhase, jfloatArray dash)
+FUN(StrokeState_newStrokeState)(JNIEnv *env, jobject self, jint startCap, jint dashCap, jint endCap, jint lineJoin, jfloat lineWidth, jfloat miterLimit, jfloat dashPhase, jfloatArray dash)
 {
 	fz_context *ctx = get_context(env);
 	fz_stroke_state *stroke = NULL;
@@ -3597,7 +4430,6 @@ FUN(StrokeState_getDashes)(JNIEnv *env, jobject self)
 	jfloatArray arr;
 
 	if (!ctx || !stroke) return NULL;
-	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return NULL; }
 
 	if (stroke->dash_len == 0)
 		return NULL; /* there are no dashes, so return NULL instead of empty array */
@@ -3622,26 +4454,6 @@ FUN(Text_finalize)(JNIEnv *env, jobject self)
 	if (!ctx || !text) return;
 
 	fz_drop_text(ctx, text);
-}
-
-JNIEXPORT jlong JNICALL
-FUN(Text_clone)(JNIEnv *env, jobject self)
-{
-	fz_context *ctx = get_context(env);
-	fz_text *old_text = from_Text(env, self);
-	fz_text *new_text = NULL;
-
-	if (!ctx || !old_text) return 0;
-
-	fz_try(ctx)
-		new_text = fz_clone_text(ctx, old_text);
-	fz_catch(ctx)
-	{
-		jni_rethrow(env, ctx);
-		return 0;
-	}
-
-	return jlong_cast(new_text);
 }
 
 JNIEXPORT jlong JNICALL
@@ -3676,14 +4488,14 @@ FUN(Text_getBounds)(JNIEnv *env, jobject self, jobject jstroke, jobject jctm)
 	if (!stroke) { jni_throw_arg(env, "stroke must not be null"); return NULL; }
 
 	fz_try(ctx)
-		fz_bound_text(ctx, text, stroke, &ctm, &rect);
+		rect = fz_bound_text(ctx, text, stroke, ctm);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return to_Rect_safe(ctx, env, &rect);
+	return to_Rect_safe(ctx, env, rect);
 }
 
 JNIEXPORT void JNICALL
@@ -3698,7 +4510,7 @@ FUN(Text_showGlyph)(JNIEnv *env, jobject self, jobject jfont, jobject jtrm, jint
 	if (!font) { jni_throw_arg(env, "font must not be null"); return; }
 
 	fz_try(ctx)
-		fz_show_glyph(ctx, text, font, &trm, glyph, unicode, wmode, 0, FZ_BIDI_NEUTRAL, FZ_LANG_UNSET);
+		fz_show_glyph(ctx, text, font, trm, glyph, unicode, wmode, 0, FZ_BIDI_NEUTRAL, FZ_LANG_UNSET);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -3720,7 +4532,7 @@ FUN(Text_showString)(JNIEnv *env, jobject self, jobject jfont, jobject jtrm, jst
 	if (!str) return;
 
 	fz_try(ctx)
-		fz_show_string(ctx, text, font, &trm, str, wmode, 0, FZ_BIDI_NEUTRAL, FZ_LANG_UNSET);
+		trm = fz_show_string(ctx, text, font, trm, str, wmode, 0, FZ_BIDI_NEUTRAL, FZ_LANG_UNSET);
 	fz_always(ctx)
 		(*env)->ReleaseStringUTFChars(env, jstr, str);
 	fz_catch(ctx)
@@ -3750,10 +4562,6 @@ FUN(Text_walk)(JNIEnv *env, jobject self, jobject walker)
 	if (text->head == NULL)
 		return; /* text has no spans to walk */
 
-	/* TODO: We reuse the same Matrix object for each call, but should we? */
-	jtrm = (*env)->NewObject(env, cls_Matrix, mid_Matrix_init, 1, 0, 0, 1, 0, 0);
-	if (!jtrm) return;
-
 	for (span = text->head; span; span = span->next)
 	{
 		if (font != span->font)
@@ -3765,23 +4573,21 @@ FUN(Text_walk)(JNIEnv *env, jobject self, jobject walker)
 			if (!jfont) return;
 		}
 
-		(*env)->SetFloatField(env, jtrm, fid_Matrix_a, span->trm.a);
-		(*env)->SetFloatField(env, jtrm, fid_Matrix_b, span->trm.b);
-		(*env)->SetFloatField(env, jtrm, fid_Matrix_c, span->trm.c);
-		(*env)->SetFloatField(env, jtrm, fid_Matrix_d, span->trm.d);
-
 		for (i = 0; i < span->len; ++i)
 		{
-			(*env)->SetFloatField(env, jtrm, fid_Matrix_e, span->items[i].x);
-			(*env)->SetFloatField(env, jtrm, fid_Matrix_f, span->items[i].y);
+			jtrm = (*env)->NewObject(env, cls_Matrix, mid_Matrix_init,
+					span->trm.a, span->trm.b, span->trm.c, span->trm.d,
+					span->items[i].x, span->items[i].y);
+			if (!jtrm) return;
 
 			(*env)->CallVoidMethod(env, walker, mid_TextWalker_showGlyph,
 					jfont, jtrm,
 					(jint)span->items[i].gid,
 					(jint)span->items[i].ucs,
 					(jint)span->wmode);
-
 			if ((*env)->ExceptionCheck(env)) return;
+
+			(*env)->DeleteLocalRef(env, jtrm);
 		}
 	}
 }
@@ -3964,13 +4770,16 @@ FUN(Annotation_run)(JNIEnv *env, jobject self, jobject jdev, jobject jctm, jobje
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_cookie *cookie= from_Cookie(env, jcookie);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !annot) return;
 	if (!dev) { jni_throw_arg(env, "device must not be null"); return; }
 
-	info = lockNativeDevice(env, jdev);
+	info = lockNativeDevice(env, jdev, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_run_annot(ctx, annot, dev, &ctm, cookie);
+		fz_run_annot(ctx, annot, dev, ctm, cookie);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -4008,7 +4817,7 @@ FUN(Annotation_toPixmap)(JNIEnv *env, jobject self, jobject jctm, jobject jcs, j
 	if (!ctx || !annot) return NULL;
 
 	fz_try(ctx)
-		pixmap = fz_new_pixmap_from_annot(ctx, annot, &ctm, cs, alpha);
+		pixmap = fz_new_pixmap_from_annot(ctx, annot, ctm, cs, alpha);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -4028,14 +4837,14 @@ FUN(Annotation_getBounds)(JNIEnv *env, jobject self)
 	if (!ctx || !annot) return NULL;
 
 	fz_try(ctx)
-		fz_bound_annot(ctx, annot, &rect);
+		rect = fz_bound_annot(ctx, annot);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return to_Rect_safe(ctx, env, &rect);
+	return to_Rect_safe(ctx, env, rect);
 }
 
 JNIEXPORT jobject JNICALL
@@ -4101,7 +4910,7 @@ static char *make_tmp_gproof_path(const char *path)
 JNIEXPORT jstring JNICALL
 FUN(Document_proofNative)(JNIEnv *env, jobject self, jstring jCurrentPath, jstring jPrintProfile, jstring jDisplayProfile, jint inResolution)
 {
-#ifdef FZ_ENABLE_GPRF
+#if FZ_ENABLE_GPRF
 	fz_context *ctx = get_context(env);
 	fz_document *doc = from_Document(env, self);
 	char *tmp;
@@ -4182,6 +4991,82 @@ FUN(Document_finalize)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT jobject JNICALL
+FUN(Document_openNativeWithStream)(JNIEnv *env, jclass cls, jobject jstream, jstring jmimetype)
+{
+	fz_context *ctx = get_context(env);
+	fz_document *doc = NULL;
+	fz_stream *stm = NULL;
+	jobject stream = NULL;
+	jbyteArray array = NULL;
+	SeekableStreamState *state = NULL;
+	const char *mimetype = NULL;
+
+	fz_var(state);
+	fz_var(stm);
+
+	if (jmimetype)
+	{
+		mimetype = (*env)->GetStringUTFChars(env, jmimetype, NULL);
+		if (!mimetype)
+			return NULL;
+	}
+
+	stream = (*env)->NewGlobalRef(env, jstream);
+	if (!stream)
+	{
+		if (mimetype)
+			(*env)->ReleaseStringUTFChars(env, jmimetype, mimetype);
+		return NULL;
+	}
+
+	array = (*env)->NewByteArray(env, sizeof state->buffer);
+	if (array)
+		array = (*env)->NewGlobalRef(env, array);
+	if (!array)
+	{
+		if (mimetype)
+			(*env)->ReleaseStringUTFChars(env, jmimetype, mimetype);
+		(*env)->DeleteGlobalRef(env, stream);
+		return NULL;
+	}
+
+	fz_try(ctx)
+	{
+		state = fz_malloc(ctx, sizeof(SeekableStreamState));
+		state->stream = stream;
+		state->array = array;
+
+		/* create a stream and open the doc using it */
+		stm = fz_new_stream(ctx, state, call_SeekableInputStream_next, call_SeekableInputStream_drop);
+		stm->state = state;
+		stm->seek = call_SeekableInputStream_seek;
+
+		/* these are now owned by 'stm' */
+		state = NULL;
+		stream = NULL;
+		array = NULL;
+
+		doc = fz_open_document_with_stream(ctx, mimetype, stm);
+	}
+	fz_always(ctx)
+	{
+		if (mimetype)
+			(*env)->ReleaseStringUTFChars(env, jmimetype, mimetype);
+		fz_drop_stream(ctx, stm);
+	}
+	fz_catch(ctx)
+	{
+		if (stream) (*env)->DeleteGlobalRef(env, stream);
+		if (array) (*env)->DeleteGlobalRef(env, array);
+		fz_free(ctx, state);
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_Document_safe_own(ctx, env, doc);
+}
+
+JNIEXPORT jobject JNICALL
 FUN(Document_openNativeWithPath)(JNIEnv *env, jclass cls, jstring jfilename)
 {
 	fz_context *ctx = get_context(env);
@@ -4207,6 +5092,82 @@ FUN(Document_openNativeWithPath)(JNIEnv *env, jclass cls, jstring jfilename)
 	}
 
 	return to_Document_safe_own(ctx, env, doc);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(Document_openNativeWithBuffer)(JNIEnv *env, jclass cls, jobject jbuffer, jstring jmagic)
+{
+	fz_context *ctx = get_context(env);
+	fz_document *doc = NULL;
+	const char *magic = NULL;
+	fz_stream *stream = NULL;
+	int n;
+	jbyte *buffer = NULL;
+	fz_buffer *buf = NULL;
+
+	if (!ctx) return NULL;
+	if (!jmagic) { jni_throw_arg(env, "magic must not be null"); return NULL; }
+
+	magic = (*env)->GetStringUTFChars(env, jmagic, NULL);
+	if (!magic) return NULL;
+
+	n = (*env)->GetArrayLength(env, jbuffer);
+
+	buffer = (*env)->GetByteArrayElements(env, jbuffer, NULL);
+	if (!buffer) {
+		if (magic)
+			(*env)->ReleaseStringUTFChars(env, jmagic, magic);
+		jni_throw_io(env, "cannot get bytes to read");
+		return NULL;
+	}
+
+	fz_try(ctx)
+	{
+		buf = fz_new_buffer(ctx, n);
+		fz_append_data(ctx, buf, buffer, n);
+		stream = fz_open_buffer(ctx, buf);
+		doc = fz_open_document_with_stream(ctx, magic, stream);
+	}
+	fz_always(ctx)
+	{
+		fz_drop_stream(ctx, stream);
+		fz_drop_buffer(ctx, buf);
+		(*env)->ReleaseByteArrayElements(env, jbuffer, buffer, 0);
+		if (magic)
+			(*env)->ReleaseStringUTFChars(env, jmagic, magic);
+	}
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_Document_safe_own(ctx, env, doc);
+}
+
+JNIEXPORT jboolean JNICALL
+FUN(Document_recognize)(JNIEnv *env, jclass self, jstring jmagic)
+{
+	fz_context *ctx = get_context(env);
+	const char *magic = NULL;
+	jboolean recognized = JNI_FALSE;
+
+	if (!ctx) return JNI_FALSE;
+	if (jmagic)
+	{
+		magic = (*env)->GetStringUTFChars(env, jmagic, NULL);
+		if (!magic) return JNI_FALSE;
+	}
+
+	fz_try(ctx)
+		recognized = fz_recognize_document(ctx, magic) != NULL;
+	fz_always(ctx)
+		if (magic)
+			(*env)->ReleaseStringUTFChars(env, jmagic, magic);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	return recognized;
 }
 
 JNIEXPORT jboolean JNICALL
@@ -4457,61 +5418,6 @@ FUN(Page_finalize)(JNIEnv *env, jobject self)
 	fz_drop_page(ctx, page);
 }
 
-JNIEXPORT jint JNICALL
-FUN(Page_countSeparations)(JNIEnv *env, jobject self)
-{
-	fz_context *ctx = get_context(env);
-	fz_page *page = from_Page(env, self);
-	int nSep;
-
-	if (!ctx || !page) return 0;
-
-	fz_try(ctx)
-		nSep = fz_count_separations_on_page(ctx, page);
-	fz_catch(ctx)
-	{
-		jni_rethrow(env, ctx);
-		return 0;
-	}
-
-	return nSep;
-}
-
-JNIEXPORT void JNICALL
-FUN(Page_enableSeparation)(JNIEnv *env, jobject self, jint sep, jboolean enable)
-{
-	fz_context *ctx = get_context(env);
-	fz_page *page = from_Page(env, self);
-
-	if (!ctx || !page) return;
-
-	fz_try(ctx)
-		fz_control_separation_on_page(ctx, page, sep, !enable);
-	fz_catch(ctx)
-		jni_rethrow(env, ctx);
-}
-
-JNIEXPORT jobject JNICALL
-FUN(Page_getSeparation)(JNIEnv *env, jobject self, jint sep)
-{
-	fz_context *ctx = get_context(env);
-	fz_page *page = from_Page(env, self);
-	const char *name;
-	char rgba[4];
-	unsigned int bgra;
-	unsigned int cmyk;
-	jobject jname;
-
-	if (!ctx || !page) return NULL;
-
-	/* MuPDF returns RGBA as bytes. Android wants a packed BGRA int. */
-	name = fz_get_separation_on_page(ctx, page, sep, (unsigned int *)(&rgba[0]), &cmyk);
-	bgra = (rgba[0] << 16) | (rgba[1]<<8) | rgba[2] | (rgba[3]<<24);
-	jname = name ? (*env)->NewStringUTF(env, name) : NULL;
-
-	return (*env)->NewObject(env, cls_Separation, mid_Separation_init, jname, bgra, cmyk);
-}
-
 JNIEXPORT jobject JNICALL
 FUN(Page_toPixmap)(JNIEnv *env, jobject self, jobject jctm, jobject jcs, jboolean alpha)
 {
@@ -4524,7 +5430,7 @@ FUN(Page_toPixmap)(JNIEnv *env, jobject self, jobject jctm, jobject jcs, jboolea
 	if (!ctx || !page) return NULL;
 
 	fz_try(ctx)
-		pixmap = fz_new_pixmap_from_page(ctx, page, &ctm, cs, alpha);
+		pixmap = fz_new_pixmap_from_page(ctx, page, ctm, cs, alpha);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -4544,14 +5450,14 @@ FUN(Page_getBounds)(JNIEnv *env, jobject self)
 	if (!ctx || !page) return NULL;
 
 	fz_try(ctx)
-		fz_bound_page(ctx, page, &rect);
+		rect = fz_bound_page(ctx, page);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return to_Rect_safe(ctx, env, &rect);
+	return to_Rect_safe(ctx, env, rect);
 }
 
 JNIEXPORT void JNICALL
@@ -4563,13 +5469,16 @@ FUN(Page_run)(JNIEnv *env, jobject self, jobject jdev, jobject jctm, jobject jco
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_cookie *cookie = from_Cookie(env, jcookie);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !page) return;
 	if (!dev) { jni_throw_arg(env, "device must not be null"); return; }
 
-	info = lockNativeDevice(env, jdev);
+	info = lockNativeDevice(env, jdev, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_run_page(ctx, page, dev, &ctm, cookie);
+		fz_run_page(ctx, page, dev, ctm, cookie);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -4585,13 +5494,16 @@ FUN(Page_runPageContents)(JNIEnv *env, jobject self, jobject jdev, jobject jctm,
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_cookie *cookie = from_Cookie(env, jcookie);
 	NativeDeviceInfo *info;
+	int err;
 
 	if (!ctx || !page) return;
 	if (!dev) { jni_throw_arg(env, "device must not be null"); return; }
 
-	info = lockNativeDevice(env, jdev);
+	info = lockNativeDevice(env, jdev, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_run_page_contents(ctx, page, dev, &ctm, cookie);
+		fz_run_page_contents(ctx, page, dev, ctm, cookie);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -4637,7 +5549,7 @@ FUN(Page_getAnnotations)(JNIEnv *env, jobject self)
 	annot = annots;
 	for (i = 0; annot && i < annot_count; i++)
 	{
-		jobject jannot = to_Annotation(ctx, env, annot);
+		jobject jannot = to_Annotation_safe(ctx, env, annot);
 		if (!jannot) return NULL;
 
 		(*env)->SetObjectArrayElement(env, jannots, i, jannot);
@@ -4705,7 +5617,7 @@ FUN(Page_getLinks)(JNIEnv *env, jobject self)
 		jobject juri = NULL;
 		int page = 0;
 
-		jbounds = to_Rect_safe(ctx, env, &link->rect);
+		jbounds = to_Rect_safe(ctx, env, link->rect);
 		if (!jbounds) return NULL;
 
 		if (fz_is_external_link(ctx, link->uri))
@@ -4739,7 +5651,7 @@ FUN(Page_search)(JNIEnv *env, jobject self, jstring jneedle)
 {
 	fz_context *ctx = get_context(env);
 	fz_page *page = from_Page(env, self);
-	fz_rect hits[256];
+	fz_quad hits[256];
 	const char *needle = NULL;
 	int n = 0;
 
@@ -4759,7 +5671,7 @@ FUN(Page_search)(JNIEnv *env, jobject self, jstring jneedle)
 		return NULL;
 	}
 
-	return to_jRectArray_safe(ctx, env, hits, n);
+	return to_jQuadArray_safe(ctx, env, hits, n);
 }
 
 JNIEXPORT jobject JNICALL
@@ -4790,7 +5702,6 @@ FUN(Page_toStructuredText)(JNIEnv *env, jobject self, jstring joptions)
 {
 	fz_context *ctx = get_context(env);
 	fz_page *page = from_Page(env, self);
-	fz_stext_sheet *sheet = NULL;
 	fz_stext_page *text = NULL;
 	const char *options= NULL;
 	fz_stext_options opts;
@@ -4803,17 +5714,13 @@ FUN(Page_toStructuredText)(JNIEnv *env, jobject self, jstring joptions)
 		if (!options) return NULL;
 	}
 
-	fz_var(sheet);
-
 	fz_try(ctx)
 	{
-		sheet = fz_new_stext_sheet(ctx);
 		fz_parse_stext_options(ctx, &opts, options);
-		text = fz_new_stext_page_from_page(ctx, page, sheet, &opts);
+		text = fz_new_stext_page_from_page(ctx, page, &opts);
 	}
 	fz_always(ctx)
 	{
-		fz_drop_stext_sheet(ctx, sheet);
 		if (options)
 			(*env)->ReleaseStringUTFChars(env, joptions, options);
 	}
@@ -4831,7 +5738,6 @@ FUN(Page_textAsHtml)(JNIEnv *env, jobject self)
 {
 	fz_context *ctx = get_context(env);
 	fz_page *page = from_Page(env, self);
-	fz_stext_sheet *sheet = NULL;
 	fz_stext_page *text = NULL;
 	fz_device *dev = NULL;
 	fz_matrix ctm;
@@ -4843,7 +5749,6 @@ FUN(Page_textAsHtml)(JNIEnv *env, jobject self)
 
 	if (!ctx || !page) return NULL;
 
-	fz_var(sheet);
 	fz_var(text);
 	fz_var(dev);
 	fz_var(buf);
@@ -4851,54 +5756,39 @@ FUN(Page_textAsHtml)(JNIEnv *env, jobject self)
 
 	fz_try(ctx)
 	{
-		fz_rect mediabox;
-
 		ctm = fz_identity;
-		sheet = fz_new_stext_sheet(ctx);
-		text = fz_new_stext_page(ctx, fz_bound_page(ctx, page, &mediabox));
-		dev = fz_new_stext_device(ctx, sheet, text, NULL);
-		fz_run_page(ctx, page, dev, &ctm, NULL);
+		text = fz_new_stext_page(ctx, fz_bound_page(ctx, page));
+		dev = fz_new_stext_device(ctx, text, NULL);
+		fz_run_page(ctx, page, dev, ctm, NULL);
 		fz_close_device(ctx, dev);
-
-		fz_analyze_text(ctx, sheet, text);
 
 		buf = fz_new_buffer(ctx, 256);
 		out = fz_new_output_with_buffer(ctx, buf);
-		fz_write_printf(ctx, out, "<html>\n");
-		fz_write_printf(ctx, out, "<style>\n");
-		fz_write_printf(ctx, out, "body{margin:0;}\n");
-		fz_write_printf(ctx, out, "div.page{background-color:white;}\n");
-		fz_write_printf(ctx, out, "div.block{margin:0pt;padding:0pt;}\n");
-		fz_write_printf(ctx, out, "div.metaline{display:table;width:100%%}\n");
-		fz_write_printf(ctx, out, "div.line{display:table-row;}\n");
-		fz_write_printf(ctx, out, "div.cell{display:table-cell;padding-left:0.25em;padding-right:0.25em}\n");
-		//fz_write_printf(ctx, out, "p{margin:0;padding:0;}\n");
-		fz_write_printf(ctx, out, "</style>\n");
-		fz_write_printf(ctx, out, "<body style=\"margin:0\"><div style=\"padding:10px\" id=\"content\">");
-		fz_print_stext_page_html(ctx, out, text);
-		fz_write_printf(ctx, out, "</div></body>\n");
-		fz_write_printf(ctx, out, "<style>\n");
-		fz_print_stext_sheet(ctx, out, sheet);
-		fz_write_printf(ctx, out, "</style>\n</html>\n");
+		fz_print_stext_header_as_html(ctx, out);
+		fz_print_stext_page_as_html(ctx, out, text);
+		fz_print_stext_trailer_as_html(ctx, out);
+		fz_close_output(ctx, out);
 	}
 	fz_always(ctx)
 	{
-		fz_drop_stext_page(ctx, text);
-		fz_drop_stext_sheet(ctx, sheet);
-		fz_drop_device(ctx, dev);
 		fz_drop_output(ctx, out);
-		fz_drop_buffer(ctx, buf);
+		fz_drop_device(ctx, dev);
+		fz_drop_stext_page(ctx, text);
 	}
 	fz_catch(ctx)
 	{
-		jni_throw_oom(env, "out of memory in MuPDFCore_textAsHtml");
+		fz_drop_buffer(ctx, buf);
+		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
 	len = fz_buffer_storage(ctx, buf, &data);
 	arr = (*env)->NewByteArray(env, (jsize)len);
-	if (!arr) return NULL;
-	(*env)->SetByteArrayRegion(env, arr, 0, (jsize)len, (jbyte *)data);
+	if (arr)
+	{
+		(*env)->SetByteArrayRegion(env, arr, 0, (jsize)len, (jbyte *)data);
+	}
+	fz_drop_buffer(ctx, buf);
 	if ((*env)->ExceptionCheck(env)) return NULL;
 
 	return arr;
@@ -4950,16 +5840,17 @@ FUN(Cookie_abort)(JNIEnv *env, jobject self)
 /* DisplayList interface */
 
 JNIEXPORT jlong JNICALL
-FUN(DisplayList_newNative)(JNIEnv *env, jobject self)
+FUN(DisplayList_newNative)(JNIEnv *env, jobject self, jobject jmediabox)
 {
 	fz_context *ctx = get_context(env);
+	fz_rect mediabox = from_Rect(env, jmediabox);
 
 	fz_display_list *list = NULL;
 
 	if (!ctx) return 0;
 
 	fz_try(ctx)
-		list = fz_new_display_list(ctx, NULL);
+		list = fz_new_display_list(ctx, mediabox);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -4978,22 +5869,23 @@ FUN(DisplayList_run)(JNIEnv *env, jobject self, jobject jdev, jobject jctm, jobj
 	fz_matrix ctm = from_Matrix(env, jctm);
 	fz_cookie *cookie = from_Cookie(env, jcookie);
 	NativeDeviceInfo *info;
-	fz_rect local_rect;
-	fz_rect *rect = NULL;
+	fz_rect rect;
+	int err;
 
 	if (!ctx || !list) return;
 	if (!dev) { jni_throw_arg(env, "device must not be null"); return; }
 
 	/* Use a scissor rectangle if one is supplied */
 	if (jrect)
-	{
-		rect = &local_rect;
-		local_rect = from_Rect(env, jrect);
-	}
+		rect = from_Rect(env, jrect);
+	else
+		rect = fz_infinite_rect;
 
-	info = lockNativeDevice(env, jdev);
+	info = lockNativeDevice(env, jdev, &err);
+	if (err)
+		return;
 	fz_try(ctx)
-		fz_run_display_list(ctx, list, dev, &ctm, rect, cookie);
+		fz_run_display_list(ctx, list, dev, ctm, rect, cookie);
 	fz_always(ctx)
 		unlockNativeDevice(env, info);
 	fz_catch(ctx)
@@ -5023,7 +5915,7 @@ FUN(DisplayList_toPixmap)(JNIEnv *env, jobject self, jobject jctm, jobject jcs, 
 	if (!ctx || !list) return NULL;
 
 	fz_try(ctx)
-		pixmap = fz_new_pixmap_from_display_list(ctx, list, &ctm, cs, alpha);
+		pixmap = fz_new_pixmap_from_display_list(ctx, list, ctm, cs, alpha);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -5038,7 +5930,6 @@ FUN(DisplayList_toStructuredText)(JNIEnv *env, jobject self, jstring joptions)
 {
 	fz_context *ctx = get_context(env);
 	fz_display_list *list = from_DisplayList(env, self);
-	fz_stext_sheet *sheet = NULL;
 	fz_stext_page *text = NULL;
 	const char *options= NULL;
 	fz_stext_options opts;
@@ -5051,17 +5942,13 @@ FUN(DisplayList_toStructuredText)(JNIEnv *env, jobject self, jstring joptions)
 		if (!options) return NULL;
 	}
 
-	fz_var(sheet);
-
 	fz_try(ctx)
 	{
-		sheet = fz_new_stext_sheet(ctx);
 		fz_parse_stext_options(ctx, &opts, options);
-		text = fz_new_stext_page_from_display_list(ctx, list, sheet, &opts);
+		text = fz_new_stext_page_from_display_list(ctx, list, &opts);
 	}
 	fz_always(ctx)
 	{
-		fz_drop_stext_sheet(ctx, sheet);
 		if (options)
 			(*env)->ReleaseStringUTFChars(env, joptions, options);
 	}
@@ -5079,7 +5966,7 @@ FUN(DisplayList_search)(JNIEnv *env, jobject self, jstring jneedle)
 {
 	fz_context *ctx = get_context(env);
 	fz_display_list *list = from_DisplayList(env, self);
-	fz_rect hits[256];
+	fz_quad hits[256];
 	const char *needle = NULL;
 	int n = 0;
 
@@ -5099,7 +5986,7 @@ FUN(DisplayList_search)(JNIEnv *env, jobject self, jstring jneedle)
 		return NULL;
 	}
 
-	return to_jRectArray_safe(ctx, env, hits, n);
+	return to_jQuadArray_safe(ctx, env, hits, n);
 }
 
 /* Buffer interface */
@@ -5510,7 +6397,7 @@ FUN(DocumentWriter_beginPage)(JNIEnv *env, jobject self, jobject jmediabox)
 	if (!ctx || !wri) return NULL;
 
 	fz_try(ctx)
-		device = fz_begin_page(ctx, wri, &mediabox);
+		device = fz_begin_page(ctx, wri, mediabox);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -5566,7 +6453,7 @@ FUN(StructuredText_search)(JNIEnv *env, jobject self, jstring jneedle)
 {
 	fz_context *ctx = get_context(env);
 	fz_stext_page *text = from_StructuredText(env, self);
-	fz_rect hits[256];
+	fz_quad hits[256];
 	const char *needle = NULL;
 	int n = 0;
 
@@ -5586,37 +6473,66 @@ FUN(StructuredText_search)(JNIEnv *env, jobject self, jstring jneedle)
 		return NULL;
 	}
 
-	return to_jRectArray_safe(ctx, env, hits, n);
+	return to_jQuadArray_safe(ctx, env, hits, n);
 }
 
 JNIEXPORT jobject JNICALL
-FUN(StructuredText_highlight)(JNIEnv *env, jobject self, jobject jrect)
+FUN(StructuredText_highlight)(JNIEnv *env, jobject self, jobject jpt1, jobject jpt2)
 {
 	fz_context *ctx = get_context(env);
 	fz_stext_page *text = from_StructuredText(env, self);
-	fz_rect rect = from_Rect(env, jrect);
-	fz_rect hits[256];
+	fz_point pt1 = from_Point(env, jpt1);
+	fz_point pt2 = from_Point(env, jpt2);
+	fz_quad hits[1000];
 	int n = 0;
 
 	if (!ctx || !text) return NULL;
 
 	fz_try(ctx)
-		n = fz_highlight_selection(ctx, text, rect, hits, nelem(hits));
+		n = fz_highlight_selection(ctx, text, pt1, pt2, hits, nelem(hits));
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return to_jRectArray_safe(ctx, env, hits, n);
+	return to_jQuadArray_safe(ctx, env, hits, n);
 }
 
 JNIEXPORT jobject JNICALL
-FUN(StructuredText_copy)(JNIEnv *env, jobject self, jobject jrect)
+FUN(StructuredText_snapSelection)(JNIEnv *env, jobject self, jobject jpt1, jobject jpt2, jint mode)
 {
 	fz_context *ctx = get_context(env);
 	fz_stext_page *text = from_StructuredText(env, self);
-	fz_rect rect = from_Rect(env, jrect);
+	fz_point pt1 = from_Point(env, jpt1);
+	fz_point pt2 = from_Point(env, jpt2);
+	fz_quad quad;
+
+	if (!ctx || !text) return NULL;
+
+	fz_try(ctx)
+		quad = fz_snap_selection(ctx, text, &pt1, &pt2, mode);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	(*env)->SetFloatField(env, jpt1, fid_Point_x, pt1.x);
+	(*env)->SetFloatField(env, jpt1, fid_Point_y, pt1.y);
+	(*env)->SetFloatField(env, jpt2, fid_Point_x, pt2.x);
+	(*env)->SetFloatField(env, jpt2, fid_Point_y, pt2.y);
+
+	return to_Quad_safe(ctx, env, quad);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(StructuredText_copy)(JNIEnv *env, jobject self, jobject jpt1, jobject jpt2)
+{
+	fz_context *ctx = get_context(env);
+	fz_stext_page *text = from_StructuredText(env, self);
+	fz_point pt1 = from_Point(env, jpt1);
+	fz_point pt2 = from_Point(env, jpt2);
 	jobject jstring = NULL;
 	char *s = NULL;
 
@@ -5625,7 +6541,7 @@ FUN(StructuredText_copy)(JNIEnv *env, jobject self, jobject jrect)
 	fz_var(s);
 
 	fz_try(ctx)
-		s = fz_copy_selection(ctx, text, rect);
+		s = fz_copy_selection(ctx, text, pt1, pt2, 0);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -5638,168 +6554,92 @@ FUN(StructuredText_copy)(JNIEnv *env, jobject self, jobject jrect)
 	return jstring;
 }
 
-JNIEXPORT jobject JNICALL
-FUN(StructuredText_getBlocks)(JNIEnv *env, jobject self)
+JNIEXPORT void JNICALL
+FUN(StructuredText_walk)(JNIEnv *env, jobject self, jobject walker)
 {
 	fz_context *ctx = get_context(env);
-	fz_stext_page *text = from_StructuredText(env, self);
-
-	jobject barr = NULL;
-	jobject larr = NULL;
-	jobject sarr = NULL;
-	jobject carr = NULL;
-	jobject jrect = NULL;
-
-	int b;
-	int l;
-	int s;
-	int c;
-
+	fz_stext_page *page = from_StructuredText(env, self);
 	fz_stext_block *block = NULL;
 	fz_stext_line *line = NULL;
-	fz_stext_span *span = NULL;
-
-	jobject jblock = NULL;
-	jobject jline = NULL;
-	jobject jspan = NULL;
-	jobject jchar = NULL;
-
-	fz_rect sbbox;
-	fz_rect bbox;
 	fz_stext_char *ch = NULL;
+	jobject jbbox = NULL;
+	jobject jtrm = NULL;
+	jobject jimage = NULL;
+	jobject jorigin = NULL;
+	jobject jfont = NULL;
+	jobject jquad = NULL;
 
-	if (!ctx || !text) return NULL;
+	if (!ctx || !page) return;
+	if (!walker) { jni_throw_arg(env, "walker must not be null"); return; }
 
-	//  create block array
-	barr = (*env)->NewObjectArray(env, text->len, cls_TextBlock, NULL);
-	if (!barr) return NULL;
+	if (page->first_block == NULL)
+		return; /* structured text has no blocks to walk */
 
-	for (b = 0; b < text->len; b++)
+	for (block = page->first_block; block; block = block->next)
 	{
-		//  only do text blocks
-		if (text->blocks[b].type != FZ_PAGE_BLOCK_TEXT)
-			continue;
+		jbbox = to_Rect_safe(ctx, env, block->bbox);
+		if (!jbbox) return;
 
-		//  make a block
-		block = text->blocks[b].u.text;
-		jblock = (*env)->NewObject(env, cls_TextBlock, mid_TextBlock_init, self);
-		if (!jblock) return NULL;
-
-		//  set block's bbox
-		jrect = to_Rect_safe(ctx, env, &(block->bbox));
-		if (!jrect) return NULL;
-
-		(*env)->SetObjectField(env, jblock, fid_TextBlock_bbox, jrect);
-		(*env)->DeleteLocalRef(env, jrect);
-
-		//  create block's line array
-		larr = (*env)->NewObjectArray(env, block->len, cls_TextLine, NULL);
-		if (!larr) return NULL;
-
-		for (l = 0; l < block->len; l++)
+		if (block->type == FZ_STEXT_BLOCK_IMAGE)
 		{
-			int len = 0;
-			//  make a line
-			line = &block->lines[l];
-			jline = (*env)->NewObject(env, cls_TextLine, mid_TextLine_init, self);
-			if (!jline) return NULL;
+			jtrm = to_Matrix_safe(ctx, env, block->u.i.transform);
+			if (!jtrm) return;
 
-			//  set line's bbox
-			jrect = to_Rect_safe(ctx, env, &(line->bbox));
-			if (!jrect) return NULL;
+			jimage = to_Image_safe(ctx, env, block->u.i.image);
+			if (!jimage) return;
 
-			(*env)->SetObjectField(env, jline, fid_TextLine_bbox, jrect);
-			(*env)->DeleteLocalRef(env, jrect);
+			(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_onImageBlock, jbbox, jtrm, jimage);
+			if ((*env)->ExceptionCheck(env)) return;
 
-			//  count the spans
-			for (span = line->first_span; span; span = span->next)
-				len++;
+			(*env)->DeleteLocalRef(env, jbbox);
+			(*env)->DeleteLocalRef(env, jimage);
+			(*env)->DeleteLocalRef(env, jtrm);
+		}
+		else if (block->type == FZ_STEXT_BLOCK_TEXT)
+		{
+			(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_beginTextBlock, jbbox);
+			if ((*env)->ExceptionCheck(env)) return;
 
-			//  create a span array
-			sarr = (*env)->NewObjectArray(env, len, cls_TextSpan, NULL);
-			if (!sarr) return NULL;
+			(*env)->DeleteLocalRef(env, jbbox);
 
-			for (s=0, span = line->first_span; span; s++, span = span->next)
+			for (line = block->u.t.first_line; line; line = line->next)
 			{
-				//  create a span
-				jspan = (*env)->NewObject(env, cls_TextSpan, mid_TextSpan_init, self);
-				if (!jspan) return NULL;
+				jbbox = to_Rect_safe(ctx, env, line->bbox);
+				if (!jbbox) return;
 
-				//  make a char array
-				carr = (*env)->NewObjectArray(env, span->len, cls_TextChar, NULL);
-				if (!carr) return NULL;
+				(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_beginLine, jbbox, line->wmode);
+				if ((*env)->ExceptionCheck(env)) return;
 
-				sbbox = fz_empty_rect;
-				for (c = 0; c < span->len; c++)
+				(*env)->DeleteLocalRef(env, jbbox);
+
+				for (ch = line->first_char; ch; ch = ch->next)
 				{
-					ch = &span->text[c];
+					jorigin = to_Point_safe(ctx, env, ch->origin);
+					if (!jorigin) return;
 
-					//  create a char
-					jchar = (*env)->NewObject(env, cls_TextChar, mid_TextChar_init, self);
-					if (!jchar) return NULL;
+					jfont = to_Font_safe(ctx, env, ch->font);
+					if (!jfont) return;
 
-					//  set the char's bbox
-					fz_stext_char_bbox(ctx, &bbox, span, c);
-					jrect = to_Rect_safe(ctx, env, &(bbox));
-					if (!jrect) return NULL;
+					jquad = to_Quad_safe(ctx, env, ch->quad);
+					if (!jquad) return;
 
-					(*env)->SetObjectField(env, jchar, fid_TextChar_bbox, jrect);
-					(*env)->DeleteLocalRef(env, jrect);
+					(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_onChar,
+						ch->c, jorigin, jfont, ch->size, jquad);
+					if ((*env)->ExceptionCheck(env)) return;
 
-					//  set the char's value
-					(*env)->SetIntField(env, jchar, fid_TextChar_c, ch->c);
-
-					//  add it to the char array
-					(*env)->SetObjectArrayElement(env, carr, c, jchar);
-					if ((*env)->ExceptionCheck(env)) return NULL;
-
-					(*env)->DeleteLocalRef(env, jchar);
-
-					//  add this char's bbox to the containing span's bbox
-					fz_union_rect(&sbbox, &bbox);
+					(*env)->DeleteLocalRef(env, jquad);
+					(*env)->DeleteLocalRef(env, jfont);
+					(*env)->DeleteLocalRef(env, jorigin);
 				}
 
-				//  set the span's bbox
-				jrect = to_Rect_safe(ctx, env, &sbbox);
-				if (!jrect) return NULL;
-
-				(*env)->SetObjectField(env, jspan, fid_TextSpan_bbox, jrect);
-				(*env)->DeleteLocalRef(env, jrect);
-
-				//  set the span's char array
-				(*env)->SetObjectField(env, jspan, fid_TextSpan_chars, carr);
-				(*env)->DeleteLocalRef(env, carr);
-
-				//  add it to the span array
-				(*env)->SetObjectArrayElement(env, sarr, s, jspan);
-				if ((*env)->ExceptionCheck(env)) return NULL;
-
-				(*env)->DeleteLocalRef(env, jspan);
+				(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_endLine);
+				if ((*env)->ExceptionCheck(env)) return;
 			}
 
-			//  set the line's span array
-			(*env)->SetObjectField(env, jline, fid_TextLine_spans, sarr);
-			(*env)->DeleteLocalRef(env, sarr);
-
-			//  add to the line array
-			(*env)->SetObjectArrayElement(env, larr, l, jline);
-			if ((*env)->ExceptionCheck(env)) return NULL;
-
-			(*env)->DeleteLocalRef(env, jline);
+			(*env)->CallVoidMethod(env, walker, mid_StructuredTextWalker_endTextBlock);
+			if ((*env)->ExceptionCheck(env)) return;
 		}
-
-		//  set the block's line array
-		(*env)->SetObjectField(env, jblock, fid_TextBlock_lines, larr);
-		(*env)->DeleteLocalRef(env, larr);
-
-		//  add to the block array
-		(*env)->SetObjectArrayElement(env, barr, b, jblock);
-		if ((*env)->ExceptionCheck(env)) return NULL;
-
-		(*env)->DeleteLocalRef(env, jblock);
 	}
-
-	return barr;
 }
 
 /* PDFDocument interface */
@@ -5860,18 +6700,16 @@ FUN(PDFDocument_newNull)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
-	fz_try(ctx)
-		obj = pdf_new_null(ctx, pdf);
-	fz_catch(ctx)
-	{
-		jni_rethrow(env, ctx);
-		return NULL;
-	}
+	obj = PDF_NULL;
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5880,18 +6718,16 @@ FUN(PDFDocument_newBoolean)(JNIEnv *env, jobject self, jboolean b)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
-	fz_try(ctx)
-		obj = pdf_new_bool(ctx, pdf, b);
-	fz_catch(ctx)
-	{
-		jni_rethrow(env, ctx);
-		return NULL;
-	}
+	obj = b ? PDF_TRUE : PDF_FALSE;
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5900,18 +6736,22 @@ FUN(PDFDocument_newInteger)(JNIEnv *env, jobject self, jint i)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
 	fz_try(ctx)
-		obj = pdf_new_int(ctx, pdf, i);
+		obj = pdf_new_int(ctx, i);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5920,18 +6760,22 @@ FUN(PDFDocument_newReal)(JNIEnv *env, jobject self, jfloat f)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
 	fz_try(ctx)
-		obj = pdf_new_real(ctx, pdf, f);
+		obj = pdf_new_real(ctx, f);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5941,6 +6785,7 @@ FUN(PDFDocument_newString)(JNIEnv *env, jobject self, jstring jstring)
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
 	const char *s = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 	if (!jstring) { jni_throw_arg(env, "string must not be null"); return NULL; }
@@ -5949,7 +6794,7 @@ FUN(PDFDocument_newString)(JNIEnv *env, jobject self, jstring jstring)
 	if (!s) return NULL;
 
 	fz_try(ctx)
-		obj = pdf_new_string(ctx, pdf, s, strlen(s));
+		obj = pdf_new_text_string(ctx, s);
 	fz_always(ctx)
 		(*env)->ReleaseStringUTFChars(env, jstring, s);
 	fz_catch(ctx)
@@ -5958,7 +6803,55 @@ FUN(PDFDocument_newString)(JNIEnv *env, jobject self, jstring jstring)
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFDocument_newByteString)(JNIEnv *env, jobject self, jobject jbs)
+{
+	fz_context *ctx = get_context(env);
+	pdf_document *pdf = from_PDFDocument(env, self);
+	pdf_obj *obj = NULL;
+	jbyte *bs;
+	size_t bslen;
+	jobject jobj;
+
+	if (!ctx || !pdf) return NULL;
+	if (!jbs) { jni_throw_arg(env, "bs must not be null"); return NULL; }
+
+	bslen = (*env)->GetArrayLength(env, jbs);
+
+	fz_try(ctx)
+		bs = fz_malloc(ctx, bslen);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	(*env)->GetByteArrayRegion(env, jbs, 0, bslen, bs);
+	if ((*env)->ExceptionCheck(env)) {
+		fz_free(ctx, bs);
+		return NULL;
+	}
+
+	fz_try(ctx)
+		obj = pdf_new_string(ctx, (char *) bs, bslen);
+	fz_always(ctx)
+		fz_free(ctx, bs);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5968,6 +6861,7 @@ FUN(PDFDocument_newName)(JNIEnv *env, jobject self, jstring jname)
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
 	const char *name = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 	if (!jname) { jni_throw_arg(env, "name must not be null"); return NULL; }
@@ -5976,7 +6870,7 @@ FUN(PDFDocument_newName)(JNIEnv *env, jobject self, jstring jname)
 	if (!name) return NULL;
 
 	fz_try(ctx)
-		obj = pdf_new_name(ctx, pdf, name);
+		obj = pdf_new_name(ctx, name);
 	fz_always(ctx)
 		(*env)->ReleaseStringUTFChars(env, jname, name);
 	fz_catch(ctx)
@@ -5985,7 +6879,10 @@ FUN(PDFDocument_newName)(JNIEnv *env, jobject self, jstring jname)
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -5994,6 +6891,7 @@ FUN(PDFDocument_newIndirect)(JNIEnv *env, jobject self, jint num, jint gen)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
@@ -6005,7 +6903,10 @@ FUN(PDFDocument_newIndirect)(JNIEnv *env, jobject self, jint num, jint gen)
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -6014,6 +6915,7 @@ FUN(PDFDocument_newArray)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
@@ -6025,7 +6927,10 @@ FUN(PDFDocument_newArray)(JNIEnv *env, jobject self)
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -6034,6 +6939,7 @@ FUN(PDFDocument_newDictionary)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
 	pdf_obj *obj = NULL;
+	jobject jobj;
 
 	if (!ctx || !pdf) return NULL;
 
@@ -6045,7 +6951,10 @@ FUN(PDFDocument_newDictionary)(JNIEnv *env, jobject self)
 		return NULL;
 	}
 
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, obj);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -6053,14 +6962,13 @@ FUN(PDFDocument_findPage)(JNIEnv *env, jobject self, jint jat)
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
-	size_t at = (size_t) jat;
 	pdf_obj *obj = NULL;
 
 	if (!ctx || !pdf) return NULL;
 	if (jat < 0 || jat >= pdf_count_pages(ctx, pdf)) { jni_throw_oob(env, "at is not a valid page"); return NULL; }
 
 	fz_try(ctx)
-		obj = pdf_lookup_page_obj(ctx, pdf, (int)at);
+		obj = pdf_lookup_page_obj(ctx, pdf, jat);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -6166,19 +7074,17 @@ FUN(PDFDocument_newPDFGraftMap)(JNIEnv *env, jobject self)
 }
 
 JNIEXPORT jobject JNICALL
-FUN(PDFDocument_graftObject)(JNIEnv *env, jobject self, jobject jsrc, jobject jobj, jobject jmap)
+FUN(PDFDocument_graftObject)(JNIEnv *env, jobject self, jobject jobj)
 {
 	fz_context *ctx = get_context(env);
-	pdf_document *dst = from_PDFDocument(env, self);
-	pdf_document *src = from_PDFDocument(env, jsrc);
 	pdf_obj *obj = from_PDFObject(env, jobj);
-	pdf_graft_map *map = from_PDFGraftMap(env, jmap);
+	pdf_document *dst = from_PDFDocument(env, self);
 
 	if (!ctx || !dst) return NULL;
-	if (!src) { jni_throw_arg(env, "source must not be null"); return NULL; }
+	if (!dst) { jni_throw_arg(env, "dst must not be null"); return NULL; }
 
 	fz_try(ctx)
-		obj = pdf_graft_object(ctx, dst, src, obj, map);
+		obj = pdf_graft_object(ctx, dst, obj);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -6228,22 +7134,19 @@ FUN(PDFDocument_addStreamString)(JNIEnv *env, jobject self, jstring jbuf, jobjec
 	sbuf = (*env)->GetStringUTFChars(env, jbuf, NULL);
 	if (!sbuf) return NULL;
 
-	fz_var(data);
 	fz_var(buf);
 
 	fz_try(ctx)
 	{
-		int len = (int)strlen(sbuf);
+		size_t len = strlen(sbuf);
 		data = fz_malloc(ctx, len);
 		memcpy(data, sbuf, len);
 		buf = fz_new_buffer_from_data(ctx, data, len);
-		data = NULL;
 		ind = pdf_add_stream(ctx, pdf, buf, obj, compressed);
 	}
 	fz_always(ctx)
 	{
 		fz_drop_buffer(ctx, buf);
-		fz_free(ctx, data);
 		(*env)->ReleaseStringUTFChars(env, jbuf, sbuf);
 	}
 	fz_catch(ctx)
@@ -6270,7 +7173,7 @@ FUN(PDFDocument_addPageBuffer)(JNIEnv *env, jobject self, jobject jmediabox, jin
 	if (!contents) { jni_throw_arg(env, "contents must not be null"); return NULL; }
 
 	fz_try(ctx)
-		ind = pdf_add_page(ctx, pdf, &mediabox, rotate, resources, contents);
+		ind = pdf_add_page(ctx, pdf, mediabox, rotate, resources, contents);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -6299,21 +7202,18 @@ FUN(PDFDocument_addPageString)(JNIEnv *env, jobject self, jobject jmediabox, jin
 	scontents = (*env)->GetStringUTFChars(env, jcontents, NULL);
 	if (!scontents) return NULL;
 
-	fz_var(data);
 	fz_var(contents);
 
 	fz_try(ctx)
 	{
-		int len = (int)strlen(scontents);
+		size_t len = strlen(scontents);
 		data = fz_malloc(ctx, len);
 		contents = fz_new_buffer_from_data(ctx, data, len);
-		data = NULL;
-		ind = pdf_add_page(ctx, pdf, &mediabox, rotate, resources, contents);
+		ind = pdf_add_page(ctx, pdf, mediabox, rotate, resources, contents);
 	}
 	fz_always(ctx)
 	{
 		fz_drop_buffer(ctx, contents);
-		fz_free(ctx, data);
 		(*env)->ReleaseStringUTFChars(env, jcontents, scontents);
 	}
 	fz_catch(ctx)
@@ -6330,7 +7230,7 @@ FUN(PDFDocument_insertPage)(JNIEnv *env, jobject self, jint jat, jobject jpage)
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
-	int at = (int)jat;
+	int at = jat;
 	pdf_obj *page = from_PDFObject(env, jpage);
 
 	if (!ctx || !pdf) return;
@@ -6348,7 +7248,7 @@ FUN(PDFDocument_deletePage)(JNIEnv *env, jobject self, jint jat)
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
-	int at = (int) jat;
+	int at = jat;
 
 	if (!ctx || !pdf) return;
 	if (jat < 0 || jat >= pdf_count_pages(ctx, pdf)) { jni_throw_oob(env, "at is not a valid page"); return; }
@@ -6404,7 +7304,7 @@ FUN(PDFDocument_addFont)(JNIEnv *env, jobject self, jobject jfont)
 }
 
 JNIEXPORT jobject JNICALL
-FUN(PDFDocument_addSimpleFont)(JNIEnv *env, jobject self, jobject jfont)
+FUN(PDFDocument_addCJKFont)(JNIEnv *env, jobject self, jobject jfont, jint ordering, jint wmode, jboolean serif)
 {
 	fz_context *ctx = get_context(env);
 	pdf_document *pdf = from_PDFDocument(env, self);
@@ -6415,7 +7315,29 @@ FUN(PDFDocument_addSimpleFont)(JNIEnv *env, jobject self, jobject jfont)
 	if (!font) { jni_throw_arg(env, "font must not be null"); return NULL; }
 
 	fz_try(ctx)
-		ind = pdf_add_simple_font(ctx, pdf, font);
+		ind = pdf_add_cjk_font(ctx, pdf, font, ordering, wmode, serif);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_PDFObject_safe_own(ctx, env, self, ind);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFDocument_addSimpleFont)(JNIEnv *env, jobject self, jobject jfont, jint encoding)
+{
+	fz_context *ctx = get_context(env);
+	pdf_document *pdf = from_PDFDocument(env, self);
+	fz_font *font = from_Font(env, jfont);
+	pdf_obj *ind = NULL;
+
+	if (!ctx || !pdf) return NULL;
+	if (!font) { jni_throw_arg(env, "font must not be null"); return NULL; }
+
+	fz_try(ctx)
+		ind = pdf_add_simple_font(ctx, pdf, font, encoding);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
@@ -6441,6 +7363,86 @@ FUN(PDFDocument_canBeSavedIncrementally)(JNIEnv *env, jobject self)
 	pdf_document *pdf = from_PDFDocument(env, self);
 	if (!ctx || !pdf) return JNI_FALSE;
 	return pdf_can_be_saved_incrementally(ctx, pdf) ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jint JNICALL
+FUN(PDFDocument_nativeSaveWithStream)(JNIEnv *env, jobject self, jobject jstream, jstring joptions)
+{
+	fz_context *ctx = get_context(env);
+	pdf_document *pdf = from_PDFDocument(env, self);
+	SeekableStreamState *state = NULL;
+	jobject stream = NULL;
+	jbyteArray array = NULL;
+	fz_output *out;
+	const char *options = NULL;
+	int errors = 0;
+	pdf_write_options pwo;
+
+	fz_var(state);
+	fz_var(out);
+
+	if (joptions)
+	{
+		options = (*env)->GetStringUTFChars(env, joptions, NULL);
+		if (!options)
+			return 0;
+	}
+
+	stream = (*env)->NewGlobalRef(env, jstream);
+	if (!stream)
+	{
+		if (options)
+			(*env)->ReleaseStringUTFChars(env, joptions, options);
+		return 0;
+	}
+
+	array = (*env)->NewByteArray(env, sizeof state->buffer);
+	if (array)
+		array = (*env)->NewGlobalRef(env, array);
+	if (!array)
+	{
+		if (options)
+			(*env)->ReleaseStringUTFChars(env, joptions, options);
+		(*env)->DeleteGlobalRef(env, stream);
+		return 0;
+	}
+
+	fz_try(ctx)
+	{
+		state = fz_malloc(ctx, sizeof(SeekableStreamState));
+		state->stream = stream;
+		state->array = array;
+
+		out = fz_new_output(ctx, 8192, state, call_SeekableOutputStream_write, NULL, call_SeekableOutputStream_drop);
+		out->seek = call_SeekableOutputStream_seek;
+		out->tell = call_SeekableOutputStream_tell;
+
+		/* these are now owned by 'out' */
+		state = NULL;
+		stream = NULL;
+		array = NULL;
+
+		pdf_parse_write_options(ctx, &pwo, options);
+		pwo.errors = &errors;
+		pdf_write_document(ctx, pdf, out, &pwo);
+		fz_close_output(ctx, out);
+	}
+	fz_always(ctx)
+	{
+		if (options)
+			(*env)->ReleaseStringUTFChars(env, joptions, options);
+		fz_drop_output(ctx, out);
+	}
+	fz_catch(ctx)
+	{
+		if (stream) (*env)->DeleteGlobalRef(env, stream);
+		if (array) (*env)->DeleteGlobalRef(env, array);
+		fz_free(ctx, state);
+		jni_rethrow(env, ctx);
+		return 0;
+	}
+
+	return errors;
 }
 
 JNIEXPORT jint JNICALL
@@ -6507,8 +7509,7 @@ FUN(PDFObject_newNull)(JNIEnv *env, jclass cls)
 
 	if (!ctx) return 0;
 
-	/* Not nice to pass doc as NULL, but it is unused */
-	return jlong_cast(pdf_new_null(ctx, NULL));
+	return jlong_cast(PDF_NULL);
 }
 
 JNIEXPORT jint JNICALL
@@ -6880,22 +7881,19 @@ FUN(PDFObject_writeStreamString)(JNIEnv *env, jobject self, jstring jstr)
 	str = (*env)->GetStringUTFChars(env, jstr, NULL);
 	if (!str) return;
 
-	fz_var(data);
 	fz_var(buf);
 
 	fz_try(ctx)
 	{
-		int len = (int)strlen(str);
+		size_t len = strlen(str);
 		data = fz_malloc(ctx, len);
 		memcpy(data, str, len);
 		buf = fz_new_buffer_from_data(ctx, data, len);
-		data = NULL;
 		pdf_update_stream(ctx, pdf, obj, buf, 0);
 	}
 	fz_always(ctx)
 	{
 		fz_drop_buffer(ctx, buf);
-		fz_free(ctx, data);
 		(*env)->ReleaseStringUTFChars(env, jstr, str);
 	}
 	fz_catch(ctx)
@@ -6937,22 +7935,19 @@ FUN(PDFObject_writeRawStreamString)(JNIEnv *env, jobject self, jstring jstr)
 	str = (*env)->GetStringUTFChars(env, jstr, NULL);
 	if (!str) return;
 
-	fz_var(data);
 	fz_var(buf);
 
 	fz_try(ctx)
 	{
-		int len = (int)strlen(str);
+		size_t len = strlen(str);
 		data = fz_malloc(ctx, len);
 		memcpy(data, str, len);
 		buf = fz_new_buffer_from_data(ctx, data, len);
-		data = NULL;
 		pdf_update_stream(ctx, pdf, obj, buf, 1);
 	}
 	fz_always(ctx)
 	{
 		fz_drop_buffer(ctx, buf);
-		fz_free(ctx, data);
 		(*env)->ReleaseStringUTFChars(env, jstr, str);
 	}
 	fz_catch(ctx)
@@ -6965,6 +7960,7 @@ FUN(PDFObject_resolve)(JNIEnv *env, jobject self)
 	fz_context *ctx = get_context(env);
 	pdf_obj *obj = from_PDFObject(env, self);
 	pdf_obj *ind = NULL;
+	jobject jobj;
 
 	if (!ctx || !obj) return NULL;
 
@@ -6977,7 +7973,10 @@ FUN(PDFObject_resolve)(JNIEnv *env, jobject self)
 	}
 
 	pdf_keep_obj(ctx, ind);
-	return (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(ind), self);
+	jobj = (*env)->NewObject(env, cls_PDFObject, mid_PDFObject_init, jlong_cast(obj), self);
+	if (!jobj)
+		pdf_drop_obj(ctx, ind);
+	return jobj;
 }
 
 JNIEXPORT jobject JNICALL
@@ -7034,18 +8033,11 @@ FUN(PDFObject_putArrayBoolean)(JNIEnv *env, jobject self, jint index, jboolean b
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		val = pdf_new_bool(ctx, pdf, b);
-		pdf_array_put(ctx, arr, index, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_array_put(ctx, arr, index, b ? PDF_TRUE : PDF_FALSE);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7055,18 +8047,11 @@ FUN(PDFObject_putArrayInteger)(JNIEnv *env, jobject self, jint index, jint i)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		val = pdf_new_int(ctx, pdf, i);
-		pdf_array_put(ctx, arr, index, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_array_put_drop(ctx, arr, index, pdf_new_int(ctx, i));
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7076,18 +8061,11 @@ FUN(PDFObject_putArrayFloat)(JNIEnv *env, jobject self, jint index, jfloat f)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		val = pdf_new_real(ctx, pdf, f);
-		pdf_array_put(ctx, arr, index, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_array_put_drop(ctx, arr, index, pdf_new_real(ctx, f));
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7098,7 +8076,6 @@ FUN(PDFObject_putArrayString)(JNIEnv *env, jobject self, jint index, jstring jst
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
 	const char *str = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !arr) return;
 	if (jstr)
@@ -7109,13 +8086,13 @@ FUN(PDFObject_putArrayString)(JNIEnv *env, jobject self, jint index, jstring jst
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		val = str ? pdf_new_string(ctx, pdf, str, strlen(str)) : NULL;
-		pdf_array_put(ctx, arr, index, val);
+		if (str)
+			pdf_array_put_drop(ctx, arr, index, pdf_new_string(ctx, str, strlen(str)));
+		else
+			pdf_array_put(ctx, arr, index, PDF_NULL);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		if (str)
 			(*env)->ReleaseStringUTFChars(env, jstr, str);
 	}
@@ -7145,7 +8122,6 @@ FUN(PDFObject_putDictionaryStringBoolean)(JNIEnv *env, jobject self, jstring jna
 	pdf_obj *dict = from_PDFObject(env, self);
 	const char *name = NULL;
 	pdf_obj *key = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jname)
@@ -7156,14 +8132,11 @@ FUN(PDFObject_putDictionaryStringBoolean)(JNIEnv *env, jobject self, jstring jna
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		key = name ? pdf_new_name(ctx, pdf, name) : NULL;
-		val = pdf_new_bool(ctx, pdf, b);
-		pdf_dict_put(ctx, dict, key, val);
+		key = name ? pdf_new_name(ctx, name) : NULL;
+		pdf_dict_put(ctx, dict, key, b ? PDF_TRUE : PDF_FALSE);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		pdf_drop_obj(ctx, key);
 		if (name)
 			(*env)->ReleaseStringUTFChars(env, jname, name);
@@ -7179,7 +8152,6 @@ FUN(PDFObject_putDictionaryStringInteger)(JNIEnv *env, jobject self, jstring jna
 	pdf_obj *dict = from_PDFObject(env, self);
 	const char *name = NULL;
 	pdf_obj *key = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jname)
@@ -7190,14 +8162,11 @@ FUN(PDFObject_putDictionaryStringInteger)(JNIEnv *env, jobject self, jstring jna
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		key = name ? pdf_new_name(ctx, pdf, name) : NULL;
-		val = pdf_new_int(ctx, pdf, i);
-		pdf_dict_put(ctx, dict, key, val);
+		key = name ? pdf_new_name(ctx, name) : NULL;
+		pdf_dict_put_int(ctx, dict, key, i);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		pdf_drop_obj(ctx, key);
 		if (name)
 			(*env)->ReleaseStringUTFChars(env, jname, name);
@@ -7213,7 +8182,6 @@ FUN(PDFObject_putDictionaryStringFloat)(JNIEnv *env, jobject self, jstring jname
 	pdf_obj *dict = from_PDFObject(env, self);
 	const char *name = NULL;
 	pdf_obj *key = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jname)
@@ -7224,14 +8192,11 @@ FUN(PDFObject_putDictionaryStringFloat)(JNIEnv *env, jobject self, jstring jname
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		key = name ? pdf_new_name(ctx, pdf, name) : NULL;
-		val = pdf_new_real(ctx, pdf, f);
-		pdf_dict_put(ctx, dict, key, val);
+		key = name ? pdf_new_name(ctx, name) : NULL;
+		pdf_dict_put_real(ctx, dict, key, f);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		pdf_drop_obj(ctx, key);
 		if (name)
 			(*env)->ReleaseStringUTFChars(env, jname, name);
@@ -7245,11 +8210,9 @@ FUN(PDFObject_putDictionaryStringString)(JNIEnv *env, jobject self, jstring jnam
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
-	pdf_document *pdf = pdf_get_bound_document(ctx, dict);
 	const char *name = NULL;
 	const char *str = NULL;
 	pdf_obj *key = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jname)
@@ -7269,13 +8232,14 @@ FUN(PDFObject_putDictionaryStringString)(JNIEnv *env, jobject self, jstring jnam
 
 	fz_try(ctx)
 	{
-		key = name ? pdf_new_name(ctx, pdf, name) : NULL;
-		val = val ? pdf_new_string(ctx, pdf, str, strlen(str)) : NULL;
-		pdf_dict_put(ctx, dict, key, val);
+		key = name ? pdf_new_name(ctx, name) : NULL;
+		if (str)
+			pdf_dict_put_string(ctx, dict, key, str, strlen(str));
+		else
+			pdf_dict_put(ctx, dict, key, PDF_NULL);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		pdf_drop_obj(ctx, key);
 		if (str)
 			(*env)->ReleaseStringUTFChars(env, jstr, str);
@@ -7291,7 +8255,6 @@ FUN(PDFObject_putDictionaryStringPDFObject)(JNIEnv *env, jobject self, jstring j
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
-	pdf_document *pdf = pdf_get_bound_document(ctx, dict);
 	pdf_obj *val = from_PDFObject(env, jobj);
 	const char *name = NULL;
 	pdf_obj *key = NULL;
@@ -7305,7 +8268,7 @@ FUN(PDFObject_putDictionaryStringPDFObject)(JNIEnv *env, jobject self, jstring j
 
 	fz_try(ctx)
 	{
-		key = name ? pdf_new_name(ctx, pdf, name) : NULL;
+		key = name ? pdf_new_name(ctx, name) : NULL;
 		pdf_dict_put(ctx, dict, key, val);
 	}
 	fz_always(ctx)
@@ -7324,18 +8287,11 @@ FUN(PDFObject_putDictionaryPDFObjectBoolean)(JNIEnv *env, jobject self, jobject 
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
 	pdf_obj *name = from_PDFObject(env, jname);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		val = pdf_new_bool(ctx, pdf, b);
-		pdf_dict_put(ctx, dict, name, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_dict_put(ctx, dict, name, b ? PDF_TRUE : PDF_FALSE);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7346,18 +8302,11 @@ FUN(PDFObject_putDictionaryPDFObjectInteger)(JNIEnv *env, jobject self, jobject 
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
 	pdf_obj *name = from_PDFObject(env, jname);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		val = pdf_new_int(ctx, pdf, i);
-		pdf_dict_put(ctx, dict, name, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_dict_put_int(ctx, dict, name, i);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7368,18 +8317,11 @@ FUN(PDFObject_putDictionaryPDFObjectFloat)(JNIEnv *env, jobject self, jobject jn
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
 	pdf_obj *name = from_PDFObject(env, jname);
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		val = pdf_new_real(ctx, pdf, f);
-		pdf_dict_put(ctx, dict, name, val);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, val);
+		pdf_dict_put_real(ctx, dict, name, f);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7391,7 +8333,6 @@ FUN(PDFObject_putDictionaryPDFObjectString)(JNIEnv *env, jobject self, jobject j
 	pdf_obj *dict = from_PDFObject(env, self);
 	pdf_obj *name = from_PDFObject(env, jname);
 	const char *str = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jstr)
@@ -7402,13 +8343,13 @@ FUN(PDFObject_putDictionaryPDFObjectString)(JNIEnv *env, jobject self, jobject j
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		val = str ? pdf_new_string(ctx, pdf, str, strlen(str)) : NULL;
-		pdf_dict_put(ctx, dict, name, val);
+		if (str)
+			pdf_dict_put_string(ctx, dict, name, str, strlen(str));
+		else
+			pdf_dict_put(ctx, dict, name, PDF_NULL);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		if (str)
 			(*env)->ReleaseStringUTFChars(env, jstr, str);
 	}
@@ -7452,7 +8393,6 @@ FUN(PDFObject_deleteDictionaryString)(JNIEnv *env, jobject self, jstring jname)
 	fz_context *ctx = get_context(env);
 	pdf_obj *dict = from_PDFObject(env, self);
 	const char *name = NULL;
-	pdf_obj *val = NULL;
 
 	if (!ctx || !dict) return;
 	if (jname)
@@ -7463,13 +8403,10 @@ FUN(PDFObject_deleteDictionaryString)(JNIEnv *env, jobject self, jstring jname)
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, dict);
-		val = name ? pdf_new_name(ctx, pdf, name) : NULL;
-		pdf_dict_del(ctx, dict, val);
+		pdf_dict_dels(ctx, dict, name);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, val);
 		if (name)
 			(*env)->ReleaseStringUTFChars(env, jname, name);
 	}
@@ -7552,27 +8489,44 @@ FUN(PDFObject_asFloat)(JNIEnv *env, jobject self)
 	return f;
 }
 
+JNIEXPORT jint JNICALL
+FUN(PDFObject_asIndirect)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_obj *obj = from_PDFObject(env, self);
+	int ind = 0;
+
+	if (!ctx || !obj) return 0;
+
+	fz_try(ctx)
+		ind = pdf_to_num(ctx, obj);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return 0;
+	}
+
+	return ind;
+}
+
 JNIEXPORT jstring JNICALL
 FUN(PDFObject_asString)(JNIEnv *env, jobject self)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *obj = from_PDFObject(env, self);
-	char *str = NULL;
-	jstring jstr;
+	const char *str = NULL;
 
 	if (!ctx || !obj) return NULL;
 
 	fz_try(ctx)
-		str = pdf_to_utf8(ctx, obj);
+		str = pdf_to_text_string(ctx, obj);
 	fz_catch(ctx)
 	{
 		jni_rethrow(env, ctx);
 		return NULL;
 	}
 
-	jstr = (*env)->NewStringUTF(env, str);
-	fz_free(ctx, str);
-	return jstr;
+	return (*env)->NewStringUTF(env, str);
 }
 
 JNIEXPORT jobject JNICALL
@@ -7630,39 +8584,6 @@ FUN(PDFObject_asName)(JNIEnv *env, jobject self)
 	return (*env)->NewStringUTF(env, str);
 }
 
-JNIEXPORT jobject JNICALL
-FUN(PDFObject_asByteName)(JNIEnv *env, jobject self)
-{
-	fz_context *ctx = get_context(env);
-	pdf_obj *obj = from_PDFObject(env, self);
-	const char *str = NULL;
-	jobject jbs = NULL;
-	jbyte *bs = NULL;
-	int len;
-
-	if (!ctx || !obj) return NULL;
-
-	fz_try(ctx)
-		str = pdf_to_name(ctx, obj);
-	fz_catch(ctx)
-	{
-		jni_rethrow(env, ctx);
-		return NULL;
-	}
-
-	len = (int)strlen(str);
-	jbs = (*env)->NewByteArray(env, len);
-	if (!jbs) return NULL;
-	bs = (*env)->GetByteArrayElements(env, jbs, NULL);
-	if (!bs) return NULL;
-
-	memcpy(bs, str, len);
-
-	(*env)->ReleaseByteArrayElements(env, jbs, bs, 0);
-
-	return jbs;
-}
-
 JNIEXPORT jint JNICALL
 FUN(PDFObject_size)(JNIEnv *env, jobject self)
 {
@@ -7688,18 +8609,11 @@ FUN(PDFObject_pushBoolean)(JNIEnv *env, jobject self, jboolean b)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *item = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		item = pdf_new_bool(ctx, pdf, b);
-		pdf_array_push(ctx, arr, item);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, item);
+		pdf_array_push_bool(ctx, arr, b);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7709,18 +8623,11 @@ FUN(PDFObject_pushInteger)(JNIEnv *env, jobject self, jint i)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *item = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		item = pdf_new_int(ctx, pdf, i);
-		pdf_array_push(ctx, arr, item);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, item);
+		pdf_array_push_int(ctx, arr, i);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7730,18 +8637,11 @@ FUN(PDFObject_pushFloat)(JNIEnv *env, jobject self, jfloat f)
 {
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
-	pdf_obj *item = NULL;
 
 	if (!ctx || !arr) return;
 
 	fz_try(ctx)
-	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		item = pdf_new_real(ctx, pdf, f);
-		pdf_array_push(ctx, arr, item);
-	}
-	fz_always(ctx)
-		pdf_drop_obj(ctx, item);
+		pdf_array_push_real(ctx, arr, f);
 	fz_catch(ctx)
 		jni_rethrow(env, ctx);
 }
@@ -7752,7 +8652,6 @@ FUN(PDFObject_pushString)(JNIEnv *env, jobject self, jstring jstr)
 	fz_context *ctx = get_context(env);
 	pdf_obj *arr = from_PDFObject(env, self);
 	const char *str = NULL;
-	pdf_obj *item = NULL;
 
 	if (!ctx || !arr) return;
 	if (jstr)
@@ -7763,13 +8662,13 @@ FUN(PDFObject_pushString)(JNIEnv *env, jobject self, jstring jstr)
 
 	fz_try(ctx)
 	{
-		pdf_document *pdf = pdf_get_bound_document(ctx, arr);
-		item = str ? pdf_new_string(ctx, pdf, str, strlen(str)) : NULL;
-		pdf_array_push(ctx, arr, item);
+		if (str)
+			pdf_array_push_string(ctx, arr, str, strlen(str));
+		else
+			pdf_array_push(ctx, arr, PDF_NULL);
 	}
 	fz_always(ctx)
 	{
-		pdf_drop_obj(ctx, item);
 		if (str)
 			(*env)->ReleaseStringUTFChars(env, jstr, str);
 	}
@@ -7849,4 +8748,866 @@ FUN(PDFGraftMap_finalize)(JNIEnv *env, jobject self)
 	if (!ctx || !map) return;
 
 	pdf_drop_graft_map(ctx, map);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFGraftMap_graftObject)(JNIEnv *env, jobject self, jobject jobj)
+{
+	fz_context *ctx = get_context(env);
+	pdf_obj *obj = from_PDFObject(env, jobj);
+	pdf_graft_map *map = from_PDFGraftMap(env, self);
+
+	if (!ctx) return NULL;
+	if (!map) { jni_throw_arg(env, "map must not be null"); return NULL; }
+
+	fz_try(ctx)
+		obj = pdf_graft_mapped_object(ctx, map, obj);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_PDFObject_safe_own(ctx, env, self, obj);
+}
+
+/* PDFPage interface */
+
+JNIEXPORT jobject JNICALL
+FUN(PDFPage_createAnnotation)(JNIEnv *env, jobject self, jint subtype)
+{
+	fz_context *ctx = get_context(env);
+	pdf_page *page = from_PDFPage(env, self);
+	pdf_annot *annot = NULL;
+
+	if (!ctx || !page) return NULL;
+
+	fz_try(ctx)
+		annot = pdf_create_annot(ctx, page, subtype);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_Annotation_safe(ctx, env, (fz_annot*)annot);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFPage_deleteAnnotation)(JNIEnv *env, jobject self, jobject jannot)
+{
+	fz_context *ctx = get_context(env);
+	pdf_page *page = from_PDFPage(env, self);
+	pdf_annot *annot = from_PDFAnnotation(env, jannot);
+
+	if (!ctx || !page) return;
+
+	fz_try(ctx)
+		pdf_delete_annot(ctx, page, annot);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jboolean JNICALL
+FUN(PDFPage_update)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_page *page = from_PDFPage(env, self);
+	jboolean changed = JNI_FALSE;
+
+	if (!ctx || !page) return JNI_FALSE;
+
+	fz_try(ctx)
+		changed = pdf_update_page(ctx, page);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	return changed;
+}
+
+/* PDFAnnotation interface */
+
+JNIEXPORT jint JNICALL
+FUN(PDFAnnotation_getType)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	jint subtype = 0;
+
+	if (!ctx || !annot) return 0;
+
+	fz_try(ctx)
+		subtype = pdf_annot_type(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return 0;
+	}
+
+	return subtype;
+}
+
+JNIEXPORT jint JNICALL
+FUN(PDFAnnotation_getFlags)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	jint flags = 0;
+
+	if (!ctx || !annot) return 0;
+
+	fz_try(ctx)
+		flags = pdf_annot_flags(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return 0;
+	}
+
+	return flags;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setFlags)(JNIEnv *env, jobject self, jint flags)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_set_annot_flags(ctx, annot, flags);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jstring JNICALL
+FUN(PDFAnnotation_getContents)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *contents = NULL;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		contents = pdf_annot_contents(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return (*env)->NewStringUTF(env, contents);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setContents)(JNIEnv *env, jobject self, jstring jcontents)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *contents = NULL;
+
+	if (!ctx || !annot) return;
+	if (jcontents)
+	{
+		contents = (*env)->GetStringUTFChars(env, jcontents, NULL);
+		if (!contents) return;
+	}
+
+	fz_try(ctx)
+		pdf_set_annot_contents(ctx, annot, contents);
+	fz_always(ctx)
+		if (contents)
+			(*env)->ReleaseStringUTFChars(env, jcontents, contents);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jstring JNICALL
+FUN(PDFAnnotation_getAuthor)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *author = NULL;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		author = pdf_annot_author(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return (*env)->NewStringUTF(env, author);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setAuthor)(JNIEnv *env, jobject self, jstring jauthor)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *author = NULL;
+
+	if (!ctx || !annot) return;
+	if (jauthor)
+	{
+		author = (*env)->GetStringUTFChars(env, jauthor, NULL);
+		if (!author) return;
+	}
+
+	fz_try(ctx)
+		pdf_set_annot_author(ctx, annot, author);
+	fz_always(ctx)
+		if (author)
+			(*env)->ReleaseStringUTFChars(env, jauthor, author);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jlong JNICALL
+FUN(PDFAnnotation_getModificationDateNative)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	jlong t;
+
+	if (!ctx || !annot) return -1;
+
+	fz_try(ctx)
+		t = pdf_annot_modification_date(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return -1;
+	}
+
+	return t * 1000;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setModificationDate)(JNIEnv *env, jobject self, jlong time)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	fz_try(ctx)
+		pdf_set_annot_modification_date(ctx, annot, time / 1000);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return;
+	}
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getRect)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	fz_rect rect;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		rect = pdf_annot_rect(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	return to_Rect_safe(ctx, env, rect);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setRect)(JNIEnv *env, jobject self, jobject jrect)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	fz_rect rect = from_Rect(env, jrect);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_set_annot_rect(ctx, annot, rect);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jfloat JNICALL
+FUN(PDFAnnotation_getBorder)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	jfloat border;
+
+	if (!ctx || !annot) return 0;
+
+	fz_try(ctx)
+		border = pdf_annot_border(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return 0;
+	}
+
+	return border;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setBorder)(JNIEnv *env, jobject self, jfloat border)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_set_annot_border(ctx, annot, border);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getColor)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int n;
+	float color[4];
+	jfloatArray arr;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		pdf_annot_color(ctx, annot, &n, color);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	arr = (*env)->NewFloatArray(env, n);
+	if (!arr) return NULL;
+
+	(*env)->SetFloatArrayRegion(env, arr, 0, n, &color[0]);
+	if ((*env)->ExceptionCheck(env)) return NULL;
+
+	return arr;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setColor)(JNIEnv *env, jobject self, jobject jcolor)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	float color[4];
+	int n;
+
+	if (!ctx || !annot) return;
+	if (!from_jfloatArray(env, color, nelem(color), jcolor)) return;
+	n = (*env)->GetArrayLength(env, jcolor);
+
+	fz_try(ctx)
+		pdf_set_annot_color(ctx, annot, n, color);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getInteriorColor)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int n;
+	float color[4];
+	jfloatArray arr;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		pdf_annot_interior_color(ctx, annot, &n, color);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	arr = (*env)->NewFloatArray(env, n);
+	if (!arr) return NULL;
+
+	(*env)->SetFloatArrayRegion(env, arr, 0, n, &color[0]);
+	if ((*env)->ExceptionCheck(env)) return NULL;
+
+	return arr;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setInteriorColor)(JNIEnv *env, jobject self, jobject jcolor)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	float color[4];
+	int n;
+
+	if (!ctx || !annot) return;
+	if (!from_jfloatArray(env, color, nelem(color), jcolor)) return;
+	n = (*env)->GetArrayLength(env, jcolor);
+
+	fz_try(ctx)
+		pdf_set_annot_interior_color(ctx, annot, n, color);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getQuadPoints)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int i, n;
+	float qp[8];
+	jobject jqps;
+	jfloatArray jqp;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		n = pdf_annot_quad_point_count(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	jqps = (*env)->NewObjectArray(env, n, cls_FloatArray, NULL);
+	if (!jqps) return NULL;
+
+	for (i = 0; i < n; i++)
+	{
+		fz_try(ctx)
+			pdf_annot_quad_point(ctx, annot, i, qp);
+		fz_catch(ctx)
+		{
+			jni_rethrow(env, ctx);
+			return NULL;
+		}
+
+		jqp = (*env)->NewFloatArray(env, 8);
+		if (!jqp) return NULL;
+
+		(*env)->SetFloatArrayRegion(env, jqp, 0, 8, &qp[0]);
+		if ((*env)->ExceptionCheck(env)) return NULL;
+
+		(*env)->SetObjectArrayElement(env, jqps, i, jqp);
+		if ((*env)->ExceptionCheck(env)) return NULL;
+
+		(*env)->DeleteLocalRef(env, jqp);
+	}
+
+	return jqps;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setQuadPoints)(JNIEnv *env, jobject self, jobject jqps)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int i, n, m;
+	float *qp;
+	jfloatArray jqp;
+
+	if (!ctx || !annot) return;
+
+	n = (*env)->GetArrayLength(env, jqps);
+
+	fz_try(ctx)
+		qp = fz_malloc(ctx, n * 8 * sizeof *qp);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	for (i = 0; i < n; i++)
+	{
+		jqp = (*env)->GetObjectArrayElement(env, jqps, i);
+		if ((*env)->ExceptionCheck(env))
+		{
+			fz_free(ctx, qp);
+			return;
+		}
+
+		if (!jqp)
+			continue;
+
+		m = (*env)->GetArrayLength(env, jqp);
+		if (m > 8)
+			m = 8;
+
+		(*env)->GetFloatArrayRegion(env, jqp, 0, m, &qp[i * 8]);
+		if ((*env)->ExceptionCheck(env))
+		{
+			fz_free(ctx, qp);
+			return;
+		}
+
+		if (m < 8)
+			memset(&qp[i * 8 + m], 0, (8 - m) * sizeof (float));
+
+		(*env)->DeleteLocalRef(env, jqp);
+	}
+
+	fz_try(ctx)
+		pdf_set_annot_quad_points(ctx, annot, n, qp);
+	fz_always(ctx)
+		fz_free(ctx, qp);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_updateAppearance)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_update_appearance(ctx, annot);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jboolean JNICALL
+FUN(PDFAnnotation_update)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	jboolean changed = JNI_FALSE;
+
+	if (!ctx || !annot) return JNI_FALSE;
+
+	fz_try(ctx)
+		changed = pdf_update_annot(ctx, annot);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	return changed;
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getInkList)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int i, k, n, m;
+	fz_point v;
+	jobject jinklist;
+	jfloatArray jpath;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		n = pdf_annot_ink_list_count(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	jinklist = (*env)->NewObjectArray(env, n, cls_FloatArray, NULL);
+	if (!jinklist) return NULL;
+
+	for (i = 0; i < n; i++)
+	{
+		fz_try(ctx)
+			m = pdf_annot_ink_list_stroke_count(ctx, annot, i);
+		fz_catch(ctx)
+		{
+			jni_rethrow(env, ctx);
+			return NULL;
+		}
+
+		jpath = (*env)->NewFloatArray(env, m * 2);
+		if (!jpath) return NULL;
+
+		for (k = 0; k < m; k++)
+		{
+			fz_try(ctx)
+				v = pdf_annot_ink_list_stroke_vertex(ctx, annot, i, k);
+			fz_catch(ctx)
+			{
+				jni_rethrow(env, ctx);
+				return NULL;
+			}
+
+			(*env)->SetFloatArrayRegion(env, jpath, k * 2, 2, (float*)&v);
+			if ((*env)->ExceptionCheck(env)) return NULL;
+		}
+
+		(*env)->SetObjectArrayElement(env, jinklist, i, jpath);
+		if ((*env)->ExceptionCheck(env)) return NULL;
+
+		(*env)->DeleteLocalRef(env, jpath);
+	}
+
+	return jinklist;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setInkList)(JNIEnv *env, jobject self, jobject jinklist)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int i, k, n, m;
+	jfloatArray jpath;
+	fz_point *points = NULL;
+	int *counts = NULL;
+
+	if (!ctx || !annot) return;
+
+	n = (*env)->GetArrayLength(env, jinklist);
+
+	for (i = m = 0; i < n; i++)
+	{
+		jpath = (*env)->GetObjectArrayElement(env, jinklist, i);
+		if ((*env)->ExceptionCheck(env)) return;
+
+		if (!jpath)
+			continue;
+
+		m += (*env)->GetArrayLength(env, jpath) / 2;
+
+		(*env)->DeleteLocalRef(env, jpath);
+	}
+
+	fz_try(ctx)
+	{
+		counts = fz_malloc(ctx, n * sizeof(int));
+		points = fz_malloc(ctx, m * sizeof(fz_point));
+	}
+	fz_catch(ctx)
+	{
+		fz_free(ctx, counts);
+		fz_free(ctx, points);
+		jni_rethrow(env, ctx);
+	}
+
+	for (i = k = 0; i < n; k += counts[i++])
+	{
+		jpath = (*env)->GetObjectArrayElement(env, jinklist, i);
+		if ((*env)->ExceptionCheck(env))
+		{
+			fz_free(ctx, counts);
+			fz_free(ctx, points);
+			return;
+		}
+
+		if (!jpath)
+			continue;
+
+		counts[i] = (*env)->GetArrayLength(env, jpath);
+		(*env)->GetFloatArrayRegion(env, jpath, 0, counts[i], (float*)&points[k]);
+		if ((*env)->ExceptionCheck(env))
+		{
+			fz_free(ctx, counts);
+			fz_free(ctx, points);
+			return;
+		}
+		counts[i] /= 2;
+
+		(*env)->DeleteLocalRef(env, jpath);
+	}
+
+	fz_try(ctx)
+		pdf_set_annot_ink_list(ctx, annot, n, counts, points);
+	fz_always(ctx)
+	{
+		fz_free(ctx, counts);
+		fz_free(ctx, points);
+	}
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jboolean JNICALL
+FUN(PDFAnnotation_isOpen)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int open = 0;
+
+	if (!ctx || !annot) return 0;
+
+	fz_try(ctx)
+		open = pdf_annot_is_open(ctx, annot);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	return open;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setIsOpen)(JNIEnv *env, jobject self, jboolean open)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_set_annot_is_open(ctx, annot, open);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jobject JNICALL
+FUN(PDFAnnotation_getVertices)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	int i, n;
+	fz_point v;
+	jobject jvertices;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		n = pdf_annot_vertex_count(ctx, annot);
+	fz_catch(ctx)
+	{
+		jni_rethrow(env, ctx);
+		return NULL;
+	}
+
+	jvertices = (*env)->NewObjectArray(env, 2 * n, cls_FloatArray, NULL);
+	if (!jvertices) return NULL;
+
+	for (i = 0; i < n; i++)
+	{
+		fz_try(ctx)
+			v = pdf_annot_vertex(ctx, annot, i);
+		fz_catch(ctx)
+		{
+			jni_rethrow(env, ctx);
+			return NULL;
+		}
+
+		(*env)->SetFloatArrayRegion(env, jvertices, i * 2, 2, (float*)&v);
+		if ((*env)->ExceptionCheck(env)) return NULL;
+	}
+
+	return jvertices;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setVertices)(JNIEnv *env, jobject self, jobject jvertices)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	float *vertices = NULL;
+	int n;
+
+	if (!ctx || !annot) return;
+
+	n = (*env)->GetArrayLength(env, jvertices);
+
+	fz_try(ctx)
+		vertices = fz_malloc(ctx, n * sizeof *vertices);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	(*env)->GetFloatArrayRegion(env, jvertices, 0, n, vertices);
+	if ((*env)->ExceptionCheck(env))
+	{
+		fz_free(ctx, vertices);
+		return;
+	}
+
+	fz_try(ctx)
+		pdf_set_annot_vertices(ctx, annot, n, (fz_point*)vertices);
+	fz_always(ctx)
+		fz_free(ctx, vertices);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jstring JNICALL
+FUN(PDFAnnotation_getIcon)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *name = NULL;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		name = pdf_annot_icon_name(ctx, annot);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	return (*env)->NewStringUTF(env, name);
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setIcon)(JNIEnv *env, jobject self, jstring jname)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	const char *name = NULL;
+
+	if (!ctx || !annot) return;
+	if (!jname) { jni_throw_arg(env, "icon name must not be null"); return; }
+
+	name = (*env)->GetStringUTFChars(env, jname, NULL);
+	if (!name) return;
+
+	fz_try(ctx)
+		pdf_set_annot_icon_name(ctx, annot, name);
+	fz_always(ctx)
+		if (name)
+			(*env)->ReleaseStringUTFChars(env, jname, name);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+}
+
+JNIEXPORT jintArray JNICALL
+FUN(PDFAnnotation_getLineEndingStyles)(JNIEnv *env, jobject self)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+	enum pdf_line_ending s = 0, e = 0;
+	int line_endings[2];
+	jintArray jline_endings = NULL;
+
+	if (!ctx || !annot) return NULL;
+
+	fz_try(ctx)
+		pdf_annot_line_ending_styles(ctx, annot, &s, &e);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
+
+	line_endings[0] = s;
+	line_endings[1] = e;
+	jline_endings = (*env)->NewIntArray(env, 2);
+	(*env)->SetIntArrayRegion(env, jline_endings, 0, 2, &line_endings[0]);
+	if ((*env)->ExceptionCheck(env)) return NULL;
+
+	return jline_endings;
+}
+
+JNIEXPORT void JNICALL
+FUN(PDFAnnotation_setLineEndingStyles)(JNIEnv *env, jobject self, jint start_style, jint end_style)
+{
+	fz_context *ctx = get_context(env);
+	pdf_annot *annot = from_PDFAnnotation(env, self);
+
+	if (!ctx || !annot) return;
+
+	fz_try(ctx)
+		pdf_set_annot_line_ending_styles(ctx, annot, start_style, end_style);
+	fz_catch(ctx)
+		jni_rethrow(env, ctx);
 }

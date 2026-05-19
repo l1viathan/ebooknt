@@ -1,4 +1,7 @@
+#include "mupdf/fitz.h"
 #include "fitz-imp.h"
+
+#include <assert.h>
 
 struct fz_halftone_s
 {
@@ -73,7 +76,7 @@ fz_halftone *fz_default_halftone(fz_context *ctx, int num_comps)
 	{
 		int i;
 		for (i = 0; i < num_comps; i++)
-			ht->comp[i] = fz_new_pixmap_with_data(ctx, NULL, 16, 16, 1, 16, mono_ht);
+			ht->comp[i] = fz_new_pixmap_with_data(ctx, NULL, 16, 16, NULL, 1, 16, mono_ht);
 	}
 	fz_catch(ctx)
 	{
@@ -153,11 +156,11 @@ typedef void (threshold_fn)(const unsigned char *ht_line, const unsigned char *p
 
 #ifdef ARCH_ARM
 static void
-do_threshold_1(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char *restrict out, int w, int ht_len)
+do_threshold_1(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 __attribute__((naked));
 
 static void
-do_threshold_1(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char *restrict out, int w, int ht_len)
+do_threshold_1(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 {
 	asm volatile(
 	ENTER_ARM
@@ -278,7 +281,7 @@ do_threshold_1(const unsigned char * restrict ht_line, const unsigned char * res
 	);
 }
 #else
-static void do_threshold_1(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char * restrict out, int w, int ht_len)
+static void do_threshold_1(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 {
 	int h;
 	int l = ht_len;
@@ -345,11 +348,11 @@ static void do_threshold_1(const unsigned char * restrict ht_line, const unsigne
 */
 #ifdef ARCH_ARM
 static void
-do_threshold_4(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char *restrict out, int w, int ht_len)
+do_threshold_4(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 __attribute__((naked));
 
 static void
-do_threshold_4(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char *restrict out, int w, int ht_len)
+do_threshold_4(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 {
 	asm volatile(
 	ENTER_ARM
@@ -444,7 +447,7 @@ do_threshold_4(const unsigned char * restrict ht_line, const unsigned char * res
 	);
 }
 #else
-static void do_threshold_4(const unsigned char * restrict ht_line, const unsigned char * restrict pixmap, unsigned char * restrict out, int w, int ht_len)
+static void do_threshold_4(const unsigned char * FZ_RESTRICT ht_line, const unsigned char * FZ_RESTRICT pixmap, unsigned char * FZ_RESTRICT out, int w, int ht_len)
 {
 	int l = ht_len;
 
@@ -539,10 +542,10 @@ fz_bitmap *fz_new_bitmap_from_pixmap_band(fz_context *ctx, fz_pixmap *pix, fz_ha
 	switch(n)
 	{
 	case 1:
-		thresh = &do_threshold_1;
+		thresh = do_threshold_1;
 		break;
 	case 4:
-		thresh = &do_threshold_4;
+		thresh = do_threshold_4;
 		break;
 	default:
 		fz_throw(ctx, FZ_ERROR_GENERIC, "pixmap must be grayscale or CMYK to convert to bitmap");

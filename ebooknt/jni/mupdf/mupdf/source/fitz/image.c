@@ -1,9 +1,20 @@
 #include "fitz-imp.h"
 
+#include <string.h>
+#include <math.h>
+#include <assert.h>
+
+/* TODO: here or public? */
+static int
+fz_key_storable_needs_reaping(fz_context *ctx, const fz_key_storable *ks)
+{
+	return ks == NULL ? 0 : (ks->store_key_refs == ks->storable.refs);
+}
+
 #define SANE_DPI 72.0f
 #define INSANE_DPI 4800.0f
 
-#define SCALABLE_IMAGE_DPI 600
+#define SCALABLE_IMAGE_DPI 96
 
 struct fz_compressed_image_s
 {
@@ -42,8 +53,7 @@ fz_keep_image_store_key(fz_context *ctx, fz_image *image)
 void
 fz_drop_image_store_key(fz_context *ctx, fz_image *image)
 {
-	if (fz_drop_key_storable_key(ctx, &image->key_storable))
-		fz_free(ctx, image);
+	fz_drop_key_storable_key(ctx, &image->key_storable);
 }
 
 static int
@@ -83,10 +93,10 @@ fz_cmp_image_key(fz_context *ctx, void *k0_, void *k1_)
 }
 
 static void
-fz_print_image_key(fz_context *ctx, fz_output *out, void *key_)
+fz_format_image_key(fz_context *ctx, char *s, int n, void *key_)
 {
 	fz_image_key *key = (fz_image_key *)key_;
-	fz_write_printf(ctx, out, "(image %d x %d sf=%d) ", key->image->w, key->image->h, key->l2factor);
+	fz_snprintf(s, n, "(image %d x %d sf=%d)", key->image->w, key->image->h, key->l2factor);
 }
 
 static int
@@ -103,19 +113,14 @@ static const fz_store_type fz_image_store_type =
 	fz_keep_image_key,
 	fz_drop_image_key,
 	fz_cmp_image_key,
-	fz_print_image_key,
+	fz_format_image_key,
 	fz_needs_reap_image_key
 };
 
 void
 fz_drop_image(fz_context *ctx, fz_image *image)
 {
-	if (fz_drop_key_storable(ctx, &image->key_storable))
-	{
-		fz_drop_colorspace(ctx, image->colorspace);
-		fz_drop_image(ctx, image->mask);
-		fz_free(ctx, image);
-	}
+	fz_drop_key_storable(ctx, &image->key_storable);
 }
 
 static void
@@ -191,6 +196,115 @@ fz_unblend_masked_tile(fz_context *ctx, fz_pixmap *tile, fz_image *image)
 	fz_drop_pixmap(ctx, mask);
 }
 
+static void fz_adjust_image_subarea(fz_context *ctx, fz_image *image, fz_irect *subarea, int l2factor)
+{
+	int f = 1<<l2factor;
+	int bpp = image->bpc * image->n;
+	int mask;
+
+	switch (bpp)
+	{
+	case 1: mask = 8*f; break;
+	case 2: mask = 4*f; break;
+	case 4: mask = 2*f; break;
+	default: mask = (bpp & 7) == 0 ? f : 0; break;
+	}
+
+	if (mask != 0)
+	{
+		subarea->x0 &= ~(mask - 1);
+		subarea->x1 = (subarea->x1 + mask - 1) & ~(mask - 1);
+	}
+	else
+	{
+		/* Awkward case - mask cannot be a power of 2. */
+		mask = bpp*f;
+		switch (bpp)
+		{
+		case 3:
+		case 5:
+		case 7:
+		case 9:
+		case 11:
+		case 13:
+		case 15:
+		default:
+			mask *= 8;
+			break;
+		case 6:
+		case 10:
+		case 14:
+			mask *= 4;
+			break;
+		case 12:
+			mask *= 2;
+			break;
+		}
+		subarea->x0 = (subarea->x0 / mask) * mask;
+		subarea->x1 = ((subarea->x1 + mask - 1) / mask) * mask;
+	}
+
+	subarea->y0 &= ~(f - 1);
+	if (subarea->x1 > image->w)
+		subarea->x1 = image->w;
+	subarea->y1 = (subarea->y1 + f - 1) & ~(f - 1);
+	if (subarea->y1 > image->h)
+		subarea->y1 = image->h;
+}
+
+static void fz_compute_image_key(fz_context *ctx, fz_image *image, fz_matrix *ctm,
+	fz_image_key *key, const fz_irect *subarea, int l2factor, int *w, int *h, int *dw, int *dh)
+{
+	key->refs = 1;
+	key->image = image;
+	key->l2factor = l2factor;
+
+	if (subarea == NULL)
+	{
+		key->rect.x0 = 0;
+		key->rect.y0 = 0;
+		key->rect.x1 = image->w;
+		key->rect.y1 = image->h;
+	}
+	else
+	{
+		key->rect = *subarea;
+		ctx->tuning->image_decode(ctx->tuning->image_decode_arg, image->w, image->h, key->l2factor, &key->rect);
+		fz_adjust_image_subarea(ctx, image, &key->rect, key->l2factor);
+	}
+
+	/* Based on that subarea, recalculate the extents */
+	if (ctm)
+	{
+		float frac_w = (float) (key->rect.x1 - key->rect.x0) / image->w;
+		float frac_h = (float) (key->rect.y1 - key->rect.y0) / image->h;
+		float a = ctm->a * frac_w;
+		float b = ctm->b * frac_h;
+		float c = ctm->c * frac_w;
+		float d = ctm->d * frac_h;
+		*w = sqrtf(a * a + b * b);
+		*h = sqrtf(c * c + d * d);
+	}
+	else
+	{
+		*w = image->w;
+		*h = image->h;
+	}
+
+	/* Return the true sizes to the caller */
+	if (dw)
+		*dw = *w;
+	if (dh)
+		*dh = *h;
+	if (*w > image->w)
+		*w = image->w;
+	if (*h > image->h)
+		*h = image->h;
+
+	if (*w == 0 || *h == 0)
+		key->l2factor = 0;
+}
+
 fz_pixmap *
 fz_decomp_image_from_stream(fz_context *ctx, fz_stream *stm, fz_compressed_image *cimg, fz_irect *subarea, int indexed, int l2factor)
 {
@@ -204,54 +318,7 @@ fz_decomp_image_from_stream(fz_context *ctx, fz_stream *stm, fz_compressed_image
 
 	if (subarea)
 	{
-		int bpp = image->bpc * image->n;
-		int mask;
-		switch (bpp)
-		{
-		case 1: mask = 8*f; break;
-		case 2: mask = 4*f; break;
-		case 4: mask = 2*f; break;
-		default: mask = (bpp & 7) == 0 ? f : 0; break;
-		}
-		if (mask != 0)
-		{
-			subarea->x0 &= ~(mask - 1);
-			subarea->x1 = (subarea->x1 + mask - 1) & ~(mask - 1);
-		}
-		else
-		{
-			/* Awkward case - mask cannot be a power of 2. */
-			mask = bpp*f;
-			switch (bpp)
-			{
-			case 3:
-			case 5:
-			case 7:
-			case 9:
-			case 11:
-			case 13:
-			case 15:
-			default:
-				mask *= 8;
-				break;
-			case 6:
-			case 10:
-			case 14:
-				mask *= 4;
-				break;
-			case 12:
-				mask *= 2;
-				break;
-			}
-			subarea->x0 = (subarea->x0 / mask) * mask;
-			subarea->x1 = ((subarea->x1 + mask - 1) / mask) * mask;
-		}
-		subarea->y0 &= ~(f - 1);
-		if (subarea->x1 > image->w)
-			subarea->x1 = image->w;
-		subarea->y1 = (subarea->y1 + f - 1) & ~(f - 1);
-		if (subarea->y1 > image->h)
-			subarea->y1 = image->h;
+		fz_adjust_image_subarea(ctx, image, subarea, l2factor);
 		w = (subarea->x1 - subarea->x0);
 		h = (subarea->y1 - subarea->y0);
 	}
@@ -266,8 +333,11 @@ fz_decomp_image_from_stream(fz_context *ctx, fz_stream *stm, fz_compressed_image
 		int alpha = (image->colorspace == NULL);
 		if (image->use_colorkey)
 			alpha = 1;
-		tile = fz_new_pixmap(ctx, image->colorspace, w, h, alpha);
-		tile->interpolate = image->interpolate;
+		tile = fz_new_pixmap(ctx, image->colorspace, w, h, NULL, alpha);
+		if (image->interpolate & FZ_PIXMAP_FLAG_INTERPOLATE)
+			tile->flags |= FZ_PIXMAP_FLAG_INTERPOLATE;
+		else
+			tile->flags &= ~FZ_PIXMAP_FLAG_INTERPOLATE;
 
 		stride = (w * image->n * image->bpc + 7) / 8;
 
@@ -357,10 +427,6 @@ fz_decomp_image_from_stream(fz_context *ctx, fz_stream *stm, fz_compressed_image
 		if (image->use_colorkey && image->mask)
 			fz_unblend_masked_tile(ctx, tile, image);
 	}
-	fz_always(ctx)
-	{
-		fz_drop_stream(ctx, stm);
-	}
 	fz_catch(ctx)
 	{
 		fz_drop_pixmap(ctx, tile);
@@ -372,11 +438,20 @@ fz_decomp_image_from_stream(fz_context *ctx, fz_stream *stm, fz_compressed_image
 }
 
 void
+fz_drop_image_base(fz_context *ctx, fz_image *image)
+{
+	fz_drop_colorspace(ctx, image->colorspace);
+	fz_drop_image(ctx, image->mask);
+	fz_free(ctx, image);
+}
+
+void
 fz_drop_image_imp(fz_context *ctx, fz_storable *image_)
 {
 	fz_image *image = (fz_image *)image_;
 
 	image->drop_image(ctx, image);
+	fz_drop_image_base(ctx, image);
 }
 
 static void
@@ -453,17 +528,23 @@ compressed_image_get_pixmap(fz_context *ctx, fz_image *image_, fz_irect *subarea
 	default:
 		native_l2factor = l2factor ? *l2factor : 0;
 		stm = fz_open_image_decomp_stream_from_buffer(ctx, image->buffer, l2factor);
-		if (l2factor)
-			native_l2factor -= *l2factor;
-
-		indexed = fz_colorspace_is_indexed(ctx, image->super.colorspace);
-		can_sub = 1;
-		tile = fz_decomp_image_from_stream(ctx, stm, image, subarea, indexed, native_l2factor);
+		fz_try(ctx)
+		{
+			if (l2factor)
+				native_l2factor -= *l2factor;
+			indexed = fz_colorspace_is_indexed(ctx, image->super.colorspace);
+			can_sub = 1;
+			tile = fz_decomp_image_from_stream(ctx, stm, image, subarea, indexed, native_l2factor);
+		}
+		fz_always(ctx)
+			fz_drop_stream(ctx, stm);
+		fz_catch(ctx)
+			fz_rethrow(ctx);
 
 		/* CMYK JPEGs in XPS documents have to be inverted */
 		if (image->super.invert_cmyk_jpeg &&
 			image->buffer->params.type == FZ_IMAGE_JPEG &&
-			image->super.colorspace == fz_device_cmyk(ctx) &&
+			fz_colorspace_is_cmyk(ctx, image->super.colorspace) &&
 			image->buffer->params.u.jpeg.color_transform)
 		{
 			fz_invert_pixmap(ctx, tile);
@@ -503,13 +584,13 @@ update_ctm_for_subarea(fz_matrix *ctm, const fz_irect *subarea, int w, int h)
 	if (subarea->x0 == 0 && subarea->y0 == 0 && subarea->x1 == w && subarea->y1 == h)
 		return;
 
-	m.a = (subarea->x1 - subarea->x0) / (float)w;
+	m.a = (float) (subarea->x1 - subarea->x0) / w;
 	m.b = 0;
 	m.c = 0;
-	m.d = (subarea->y1 - subarea->y0) / (float)h;
-	m.e = subarea->x0 / (float)w;
-	m.f = subarea->y0 / (float)h;
-	fz_concat(ctm, &m, ctm);
+	m.d = (float) (subarea->y1 - subarea->y0) / h;
+	m.e = (float) subarea->x0 / w;
+	m.f = (float) subarea->y0 / h;
+	*ctm = fz_concat(m, *ctm);
 }
 
 void fz_default_image_decode(void *arg, int w, int h, int l2factor, fz_irect *subarea)
@@ -537,6 +618,24 @@ void fz_default_image_decode(void *arg, int w, int h, int l2factor, fz_irect *su
 		if (subarea->y1 >= h*99/100)
 			subarea->y1 = h;
 	}
+}
+
+static fz_pixmap *
+fz_find_image_tile(fz_context *ctx, fz_image *image, fz_image_key *key, fz_matrix *ctm)
+{
+	fz_pixmap *tile;
+	do
+	{
+		tile = fz_find_item(ctx, fz_drop_pixmap_imp, key, &fz_image_store_type);
+		if (tile)
+		{
+			update_ctm_for_subarea(ctm, &key->rect, image->w, image->h);
+			return tile;
+		}
+		key->l2factor--;
+	}
+	while (key->l2factor >= 0);
+	return NULL;
 }
 
 fz_pixmap *
@@ -596,75 +695,33 @@ fz_get_pixmap_from_image(fz_context *ctx, fz_image *image, const fz_irect *subar
 	 * we can subdivide and stay larger than the required size. We add
 	 * a fudge factor of +2 here to allow for the possibility of
 	 * expansion due to grid fitting. */
-	if (w == 0 || h == 0)
-		l2factor = 0;
-	else
-		for (l2factor=0; image->w>>(l2factor+1) >= w+2 && image->h>>(l2factor+1) >= h+2 && l2factor < 6; l2factor++);
-
-	/* Now figure out if we want to decode just a subarea */
-	if (subarea == NULL)
+	l2factor = 0;
+	if (w > 0 && h > 0)
 	{
-		key.rect.x0 = 0;
-		key.rect.y0 = 0;
-		key.rect.x1 = image->w;
-		key.rect.y1 = image->h;
-	}
-	else
-	{
-		key.rect = *subarea;
-		ctx->tuning->image_decode(ctx->tuning->image_decode_arg, image->w, image->h, l2factor, &key.rect);
+		while (image->w>>(l2factor+1) >= w+2 && image->h>>(l2factor+1) >= h+2 && l2factor < 6)
+			l2factor++;
 	}
 
-	/* Based on that subarea, recalculate the extents */
-	if (ctm)
+	/* First, look through the store for existing tiles */
+	if (subarea)
 	{
-		float frac_w = (key.rect.x1 - key.rect.x0) / (float)image->w;
-		float frac_h = (key.rect.y1 - key.rect.y0) / (float)image->h;
-		float a = ctm->a * frac_w;
-		float b = ctm->b * frac_h;
-		float c = ctm->c * frac_w;
-		float d = ctm->d * frac_h;
-
-		w = sqrtf(a * a + b * b);
-		h = sqrtf(c * c + d * d);
-	}
-	else
-	{
-		w = image->w;
-		h = image->h;
-	}
-
-	/* Return the true sizes to the caller */
-	if (dw)
-		*dw = w;
-	if (dh)
-		*dh = h;
-	if (w > image->w)
-		w = image->w;
-	if (h > image->h)
-		h = image->h;
-
-	if (w == 0 || h == 0)
-		l2factor = 0;
-
-	/* Can we find any suitable tiles in the cache? */
-	key.refs = 1;
-	key.image = image;
-	key.l2factor = l2factor;
-	do
-	{
-		tile = fz_find_item(ctx, fz_drop_pixmap_imp, &key, &fz_image_store_type);
+		fz_compute_image_key(ctx, image, ctm, &key, subarea, l2factor, &w, &h, dw, dh);
+		tile = fz_find_image_tile(ctx, image, &key, ctm);
 		if (tile)
-		{
-			update_ctm_for_subarea(ctm, &key.rect, image->w, image->h);
 			return tile;
-		}
-		key.l2factor--;
 	}
-	while (key.l2factor >= 0);
 
-	/* We'll have to decode the image; request the correct amount of
-	 * downscaling. */
+	/* No subarea given, or no tile for subarea found; try entire image */
+	fz_compute_image_key(ctx, image, ctm, &key, NULL, l2factor, &w, &h, dw, dh);
+	tile = fz_find_image_tile(ctx, image, &key, ctm);
+	if (tile)
+		return tile;
+
+	/* Neither subarea nor full image tile found; prepare the subarea key again */
+	if (subarea)
+		fz_compute_image_key(ctx, image, ctm, &key, subarea, l2factor, &w, &h, dw, dh);
+
+	/* We'll have to decode the image; request the correct amount of downscaling. */
 	l2factor_remaining = l2factor;
 	tile = image->get_pixmap(ctx, image, &key.rect, w, h, &l2factor_remaining);
 
@@ -675,22 +732,25 @@ fz_get_pixmap_from_image(fz_context *ctx, fz_image *image, const fz_irect *subar
 	assert(l2factor_remaining >= 0 && l2factor_remaining <= 6);
 	if (l2factor_remaining)
 	{
-		fz_subsample_pixmap(ctx, tile, l2factor_remaining);
+		fz_try(ctx)
+			fz_subsample_pixmap(ctx, tile, l2factor_remaining);
+		fz_catch(ctx)
+		{
+			fz_drop_pixmap(ctx, tile);
+			fz_rethrow(ctx);
+		}
 	}
 
 	/* Now we try to cache the pixmap. Any failure here will just result
 	 * in us not caching. */
-	fz_var(keyp);
+	keyp = fz_malloc_struct(ctx, fz_image_key);
+	keyp->refs = 1;
+	keyp->image = fz_keep_image_store_key(ctx, image);
+	keyp->l2factor = l2factor;
+	keyp->rect = key.rect;
 	fz_try(ctx)
 	{
-		fz_pixmap *existing_tile;
-
-		keyp = fz_malloc_struct(ctx, fz_image_key);
-		keyp->refs = 1;
-		keyp->image = fz_keep_image_store_key(ctx, image);
-		keyp->l2factor = l2factor;
-		keyp->rect = key.rect;
-		existing_tile = fz_store_item(ctx, keyp, tile, fz_pixmap_size(ctx, tile), &fz_image_store_type);
+		fz_pixmap *existing_tile = fz_store_item(ctx, keyp, tile, fz_pixmap_size(ctx, tile), &fz_image_store_type);
 		if (existing_tile)
 		{
 			/* We already have a tile. This must have been produced by a
@@ -750,8 +810,10 @@ fz_new_image_from_pixmap(fz_context *ctx, fz_pixmap *pixmap, fz_image *mask)
 fz_image *
 fz_new_image_of_size(fz_context *ctx, int w, int h, int bpc, fz_colorspace *colorspace,
 		int xres, int yres, int interpolate, int imagemask, float *decode,
-		int *colorkey, fz_image *mask, int size, fz_image_get_pixmap_fn *get,
-		fz_image_get_size_fn *get_size, fz_drop_image_fn *drop)
+		int *colorkey, fz_image *mask, int size,
+		fz_image_get_pixmap_fn *get_pixmap,
+		fz_image_get_size_fn *get_size,
+		fz_drop_image_fn *drop)
 {
 	fz_image *image;
 	int i;
@@ -762,7 +824,7 @@ fz_new_image_of_size(fz_context *ctx, int w, int h, int bpc, fz_colorspace *colo
 	image = Memento_label(fz_calloc(ctx, 1, size), "fz_image");
 	FZ_INIT_KEY_STORABLE(image, 1, fz_drop_image_imp);
 	image->drop_image = drop;
-	image->get_pixmap = get;
+	image->get_pixmap = get_pixmap;
 	image->get_size = get_size;
 	image->w = w;
 	image->h = h;
@@ -791,9 +853,22 @@ fz_new_image_of_size(fz_context *ctx, int w, int h, int bpc, fz_colorspace *colo
 			image->decode[2*i+1] = maxval;
 		}
 	}
+	/* ICC spaces have the default decode arrays pickled into them.
+	 * For most spaces this is fine, because [ 0 1 0 1 0 1 ] is
+	 * idempotent. For Lab, however, we need to adjust it. */
+	if (fz_colorspace_is_lab_icc(ctx, colorspace))
+	{
+		/* Undo the default decode array of [0 100 -128 127 -128 127] */
+		image->decode[0] = image->decode[0]/100.0f;
+		image->decode[1] = image->decode[1]/100.0f;
+		image->decode[2] = (image->decode[2]+128)/255.0f;
+		image->decode[3] = (image->decode[3]+128)/255.0f;
+		image->decode[4] = (image->decode[4]+128)/255.0f;
+		image->decode[5] = (image->decode[5]+128)/255.0f;
+	}
 	for (i = 0; i < image->n; i++)
 	{
-		if (image->decode[i * 2] * 255 != 0 || image->decode[i * 2 + 1] * 255 != 255)
+		if (image->decode[i * 2] != 0 || image->decode[i * 2 + 1] != 1)
 			break;
 	}
 	if (i != image->n)
@@ -852,7 +927,7 @@ fz_compressed_buffer *fz_compressed_image_buffer(fz_context *ctx, fz_image *imag
 void fz_set_compressed_image_buffer(fz_context *ctx, fz_compressed_image *image, fz_compressed_buffer *buf)
 {
 	assert(image != NULL && image->super.get_pixmap == compressed_image_get_pixmap);
-	((fz_compressed_image *)image)->buffer = buf;
+	((fz_compressed_image *)image)->buffer = buf; /* Note: compressed buffers are not reference counted */
 }
 
 fz_pixmap *fz_compressed_image_tile(fz_context *ctx, fz_compressed_image *image)
@@ -865,7 +940,8 @@ fz_pixmap *fz_compressed_image_tile(fz_context *ctx, fz_compressed_image *image)
 void fz_set_compressed_image_tile(fz_context *ctx, fz_compressed_image *image, fz_pixmap *pix)
 {
 	assert(image != NULL && image->super.get_pixmap == compressed_image_get_pixmap);
-	((fz_compressed_image *)image)->tile = pix;
+	fz_drop_pixmap(ctx, ((fz_compressed_image *)image)->tile);
+	((fz_compressed_image *)image)->tile = fz_keep_pixmap(ctx, pix);
 }
 
 fz_pixmap *fz_pixmap_image_tile(fz_context *ctx, fz_pixmap_image *image)
@@ -881,77 +957,81 @@ void fz_set_pixmap_image_tile(fz_context *ctx, fz_pixmap_image *image, fz_pixmap
 	((fz_pixmap_image *)image)->tile = pix;
 }
 
+int
+fz_recognize_image_format(fz_context *ctx, unsigned char p[8])
+{
+	if (p[0] == 'P' && p[1] >= '1' && p[1] <= '7')
+		return FZ_IMAGE_PNM;
+	if (p[0] == 0xff && p[1] == 0x4f)
+		return FZ_IMAGE_JPX;
+	if (p[0] == 0x00 && p[1] == 0x00 && p[2] == 0x00 && p[3] == 0x0c &&
+			p[4] == 0x6a && p[5] == 0x50 && p[6] == 0x20 && p[7] == 0x20)
+		return FZ_IMAGE_JPX;
+	if (p[0] == 0xff && p[1] == 0xd8)
+		return FZ_IMAGE_JPEG;
+	if (p[0] == 137 && p[1] == 80 && p[2] == 78 && p[3] == 71 &&
+			p[4] == 13 && p[5] == 10 && p[6] == 26 && p[7] == 10)
+		return FZ_IMAGE_PNG;
+	if (p[0] == 'I' && p[1] == 'I' && p[2] == 0xBC)
+		return FZ_IMAGE_JXR;
+	if (p[0] == 'I' && p[1] == 'I' && p[2] == 42 && p[3] == 0)
+		return FZ_IMAGE_TIFF;
+	if (p[0] == 'M' && p[1] == 'M' && p[2] == 0 && p[3] == 42)
+		return FZ_IMAGE_TIFF;
+	if (p[0] == 'G' && p[1] == 'I' && p[2] == 'F')
+		return FZ_IMAGE_GIF;
+	if (p[0] == 'B' && p[1] == 'M')
+		return FZ_IMAGE_BMP;
+	return FZ_IMAGE_UNKNOWN;
+}
+
 fz_image *
 fz_new_image_from_buffer(fz_context *ctx, fz_buffer *buffer)
 {
 	fz_compressed_buffer *bc;
 	int w, h, xres, yres;
-	fz_colorspace *cspace = NULL;
+	fz_colorspace *cspace;
 	size_t len = buffer->len;
 	unsigned char *buf = buffer->data;
-	fz_image *image;
+	fz_image *image = NULL;
 	int type;
 
 	if (len < 8)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "unknown image file format");
 
-	fz_var(cspace);
+	type = fz_recognize_image_format(ctx, buf);
+	switch (type)
+	{
+	case FZ_IMAGE_PNM:
+		fz_load_pnm_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_JPX:
+		fz_load_jpx_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_JPEG:
+		fz_load_jpeg_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_PNG:
+		fz_load_png_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_JXR:
+		fz_load_jxr_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_TIFF:
+		fz_load_tiff_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_GIF:
+		fz_load_gif_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	case FZ_IMAGE_BMP:
+		fz_load_bmp_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
+		break;
+	default:
+		fz_throw(ctx, FZ_ERROR_GENERIC, "unknown image file format");
+	}
 
 	fz_try(ctx)
 	{
-		if (buf[0] == 'P' && buf[1] >= '1' && buf[1] <= '7')
-		{
-			type = FZ_IMAGE_PNM;
-			fz_load_pnm_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 0xff && buf[1] == 0x4f)
-		{
-			type = FZ_IMAGE_JPX;
-			fz_load_jpx_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 0x00 && buf[1] == 0x00 && buf[2] == 0x00 && buf[3] == 0x0c && buf[4] == 0x6a && buf[5] == 0x50 && buf[6] == 0x20 && buf[7] == 0x20)
-		{
-			type = FZ_IMAGE_JPX;
-			fz_load_jpx_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 0xff && buf[1] == 0xd8)
-		{
-			type = FZ_IMAGE_JPEG;
-			fz_load_jpeg_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (memcmp(buf, "\211PNG\r\n\032\n", 8) == 0)
-		{
-			type = FZ_IMAGE_PNG;
-			fz_load_png_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 'I' && buf[1] == 'I' && buf[2] == 0xBC)
-		{
-			type = FZ_IMAGE_JXR;
-			fz_load_jxr_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 'I' && buf[1] == 'I' && buf[2] == 42 && buf[3] == 0)
-		{
-			type = FZ_IMAGE_TIFF;
-			fz_load_tiff_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (buf[0] == 'M' && buf[1] == 'M' && buf[2] == 0 && buf[3] == 42)
-		{
-			type = FZ_IMAGE_TIFF;
-			fz_load_tiff_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (memcmp(buf, "GIF", 3) == 0)
-		{
-			type = FZ_IMAGE_GIF;
-			fz_load_gif_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else if (memcmp(buf, "BM", 2) == 0)
-		{
-			type = FZ_IMAGE_BMP;
-			fz_load_bmp_info(ctx, buf, len, &w, &h, &xres, &yres, &cspace);
-		}
-		else
-			fz_throw(ctx, FZ_ERROR_GENERIC, "unknown image file format");
-
 		bc = fz_malloc_struct(ctx, fz_compressed_buffer);
 		bc->buffer = fz_keep_buffer(ctx, buffer);
 		bc->params.type = type;
@@ -971,7 +1051,7 @@ fz_image *
 fz_new_image_from_file(fz_context *ctx, const char *path)
 {
 	fz_buffer *buffer;
-	fz_image *image;
+	fz_image *image = NULL;
 
 	buffer = fz_read_file(ctx, path);
 	fz_try(ctx)
@@ -1048,25 +1128,30 @@ display_list_image_get_pixmap(fz_context *ctx, fz_image *image_, fz_irect *subar
 		int r = (subarea->x1 * w + image->super.w - 1) / image->super.w;
 		int b = (subarea->y1 * h + image->super.h - 1) / image->super.h;
 
-		pix = fz_new_pixmap(ctx, image->super.colorspace, r-l, b-t, 0);
+		pix = fz_new_pixmap(ctx, image->super.colorspace, r-l, b-t, NULL, 0);
 		pix->x = l;
 		pix->y = t;
 	}
 	else
 	{
-		pix = fz_new_pixmap(ctx, image->super.colorspace, w, h, 0);
+		pix = fz_new_pixmap(ctx, image->super.colorspace, w, h, NULL, 0);
 	}
 
 	/* If we render the display list into pix with the image matrix, we'll get a unit
 	 * square result. Therefore scale by w, h. */
-	ctm = image->transform;
-	fz_pre_scale(&ctm, w, h);
+	ctm = fz_pre_scale(image->transform, w, h);
 
 	fz_clear_pixmap(ctx, pix); /* clear to transparent */
-	dev = fz_new_draw_device(ctx, &ctm, pix);
-	fz_run_display_list(ctx, image->list, dev, &fz_identity, NULL, NULL);
-	fz_close_device(ctx, dev);
-	fz_drop_device(ctx, dev);
+	dev = fz_new_draw_device(ctx, ctm, pix);
+	fz_try(ctx)
+	{
+		fz_run_display_list(ctx, image->list, dev, fz_identity, fz_infinite_rect, NULL);
+		fz_close_device(ctx, dev);
+	}
+	fz_always(ctx)
+		fz_drop_device(ctx, dev);
+	fz_catch(ctx)
+		fz_rethrow(ctx);
 
 	/* Never do more subsampling, cos we've already given them the right size */
 	if (l2factor)
@@ -1110,7 +1195,7 @@ fz_image *fz_new_image_from_display_list(fz_context *ctx, float w, float h, fz_d
 				display_list_image_get_size,
 				drop_display_list_image);
 	image->super.scalable = 1;
-	fz_scale(&image->transform, 1 / w, 1 / h);
+	image->transform = fz_scale(1 / w, 1 / h);
 	image->list = fz_keep_display_list(ctx, list);
 
 	return &image->super;

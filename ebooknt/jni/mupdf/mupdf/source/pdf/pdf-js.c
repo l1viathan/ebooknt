@@ -1,8 +1,12 @@
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
 #if FZ_ENABLE_JS
 
 #include "mujs.h"
+
+#include <stdarg.h>
+#include <string.h>
 
 struct pdf_js_s
 {
@@ -86,7 +90,8 @@ static void app_alert(js_State *J)
 	event.message = js_tostring(J, 1);
 	event.icon_type = js_tointeger(J, 2);
 	event.button_group_type = js_tointeger(J, 3);
-	event.title = js_tostring(J, 4);
+	event.title = js_isdefined(J, 4) ? js_tostring(J, 4) : "PDF Alert";
+	event.button_pressed = 0; /* WIP WIP WIP IS THIS CORRECT? */
 
 	fz_try(js->ctx)
 		pdf_event_issue_alert(js->ctx, js->doc, &event);
@@ -157,7 +162,7 @@ static void field_getName(js_State *J)
 {
 	pdf_js *js = js_getcontext(J);
 	pdf_obj *field = js_touserdata(J, 0, "Field");
-	char *name;
+	char *name = NULL;
 	fz_try(js->ctx)
 		name = pdf_field_name(js->ctx, js->doc, field);
 	fz_catch(js->ctx)
@@ -175,7 +180,7 @@ static void field_getDisplay(js_State *J)
 {
 	pdf_js *js = js_getcontext(J);
 	pdf_obj *field = js_touserdata(J, 0, "Field");
-	int display;
+	int display = 0;
 	fz_try(js->ctx)
 		display = pdf_field_display(js->ctx, js->doc, field);
 	fz_catch(js->ctx)
@@ -223,7 +228,7 @@ static pdf_obj *load_color(pdf_js *js, int idx)
 			c = js_tonumber(J, -1);
 			js_pop(J, 1);
 
-			pdf_array_push_drop(ctx, color, pdf_new_real(ctx, doc, c));
+			pdf_array_push_real(ctx, color, c);
 		}
 	}
 	fz_catch(ctx)
@@ -275,7 +280,7 @@ static void field_getBorderStyle(js_State *J)
 {
 	pdf_js *js = js_getcontext(J);
 	pdf_obj *field = js_touserdata(J, 0, "Field");
-	const char *border_style;
+	const char *border_style = NULL;
 	fz_try(js->ctx)
 		border_style = pdf_field_border_style(js->ctx, js->doc, field);
 	fz_catch(js->ctx)
@@ -298,7 +303,7 @@ static void field_getValue(js_State *J)
 {
 	pdf_js *js = js_getcontext(J);
 	pdf_obj *field = js_touserdata(J, 0, "Field");
-	char *val;
+	char *val = NULL;
 
 	fz_try(js->ctx)
 		val = pdf_field_value(js->ctx, js->doc, field);
@@ -379,7 +384,7 @@ static void doc_getField(js_State *J)
 	fz_context *ctx = js->ctx;
 	const char *cName = js_tostring(J, 1);
 	char *name = pdf_from_utf8(ctx, cName);
-	pdf_obj *dict;
+	pdf_obj *dict = NULL;
 
 	fz_try(ctx)
 		dict = pdf_lookup_field(ctx, js->form, name);
@@ -505,6 +510,15 @@ static void declare_dom(pdf_js *js)
 	/* Create the 'app' object */
 	js_newobject(J);
 	{
+#ifdef _WIN32
+		js_pushstring(J, "WIN");
+#elif defined(__APPLE__)
+		js_pushstring(J, "MAC");
+#else
+		js_pushstring(J, "UNIX");
+#endif
+		js_defproperty(J, -2, "app.platform", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
+
 		addmethod(J, "app.alert", app_alert, 4);
 		addmethod(J, "app.execDialog", app_execDialog, 0);
 		addmethod(J, "app.execMenuItem", app_execMenuItem, 1);
@@ -549,8 +563,6 @@ static void declare_dom(pdf_js *js)
 	js_setglobal(J, "MuPDF_Doc"); /* for pdf-util.js use */
 }
 
-#include "gen_js_util.h"
-
 static void preload_helpers(pdf_js *js)
 {
 	/* When testing on the cluster:
@@ -569,7 +581,9 @@ static void preload_helpers(pdf_js *js)
 	);
 #endif
 
-	js_dostring(js->imp, fz_source_pdf_pdf_js_util_js);
+	js_dostring(js->imp,
+#include "js/util.js.h"
+	);
 }
 
 void pdf_drop_js(fz_context *ctx, pdf_js *js)
@@ -604,9 +618,9 @@ static pdf_js *pdf_new_js(fz_context *ctx, pdf_document *doc)
 		pdf_obj *root, *acroform;
 
 		/* Find the form array */
-		root = pdf_dict_get(ctx, pdf_trailer(ctx, doc), PDF_NAME_Root);
-		acroform = pdf_dict_get(ctx, root, PDF_NAME_AcroForm);
-		js->form = pdf_dict_get(ctx, acroform, PDF_NAME_Fields);
+		root = pdf_dict_get(ctx, pdf_trailer(ctx, doc), PDF_NAME(Root));
+		acroform = pdf_dict_get(ctx, root, PDF_NAME(AcroForm));
+		js->form = pdf_dict_get(ctx, acroform, PDF_NAME(Fields));
 
 		/* Initialise the javascript engine, passing the fz_context for use in memory allocation. */
 		js->imp = js_newstate(pdf_js_alloc, ctx, 0);
@@ -622,7 +636,7 @@ static pdf_js *pdf_new_js(fz_context *ctx, pdf_document *doc)
 	fz_catch(ctx)
 	{
 		pdf_drop_js(ctx, js);
-		js = NULL;
+		fz_rethrow(ctx);
 	}
 
 	return js;
@@ -635,7 +649,7 @@ static void pdf_js_load_document_level(pdf_js *js)
 	pdf_obj *javascript;
 	int len, i;
 
-	javascript = pdf_load_name_tree(ctx, doc, PDF_NAME_JavaScript);
+	javascript = pdf_load_name_tree(ctx, doc, PDF_NAME(JavaScript));
 	len = pdf_dict_len(ctx, javascript);
 
 	fz_try(ctx)
@@ -643,7 +657,7 @@ static void pdf_js_load_document_level(pdf_js *js)
 		for (i = 0; i < len; i++)
 		{
 			pdf_obj *fragment = pdf_dict_get_val(ctx, javascript, i);
-			pdf_obj *code = pdf_dict_get(ctx, fragment, PDF_NAME_JS);
+			pdf_obj *code = pdf_dict_get(ctx, fragment, PDF_NAME(JS));
 			char *codebuf = pdf_load_stream_or_string_as_utf8(ctx, code);
 			pdf_js_execute(js, codebuf);
 			fz_free(ctx, codebuf);
@@ -682,14 +696,14 @@ void pdf_js_execute(pdf_js *js, char *source)
 	{
 		if (js_ploadstring(js->imp, "[pdf]", source))
 		{
-			fz_warn(js->ctx, "%s", js_tostring(js->imp, -1));
+			fz_warn(js->ctx, "%s", js_trystring(js->imp, -1, "Error"));
 			js_pop(js->imp, 1);
 			return;
 		}
 		js_getregistry(js->imp, "Doc"); /* set 'this' to the Doc object */
 		if (js_pcall(js->imp, 0))
 		{
-			fz_warn(js->ctx, "%s", js_tostring(js->imp, -1));
+			fz_warn(js->ctx, "%s", js_trystring(js->imp, -1, "Error"));
 			js_pop(js->imp, 1);
 			return;
 		}

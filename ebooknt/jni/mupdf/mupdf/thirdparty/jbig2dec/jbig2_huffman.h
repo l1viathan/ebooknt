@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,16 +9,16 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
     jbig2dec
 */
 
-#ifndef JBIG2_HUFFMAN_H
-#define JBIG2_HUFFMAN_H
+#ifndef _JBIG2_HUFFMAN_H
+#define _JBIG2_HUFFMAN_H
 
 /* Huffman coder interface */
 
@@ -60,9 +60,9 @@ Jbig2HuffmanState *jbig2_huffman_new(Jbig2Ctx *ctx, Jbig2WordStream *ws);
 
 void jbig2_huffman_free(Jbig2Ctx *ctx, Jbig2HuffmanState *hs);
 
-void jbig2_huffman_skip(Jbig2HuffmanState *hs);
+int jbig2_huffman_skip(Jbig2HuffmanState *hs);
 
-void jbig2_huffman_advance(Jbig2HuffmanState *hs, int offset);
+int jbig2_huffman_advance(Jbig2HuffmanState *hs, size_t advance);
 
 uint32_t jbig2_huffman_offset(Jbig2HuffmanState *hs);
 
@@ -107,4 +107,4 @@ void jbig2_table_free(Jbig2Ctx *ctx, Jbig2HuffmanParams *params);
 /* find a user supplied table used by 'segment' and by 'index' */
 const Jbig2HuffmanParams *jbig2_find_table(Jbig2Ctx *ctx, Jbig2Segment *segment, int index);
 
-#endif /* JBIG2_HUFFMAN_H */
+#endif /* _JBIG2_HUFFMAN_H */

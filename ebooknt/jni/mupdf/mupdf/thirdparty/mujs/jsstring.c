@@ -356,6 +356,11 @@ static void Sp_match(js_State *J)
 		if (c - b == 0)
 			++a;
 	}
+
+	if (len == 0) {
+		js_pop(J, 1);
+		js_pushnull(J);
+	}
 }
 
 static void Sp_search(js_State *J)
@@ -405,7 +410,7 @@ loop:
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
-		js_pushundefinedthis(J);
+		js_pushundefined(J);
 		for (x = 0; m.sub[x].sp; ++x) /* arg 0..x: substring and subexps that matched */
 			js_pushlstring(J, m.sub[x].sp, m.sub[x].ep - m.sub[x].sp);
 		js_pushnumber(J, s - source); /* arg x+2: offset within search string */
@@ -421,7 +426,8 @@ loop:
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case 0: --r; /* end of string; back up and fall through */
+				case 0: --r; /* end of string; back up */
+				/* fallthrough */
 				case '$': js_putc(J, &sb, '$'); break;
 				case '`': js_putm(J, &sb, source, s); break;
 				case '\'': js_puts(J, &sb, s + n); break;
@@ -500,7 +506,7 @@ static void Sp_replace_string(js_State *J)
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
-		js_pushundefinedthis(J);
+		js_pushundefined(J);
 		js_pushlstring(J, s, n); /* arg 1: substring that matched */
 		js_pushnumber(J, s - source); /* arg 2: offset within search string */
 		js_copy(J, 0); /* arg 3: search string */
@@ -517,7 +523,8 @@ static void Sp_replace_string(js_State *J)
 		while (*r) {
 			if (*r == '$') {
 				switch (*(++r)) {
-				case 0: --r; /* end of string; back up and fall through */
+				case 0: --r; /* end of string; back up */
+				/* fallthrough */
 				case '$': js_putc(J, &sb, '$'); break;
 				case '&': js_putm(J, &sb, s, s + n); break;
 				case '`': js_putm(J, &sb, source, s); break;

@@ -1,35 +1,9 @@
 #include "fitz-imp.h"
 
-struct fz_id_context_s
-{
-	int refs;
-	int id;
-};
-
-static void
-fz_drop_id_context(fz_context *ctx)
-{
-	if (!ctx)
-		return;
-	if (fz_drop_imp(ctx, ctx->id, &ctx->id->refs))
-		fz_free(ctx, ctx->id);
-}
-
-static void
-fz_new_id_context(fz_context *ctx)
-{
-	ctx->id = fz_malloc_struct(ctx, fz_id_context);
-	ctx->id->refs = 1;
-	ctx->id->id = 0;
-}
-
-static fz_id_context *
-fz_keep_id_context(fz_context *ctx)
-{
-	if (!ctx)
-		return NULL;
-	return fz_keep_imp(ctx, ctx->id, &ctx->id->refs);
-}
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+#include <time.h>
 
 struct fz_style_context_s
 {
@@ -80,7 +54,7 @@ int fz_use_document_css(fz_context *ctx)
 void fz_set_user_css(fz_context *ctx, const char *user_css)
 {
 	fz_free(ctx, ctx->style->user_css);
-	ctx->style->user_css = fz_strdup(ctx, user_css);
+	ctx->style->user_css = user_css ? fz_strdup(ctx, user_css) : NULL;
 }
 
 const char *fz_user_css(fz_context *ctx)
@@ -94,8 +68,8 @@ static void fz_new_tuning_context(fz_context *ctx)
 	{
 		ctx->tuning = fz_malloc_struct(ctx, fz_tuning_context);
 		ctx->tuning->refs = 1;
-		ctx->tuning->image_decode = &fz_default_image_decode;
-		ctx->tuning->image_scale = &fz_default_image_scale;
+		ctx->tuning->image_decode = fz_default_image_decode;
+		ctx->tuning->image_scale = fz_default_image_scale;
 	}
 }
 
@@ -128,6 +102,22 @@ void fz_tune_image_scale(fz_context *ctx, fz_tune_image_scale_fn *image_scale, v
 	ctx->tuning->image_scale_arg = arg;
 }
 
+static void fz_init_random_context(fz_context *ctx)
+{
+	if (!ctx)
+		return;
+
+	ctx->seed48[0] = 0;
+	ctx->seed48[1] = 0;
+	ctx->seed48[2] = 0;
+	ctx->seed48[3] = 0xe66d;
+	ctx->seed48[4] = 0xdeec;
+	ctx->seed48[5] = 0x5;
+	ctx->seed48[6] = 0xb;
+
+	fz_srand48(ctx, (uint32_t)time(NULL));
+}
+
 void
 fz_drop_context(fz_context *ctx)
 {
@@ -142,8 +132,8 @@ fz_drop_context(fz_context *ctx)
 	fz_drop_style_context(ctx);
 	fz_drop_tuning_context(ctx);
 	fz_drop_colorspace_context(ctx);
+	fz_drop_cmm_context(ctx);
 	fz_drop_font_context(ctx);
-	fz_drop_id_context(ctx);
 	fz_drop_output_context(ctx);
 
 	if (ctx->warn)
@@ -176,7 +166,7 @@ new_context_phase1(const fz_alloc_context *alloc, const fz_locks_context *locks)
 	memset(ctx, 0, sizeof *ctx);
 	ctx->user = NULL;
 	ctx->alloc = alloc;
-	ctx->locks = locks;
+	ctx->locks = *locks;
 
 	ctx->glyph_cache = NULL;
 
@@ -238,12 +228,13 @@ fz_new_context_imp(const fz_alloc_context *alloc, const fz_locks_context *locks,
 		fz_new_output_context(ctx);
 		fz_new_store_context(ctx, max_store);
 		fz_new_glyph_cache_context(ctx);
+		fz_new_cmm_context(ctx);
 		fz_new_colorspace_context(ctx);
 		fz_new_font_context(ctx);
-		fz_new_id_context(ctx);
 		fz_new_document_handler_context(ctx);
 		fz_new_style_context(ctx);
 		fz_new_tuning_context(ctx);
+		fz_init_random_context(ctx);
 	}
 	fz_catch(ctx)
 	{
@@ -259,7 +250,7 @@ fz_clone_context(fz_context *ctx)
 {
 	/* We cannot safely clone the context without having locking/
 	 * unlocking functions. */
-	if (ctx == NULL || ctx->locks == &fz_locks_default)
+	if (ctx == NULL || (ctx->locks.lock == fz_locks_default.lock && ctx->locks.unlock == fz_locks_default.unlock))
 		return NULL;
 	return fz_clone_context_internal(ctx);
 }
@@ -272,7 +263,7 @@ fz_clone_context_internal(fz_context *ctx)
 	if (ctx == NULL || ctx->alloc == NULL)
 		return NULL;
 
-	new_ctx = new_context_phase1(ctx->alloc, ctx->locks);
+	new_ctx = new_context_phase1(ctx->alloc, &ctx->locks);
 	if (!new_ctx)
 		return NULL;
 
@@ -289,31 +280,18 @@ fz_clone_context_internal(fz_context *ctx)
 	new_ctx->glyph_cache = fz_keep_glyph_cache(new_ctx);
 	new_ctx->colorspace = ctx->colorspace;
 	new_ctx->colorspace = fz_keep_colorspace_context(new_ctx);
+	fz_new_cmm_context(new_ctx);
 	new_ctx->font = ctx->font;
 	new_ctx->font = fz_keep_font_context(new_ctx);
 	new_ctx->style = ctx->style;
 	new_ctx->style = fz_keep_style_context(new_ctx);
-	new_ctx->id = ctx->id;
-	new_ctx->id = fz_keep_id_context(new_ctx);
 	new_ctx->tuning = ctx->tuning;
 	new_ctx->tuning = fz_keep_tuning_context(new_ctx);
+	memcpy(new_ctx->seed48, ctx->seed48, sizeof ctx->seed48);
 	new_ctx->handler = ctx->handler;
 	new_ctx->handler = fz_keep_document_handler_context(new_ctx);
 
 	return new_ctx;
-}
-
-int
-fz_gen_id(fz_context *ctx)
-{
-	int id;
-	fz_lock(ctx, FZ_LOCK_ALLOC);
-	/* We'll never wrap around in normal use, but if we do, then avoid 0. */
-	do
-		id = ++ctx->id->id;
-	while (id == 0);
-	fz_unlock(ctx, FZ_LOCK_ALLOC);
-	return id;
 }
 
 void fz_set_user_context(fz_context *ctx, void *user)

@@ -55,15 +55,10 @@ void *fz_keep_storable(fz_context *, const fz_storable *);
 void fz_drop_storable(fz_context *, const fz_storable *);
 
 void *fz_keep_key_storable(fz_context *, const fz_key_storable *);
-int fz_drop_key_storable(fz_context *, const fz_key_storable *);
+void fz_drop_key_storable(fz_context *, const fz_key_storable *);
 
 void *fz_keep_key_storable_key(fz_context *, const fz_key_storable *);
-int fz_drop_key_storable_key(fz_context *, const fz_key_storable *);
-
-static inline int fz_key_storable_needs_reaping(fz_context *ctx, const fz_key_storable *ks)
-{
-	return ks == NULL ? 0 : (ks->store_key_refs == ks->storable.refs);
-}
+void fz_drop_key_storable_key(fz_context *, const fz_key_storable *);
 
 /*
 	The store can be seen as a dictionary that maps keys to fz_storable
@@ -123,29 +118,42 @@ typedef struct fz_store_hash_s
 		{
 			const void *ptr;
 			int i;
-		} pi;
+		} pi; /* 8 or 12 bytes */
 		struct
 		{
 			const void *ptr;
 			int i;
 			fz_irect r;
-		} pir;
+		} pir; /* 24 or 28 bytes */
 		struct
 		{
 			int id;
 			float m[4];
-		} im;
+			void *ptr;
+		} im; /* 20 bytes */
+		struct
+		{
+			unsigned char src_md5[16];
+			unsigned char dst_md5[16];
+			unsigned int ri:2;
+			unsigned int bp:1;
+			unsigned int bpp16:1;
+			unsigned int proof:1;
+			unsigned int src_extras:5;
+			unsigned int dst_extras:5;
+			unsigned int copy_spots:1;
+		} link; /* 36 bytes */
 	} u;
-} fz_store_hash;
+} fz_store_hash; /* 40 or 44 bytes */
 
 typedef struct fz_store_type_s
 {
-	int (*make_hash_key)(fz_context *ctx, fz_store_hash *, void *);
-	void *(*keep_key)(fz_context *,void *);
-	void (*drop_key)(fz_context *,void *);
-	int (*cmp_key)(fz_context *ctx, void *, void *);
-	void (*print)(fz_context *ctx, fz_output *out, void *);
-	int (*needs_reap)(fz_context *ctx, void *);
+	int (*make_hash_key)(fz_context *ctx, fz_store_hash *hash, void *key);
+	void *(*keep_key)(fz_context *ctx, void *key);
+	void (*drop_key)(fz_context *ctx, void *key);
+	int (*cmp_key)(fz_context *ctx, void *a, void *b);
+	void (*format_key)(fz_context *ctx, char *buf, int size, void *key);
+	int (*needs_reap)(fz_context *ctx, void *key);
 } fz_store_type;
 
 /*
@@ -235,6 +243,18 @@ void fz_empty_store(fz_context *ctx);
 int fz_store_scavenge(fz_context *ctx, size_t size, int *phase);
 
 /*
+	fz_store_scavenge_external: External function for callers to use
+	to scavenge while trying allocations.
+
+	size: The number of bytes we are trying to have free.
+
+	phase: What phase of the scavenge we are in. Updated on exit.
+
+	Returns non zero if we managed to free any memory.
+*/
+int fz_store_scavenge_external(fz_context *ctx, size_t size, int *phase);
+
+/*
 	fz_shrink_store: Evict items from the store until the total size of
 	the objects in the store is reduced to a given percentage of its
 	current size.
@@ -250,10 +270,9 @@ typedef int (fz_store_filter_fn)(fz_context *ctx, void *arg, void *key);
 void fz_filter_store(fz_context *ctx, fz_store_filter_fn *fn, void *arg, const fz_store_type *type);
 
 /*
-	fz_print_store: Dump the contents of the store for debugging.
+	fz_debug_store: Dump the contents of the store for debugging.
 */
-void fz_print_store(fz_context *ctx, fz_output *out);
-void fz_print_store_locked(fz_context *ctx, fz_output *out);
+void fz_debug_store(fz_context *ctx);
 
 /*
 	fz_defer_reap_start: Increment the defer reap count.

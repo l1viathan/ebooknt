@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,13 +9,16 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
     jbig2dec
 */
+
+#ifndef _JBIG2_PRIV_H
+#define _JBIG2_PRIV_H
 
 /* To enable Memento, either uncomment the following, or arrange to
  * predefine MEMENTO whilst building. */
@@ -52,6 +55,9 @@ typedef uint8_t byte;
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
+
+typedef struct _Jbig2Page Jbig2Page;
+typedef struct _Jbig2Segment Jbig2Segment;
 
 typedef enum {
     JBIG2_FILE_HEADER,
@@ -91,7 +97,7 @@ struct _Jbig2Ctx {
     Jbig2Page *pages;
 };
 
-uint32_t  jbig2_get_uint32(const byte *bptr);
+uint32_t jbig2_get_uint32(const byte *bptr);
 
 int32_t jbig2_get_int32(const byte *buf);
 
@@ -112,68 +118,6 @@ void *jbig2_realloc(Jbig2Allocator *allocator, void *p, size_t size, size_t num)
 
 int jbig2_error(Jbig2Ctx *ctx, Jbig2Severity severity, int32_t seg_idx, const char *fmt, ...);
 
-/* the page structure handles decoded page
-   results. it's allocated by a 'page info'
-   segement and marked complete by an 'end of page'
-   segment.
-*/
-typedef enum {
-    JBIG2_PAGE_FREE,
-    JBIG2_PAGE_NEW,
-    JBIG2_PAGE_COMPLETE,
-    JBIG2_PAGE_RETURNED,
-    JBIG2_PAGE_RELEASED
-} Jbig2PageState;
-
-struct _Jbig2Page {
-    Jbig2PageState state;
-    uint32_t number;
-    uint32_t height, width;     /* in pixels */
-    uint32_t x_resolution, y_resolution;        /* in pixels per meter */
-    uint16_t stripe_size;
-    bool striped;
-    uint32_t end_row;
-    uint8_t flags;
-    Jbig2Image *image;
-};
-
-int jbig2_page_info(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-int jbig2_end_of_stripe(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-int jbig2_end_of_page(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-int jbig2_extension_segment(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-
-typedef enum {
-    JBIG2_COMPOSE_OR = 0,
-    JBIG2_COMPOSE_AND = 1,
-    JBIG2_COMPOSE_XOR = 2,
-    JBIG2_COMPOSE_XNOR = 3,
-    JBIG2_COMPOSE_REPLACE = 4
-} Jbig2ComposeOp;
-
-int jbig2_image_compose(Jbig2Ctx *ctx, Jbig2Image *dst, Jbig2Image *src, int x, int y, Jbig2ComposeOp op);
-int jbig2_page_add_result(Jbig2Ctx *ctx, Jbig2Page *page, Jbig2Image *src, int x, int y, Jbig2ComposeOp op);
-
-/* region segment info */
-
-typedef struct {
-    int32_t width;
-    int32_t height;
-    int32_t x;
-    int32_t y;
-    Jbig2ComposeOp op;
-    uint8_t flags;
-} Jbig2RegionSegmentInfo;
-
-void jbig2_get_region_segment_info(Jbig2RegionSegmentInfo *info, const uint8_t *segment_data);
-int jbig2_text_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-
-/* 7.4 */
-int jbig2_immediate_generic_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const uint8_t *segment_data);
-int jbig2_refinement_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
-
-int jbig2_pattern_dictionary(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
-int jbig2_halftone_region(Jbig2Ctx *ctx, Jbig2Segment *segment, const byte *segment_data);
-
 /* The word stream design is a compromise between simplicity and
    trying to amortize the number of method calls. Each ::get_next_word
    invocation pulls 4 bytes from the stream, packed big-endian into a
@@ -188,3 +132,5 @@ struct _Jbig2WordStream {
 Jbig2WordStream *jbig2_word_stream_buf_new(Jbig2Ctx *ctx, const byte *data, size_t size);
 
 void jbig2_word_stream_buf_free(Jbig2Ctx *ctx, Jbig2WordStream *ws);
+
+#endif /* _JBIG2_PRIV_H */

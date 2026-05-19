@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -35,7 +35,13 @@
 #include "jbig2_priv.h"
 #include "jbig2_arith.h"
 #include "jbig2_generic.h"
+#include "jbig2_image.h"
 #include "jbig2_mmr.h"
+#include "jbig2_segment.h"
+
+#if !defined (UINT32_MAX)
+#define UINT32_MAX 0xffffffff
+#endif
 
 typedef struct {
     uint32_t width;
@@ -47,7 +53,10 @@ typedef struct {
     uint32_t word;
 } Jbig2MmrCtx;
 
-#define MINUS1 ((uint32_t)-1)
+#define MINUS1 UINT32_MAX
+#define ERROR -1
+#define ZEROES -2
+#define UNCOMPRESSED -3
 
 static void
 jbig2_decode_mmr_init(Jbig2MmrCtx *mmr, int width, int height, const byte *data, size_t size)
@@ -733,20 +742,22 @@ const mmr_table_node jbig2_mmr_black_decode[] = {
 
 #define getbit(buf, x) ( ( buf[x >> 3] >> ( 7 - (x & 7) ) ) & 1 )
 
-static int
+static uint32_t
 jbig2_find_changing_element(const byte *line, uint32_t x, uint32_t w)
 {
     int a, b;
 
-    if (line == 0)
-        return (int)w;
+    if (line == NULL)
+        return w;
 
     if (x == MINUS1) {
         a = 0;
         x = 0;
-    } else {
+    } else if (x < w) {
         a = getbit(line, x);
         x++;
+    } else {
+        return x;
     }
 
     while (x < w) {
@@ -759,10 +770,10 @@ jbig2_find_changing_element(const byte *line, uint32_t x, uint32_t w)
     return x;
 }
 
-static int
+static uint32_t
 jbig2_find_changing_element_of_color(const byte *line, uint32_t x, uint32_t w, int color)
 {
-    if (line == 0)
+    if (line == NULL)
         return w;
     x = jbig2_find_changing_element(line, x, w);
     if (x < w && getbit(line, x) != color)
@@ -817,13 +828,19 @@ jbig2_decode_get_code(Jbig2MmrCtx *mmr, const mmr_table_node *table, int initial
 }
 
 static int
-jbig2_decode_get_run(Jbig2MmrCtx *mmr, const mmr_table_node *table, int initial_bits)
+jbig2_decode_get_run(Jbig2Ctx *ctx, Jbig2MmrCtx *mmr, const mmr_table_node *table, int initial_bits)
 {
     int result = 0;
     int val;
 
     do {
         val = jbig2_decode_get_code(mmr, table, initial_bits);
+        if (val == ERROR)
+            return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "invalid code detected in MMR-coded data");
+        else if (val == UNCOMPRESSED)
+            return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "uncompressed code in MMR-coded data");
+        else if (val == ZEROES)
+            return jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "zeroes code in MMR-coded data");
         result += val;
     } while (val >= 64);
 
@@ -831,7 +848,7 @@ jbig2_decode_get_run(Jbig2MmrCtx *mmr, const mmr_table_node *table, int initial_
 }
 
 static int
-jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
+jbig2_decode_mmr_line(Jbig2Ctx *ctx, Jbig2MmrCtx *mmr, const byte *ref, byte *dst, int *eofb)
 {
     uint32_t a0 = MINUS1;
     uint32_t a1, a2, b1, b2;
@@ -854,33 +871,47 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
                 a0 = 0;
 
             if (c == 0) {
-                white_run = jbig2_decode_get_run(mmr, jbig2_mmr_white_decode, 8);
-                black_run = jbig2_decode_get_run(mmr, jbig2_mmr_black_decode, 7);
+                white_run = jbig2_decode_get_run(ctx, mmr, jbig2_mmr_white_decode, 8);
+                if (white_run < 0)
+                    return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "failed to decode white H run");
+                black_run = jbig2_decode_get_run(ctx, mmr, jbig2_mmr_black_decode, 7);
+                if (black_run < 0)
+                    return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "failed to decode black H run");
+                /* printf ("H %d %d\n", white_run, black_run); */
                 a1 = a0 + white_run;
                 a2 = a1 + black_run;
                 if (a1 > mmr->width)
                     a1 = mmr->width;
                 if (a2 > mmr->width)
                     a2 = mmr->width;
-                if (a1 == MINUS1 || a2 < a1)
-                    return -1;
-                jbig2_set_bits(dst, a1, a2);
+                if (a2 < a1) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative black H run");
+                    a2 = a1;
+                }
+                if (a1 < mmr->width)
+                    jbig2_set_bits(dst, a1, a2);
                 a0 = a2;
-                /* printf ("H %d %d\n", white_run, black_run); */
             } else {
-                black_run = jbig2_decode_get_run(mmr, jbig2_mmr_black_decode, 7);
-                white_run = jbig2_decode_get_run(mmr, jbig2_mmr_white_decode, 8);
+                black_run = jbig2_decode_get_run(ctx, mmr, jbig2_mmr_black_decode, 7);
+                if (black_run < 0)
+                    return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "failed to decode black H run");
+                white_run = jbig2_decode_get_run(ctx, mmr, jbig2_mmr_white_decode, 8);
+                if (white_run < 0)
+                    return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "failed to decode white H run");
+                /* printf ("H %d %d\n", black_run, white_run); */
                 a1 = a0 + black_run;
                 a2 = a1 + white_run;
                 if (a1 > mmr->width)
                     a1 = mmr->width;
                 if (a2 > mmr->width)
                     a2 = mmr->width;
-                if (a0 == MINUS1 || a1 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, a1);
+                if (a1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative white H run");
+                    a1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, a1);
                 a0 = a2;
-                /* printf ("H %d %d\n", black_run, white_run); */
             }
         }
 
@@ -890,9 +921,12 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
             b2 = jbig2_find_changing_element(ref, b1, mmr->width);
             if (c) {
-                if (a0 == MINUS1 || b2 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b2);
+                if (b2 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative P run");
+                    b2 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b2);
             }
             a0 = b2;
         }
@@ -902,9 +936,12 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             jbig2_decode_mmr_consume(mmr, 1);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
             if (c) {
-                if (a0 == MINUS1 || b1 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative V(0) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
             a0 = b1;
             c = !c;
@@ -914,14 +951,17 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VR(1)\n"); */
             jbig2_decode_mmr_consume(mmr, 3);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 + 1 > mmr->width)
-                break;
+            if (b1 + 1 <= mmr->width)
+                b1 += 1;
             if (c) {
-                if (a0 == MINUS1 || b1 + 1 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 + 1);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VR(1) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 + 1;
+            a0 = b1;
             c = !c;
         }
 
@@ -929,14 +969,17 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VR(2)\n"); */
             jbig2_decode_mmr_consume(mmr, 6);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 + 2 > mmr->width)
-                break;
+            if (b1 + 2 <= mmr->width)
+                b1 += 2;
             if (c) {
-                if (a0 == MINUS1 || b1 + 2 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 + 2);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VR(2) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 + 2;
+            a0 = b1;
             c = !c;
         }
 
@@ -944,14 +987,17 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VR(3)\n"); */
             jbig2_decode_mmr_consume(mmr, 7);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 + 3 > (int)mmr->width)
-                break;
+            if (b1 + 3 <= mmr->width)
+                b1 += 3;
             if (c) {
-                if (a0 == MINUS1 || b1 + 3 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 + 3);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VR(3) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 + 3;
+            a0 = b1;
             c = !c;
         }
 
@@ -959,14 +1005,17 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VL(1)\n"); */
             jbig2_decode_mmr_consume(mmr, 3);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 < 1)
-                break;
+            if (b1 >= 1)
+                b1 -= 1;
             if (c) {
-                if (a0 == MINUS1 || b1 - 1 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 - 1);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VL(1) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 - 1;
+            a0 = b1;
             c = !c;
         }
 
@@ -974,14 +1023,17 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VL(2)\n"); */
             jbig2_decode_mmr_consume(mmr, 6);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 < 2)
-                break;
+            if (b1 >= 2)
+                b1 -= 2;
             if (c) {
-                if (a0 == MINUS1 || b1 - 2 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 - 2);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VL(2) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 - 2;
+            a0 = b1;
             c = !c;
         }
 
@@ -989,15 +1041,25 @@ jbig2_decode_mmr_line(Jbig2MmrCtx *mmr, const byte *ref, byte *dst)
             /* printf ("VL(3)\n"); */
             jbig2_decode_mmr_consume(mmr, 7);
             b1 = jbig2_find_changing_element_of_color(ref, a0, mmr->width, !c);
-            if (b1 < 3)
-                break;
+            if (b1 >= 3)
+                b1 -= 3;
             if (c) {
-                if (a0 == MINUS1 || b1 - 3 < a0)
-                    return -1;
-                jbig2_set_bits(dst, a0, b1 - 3);
+                if (b1 < a0) {
+                    jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "ignoring negative VL(3) run");
+                    b1 = a0;
+                }
+                if (a0 < mmr->width)
+                    jbig2_set_bits(dst, a0, b1);
             }
-            a0 = b1 - 3;
+            a0 = b1;
             c = !c;
+        }
+
+        else if ((word >> (32 - 24)) == 0x1001) {
+            /* printf ("EOFB\n"); */
+            jbig2_decode_mmr_consume(mmr, 24);
+            *eofb = 1;
+            break;
         }
 
         else
@@ -1016,16 +1078,21 @@ jbig2_decode_generic_mmr(Jbig2Ctx *ctx, Jbig2Segment *segment, const Jbig2Generi
     byte *ref = NULL;
     uint32_t y;
     int code = 0;
+    int eofb = 0;
 
     jbig2_decode_mmr_init(&mmr, image->width, image->height, data, size);
 
-    for (y = 0; y < image->height; y++) {
+    for (y = 0; !eofb && y < image->height; y++) {
         memset(dst, 0, rowstride);
-        code = jbig2_decode_mmr_line(&mmr, ref, dst);
+        code = jbig2_decode_mmr_line(ctx, &mmr, ref, dst, &eofb);
         if (code < 0)
-            return code;
+            return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, segment->number, "failed to decode mmr line");
         ref = dst;
         dst += rowstride;
+    }
+
+    if (eofb && y < image->height) {
+        memset(dst, 0, rowstride * (image->height - y));
     }
 
     return code;
@@ -1055,21 +1122,26 @@ jbig2_decode_halftone_mmr(Jbig2Ctx *ctx, const Jbig2GenericRegionParams *params,
     uint32_t y;
     int code = 0;
     const uint32_t EOFB = 0x001001;
+    int eofb = 0;
 
     jbig2_decode_mmr_init(&mmr, image->width, image->height, data, size);
 
-    for (y = 0; y < image->height; y++) {
+    for (y = 0; !eofb && y < image->height; y++) {
         memset(dst, 0, rowstride);
-        code = jbig2_decode_mmr_line(&mmr, ref, dst);
+        code = jbig2_decode_mmr_line(ctx, &mmr, ref, dst, &eofb);
         if (code < 0)
-            return code;
+            return jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "failed to decode halftone mmr line");
         ref = dst;
         dst += rowstride;
     }
 
+    if (eofb && y < image->height) {
+        memset(dst, 0, rowstride * (image->height - y));
+    }
+
     /* test for EOFB (see section 6.2.6) */
     if (mmr.word >> 8 == EOFB) {
-        mmr.data_index += 3;
+        jbig2_decode_mmr_consume(&mmr, 24);
     }
 
     *consumed_bytes += mmr.data_index + (mmr.bit_index >> 3) + (mmr.bit_index > 0 ? 1 : 0);

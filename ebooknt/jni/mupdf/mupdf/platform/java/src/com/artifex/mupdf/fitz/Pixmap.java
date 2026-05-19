@@ -2,6 +2,10 @@ package com.artifex.mupdf.fitz;
 
 public class Pixmap
 {
+	static {
+		Context.init();
+	}
+
 	private long pointer;
 
 	protected native void finalize();
@@ -62,6 +66,8 @@ public class Pixmap
 	public native int[] getPixels(); /* only valid for RGBA or BGRA pixmaps */
 	public native int getXResolution();
 	public native int getYResolution();
+	public native void invert();
+	public native void gamma(float gamma);
 
 	public Rect getBounds() {
 		int x = getX();

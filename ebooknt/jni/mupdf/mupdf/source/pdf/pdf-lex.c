@@ -1,10 +1,13 @@
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
+
+#include <string.h>
 
 #define IS_NUMBER \
 	'+':case'-':case'.':case'0':case'1':case'2':case'3':\
 	case'4':case'5':case'6':case'7':case'8':case'9'
 #define IS_WHITE \
-	'\000':case'\011':case'\012':case'\014':case'\015':case'\040'
+	'\x00':case'\x09':case'\x0a':case'\x0c':case'\x0d':case'\x20'
 #define IS_HEX \
 	'0':case'1':case'2':case'3':case'4':case'5':case'6':\
 	case'7':case'8':case'9':case'A':case'B':case'C':\
@@ -23,6 +26,24 @@
 	'A':case'B':case'C':case'D':case'E':case'F'
 #define RANGE_0_7 \
 	'0':case'1':case'2':case'3':case'4':case'5':case'6':case'7'
+
+/* #define DUMP_LEXER_STREAM */
+#ifdef DUMP_LEXER_STREAM
+static inline int lex_byte(fz_context *ctx, fz_stream *stm)
+{
+	int c = fz_read_byte(ctx, stm);
+
+	if (c == EOF)
+		fz_write_printf(ctx, fz_stdout(ctx), "<EOF>");
+	else if (c >= 32 && c < 128)
+		fz_write_printf(ctx, fz_stdout(ctx), "%c", c);
+	else
+		fz_write_printf(ctx, fz_stdout(ctx), "<%02x>", c);
+	return c;
+}
+#else
+#define lex_byte(C,S) fz_read_byte(C,S)
+#endif
 
 static inline int iswhite(int ch)
 {
@@ -53,7 +74,7 @@ lex_white(fz_context *ctx, fz_stream *f)
 {
 	int c;
 	do {
-		c = fz_read_byte(ctx, f);
+		c = lex_byte(ctx, f);
 	} while ((c <= 32) && (iswhite(c)));
 	if (c != EOF)
 		fz_unread_byte(ctx, f);
@@ -64,7 +85,7 @@ lex_comment(fz_context *ctx, fz_stream *f)
 {
 	int c;
 	do {
-		c = fz_read_byte(ctx, f);
+		c = lex_byte(ctx, f);
 	} while ((c != '\012') && (c != '\015') && (c != EOF));
 }
 
@@ -148,12 +169,21 @@ lex_number(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf, int c)
 	char *e = buf->scratch + buf->size - 1; /* leave space for zero terminator */
 	char *isreal = (c == '.' ? s : NULL);
 	int neg = (c == '-');
+	int isbad = 0;
 
 	*s++ = c;
 
+	c = lex_byte(ctx, f);
+
+	/* skip extra '-' signs at start of number */
+	if (neg)
+	{
+		while (c == '-')
+			c = lex_byte(ctx, f);
+	}
+
 	while (s < e)
 	{
-		int c = fz_read_byte(ctx, f);
 		switch (c)
 		{
 		case IS_WHITE:
@@ -162,21 +192,27 @@ lex_number(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf, int c)
 			goto end;
 		case EOF:
 			goto end;
-		case '-':
-			neg++;
+		case '.':
+			if (isreal)
+				isbad = 1;
+			isreal = s;
 			*s++ = c;
 			break;
-		case '.':
-			isreal = s;
-			/* Fall through */
+		case RANGE_0_9:
+			*s++ = c;
+			break;
 		default:
+			isbad = 1;
 			*s++ = c;
 			break;
 		}
+		c = lex_byte(ctx, f);
 	}
 
 end:
 	*s = '\0';
+	if (isbad)
+		return PDF_TOK_ERROR;
 	if (isreal)
 	{
 		/* We'd like to use the fastest possible atof
@@ -198,14 +234,31 @@ end:
 }
 
 static void
-lex_name(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
+lex_name(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 {
-	char *s = buf->scratch;
-	int n = buf->size;
+	char *s = lb->scratch;
+	char *e = s + fz_mini(127, lb->size);
+	int c;
 
-	while (n > 1)
+	while (1)
 	{
-		int c = fz_read_byte(ctx, f);
+		if (s == e)
+		{
+			if (e - lb->scratch < 127)
+			{
+				s += pdf_lexbuf_grow(ctx, lb);
+				e = lb->scratch + fz_mini(127, lb->size);
+			}
+			else
+			{
+				/* truncate names that are too long */
+				fz_warn(ctx, "name is too long");
+				*s = 0;
+				lb->len = s - lb->scratch;
+				s = NULL;
+			}
+		}
+		c = lex_byte(ctx, f);
 		switch (c)
 		{
 		case IS_WHITE:
@@ -216,58 +269,48 @@ lex_name(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
 			goto end;
 		case '#':
 		{
-			int d;
-			c = fz_read_byte(ctx, f);
-			switch (c)
+			int hex[2];
+			int i;
+			for (i = 0; i < 2; i++)
 			{
-			case RANGE_0_9:
-				d = (c - '0') << 4;
-				break;
-			case RANGE_a_f:
-				d = (c - 'a' + 10) << 4;
-				break;
-			case RANGE_A_F:
-				d = (c - 'A' + 10) << 4;
-				break;
-			default:
-				fz_unread_byte(ctx, f);
-				/* fallthrough */
-			case EOF:
-				goto end;
+				c = fz_peek_byte(ctx, f);
+				switch (c)
+				{
+				case RANGE_0_9:
+					if (i == 1 && c == '0' && hex[0] == 0)
+						goto illegal;
+					hex[i] = lex_byte(ctx, f) - '0';
+					break;
+				case RANGE_a_f:
+					hex[i] = lex_byte(ctx, f) - 'a' + 10;
+					break;
+				case RANGE_A_F:
+					hex[i] = lex_byte(ctx, f) - 'A' + 10;
+					break;
+				default:
+				case EOF:
+					goto illegal;
+				}
 			}
-			c = fz_read_byte(ctx, f);
-			switch (c)
-			{
-			case RANGE_0_9:
-				c -= '0';
-				break;
-			case RANGE_a_f:
-				c -= 'a' - 10;
-				break;
-			case RANGE_A_F:
-				c -= 'A' - 10;
-				break;
-			default:
-				fz_unread_byte(ctx, f);
-				/* fallthrough */
-			case EOF:
-				*s++ = d;
-				n--;
-				goto end;
-			}
-			*s++ = d + c;
-			n--;
+			if (s) *s++ = (hex[0] << 4) + hex[1];
 			break;
+illegal:
+			if (i == 1)
+				fz_unread_byte(ctx, f);
+			if (s) *s++ = '#';
+			continue;
 		}
 		default:
-			*s++ = c;
-			n--;
+			if (s) *s++ = c;
 			break;
 		}
 	}
 end:
-	*s = '\0';
-	buf->len = s - buf->scratch;
+	if (s)
+	{
+		*s = '\0';
+		lb->len = s - lb->scratch;
+	}
 }
 
 static int
@@ -286,11 +329,11 @@ lex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 			s += pdf_lexbuf_grow(ctx, lb);
 			e = lb->scratch + lb->size;
 		}
-		c = fz_read_byte(ctx, f);
+		c = lex_byte(ctx, f);
 		switch (c)
 		{
 		case EOF:
-			goto end;
+			return PDF_TOK_ERROR;
 		case '(':
 			bal++;
 			*s++ = c;
@@ -302,11 +345,11 @@ lex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 			*s++ = c;
 			break;
 		case '\\':
-			c = fz_read_byte(ctx, f);
+			c = lex_byte(ctx, f);
 			switch (c)
 			{
 			case EOF:
-				goto end;
+				return PDF_TOK_ERROR;
 			case 'n':
 				*s++ = '\n';
 				break;
@@ -333,11 +376,11 @@ lex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 				break;
 			case RANGE_0_7:
 				oct = c - '0';
-				c = fz_read_byte(ctx, f);
+				c = lex_byte(ctx, f);
 				if (c >= '0' && c <= '7')
 				{
 					oct = oct * 8 + (c - '0');
-					c = fz_read_byte(ctx, f);
+					c = lex_byte(ctx, f);
 					if (c >= '0' && c <= '7')
 						oct = oct * 8 + (c - '0');
 					else if (c != EOF)
@@ -350,7 +393,7 @@ lex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 			case '\n':
 				break;
 			case '\r':
-				c = fz_read_byte(ctx, f);
+				c = lex_byte(ctx, f);
 				if ((c != '\n') && (c != EOF))
 					fz_unread_byte(ctx, f);
 				break;
@@ -383,11 +426,14 @@ lex_hex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 			s += pdf_lexbuf_grow(ctx, lb);
 			e = lb->scratch + lb->size;
 		}
-		c = fz_read_byte(ctx, f);
+		c = lex_byte(ctx, f);
 		switch (c)
 		{
 		case IS_WHITE:
 			break;
+		default:
+			fz_warn(ctx, "invalid character in hex string");
+			/* fall through */
 		case IS_HEX:
 			if (x)
 			{
@@ -401,10 +447,13 @@ lex_hex_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *lb)
 			}
 			break;
 		case '>':
-		case EOF:
+			if (x)
+			{
+				*s++ = a * 16; /* pad truncated string with '0' */
+			}
 			goto end;
-		default:
-			fz_warn(ctx, "ignoring invalid character in hex string");
+		case EOF:
+			return PDF_TOK_ERROR;
 		}
 	}
 end:
@@ -491,7 +540,7 @@ pdf_lex(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
 {
 	while (1)
 	{
-		int c = fz_read_byte(ctx, f);
+		int c = lex_byte(ctx, f);
 		switch (c)
 		{
 		case EOF:
@@ -508,32 +557,21 @@ pdf_lex(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
 		case '(':
 			return lex_string(ctx, f, buf);
 		case ')':
-			fz_warn(ctx, "lexical error (unexpected ')')");
-			continue;
+			return PDF_TOK_ERROR;
 		case '<':
-			c = fz_read_byte(ctx, f);
+			c = lex_byte(ctx, f);
 			if (c == '<')
-			{
 				return PDF_TOK_OPEN_DICT;
-			}
-			else
-			{
+			if (c != EOF)
 				fz_unread_byte(ctx, f);
-				return lex_hex_string(ctx, f, buf);
-			}
+			return lex_hex_string(ctx, f, buf);
 		case '>':
-			c = fz_read_byte(ctx, f);
+			c = lex_byte(ctx, f);
 			if (c == '>')
-			{
 				return PDF_TOK_CLOSE_DICT;
-			}
-			fz_warn(ctx, "lexical error (unexpected '>')");
-			if (c == EOF)
-			{
-				return PDF_TOK_EOF;
-			}
-			fz_unread_byte(ctx, f);
-			continue;
+			if (c != EOF)
+				fz_unread_byte(ctx, f);
+			return PDF_TOK_ERROR;
 		case '[':
 			return PDF_TOK_OPEN_ARRAY;
 		case ']':
@@ -557,7 +595,7 @@ pdf_lex_no_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
 {
 	while (1)
 	{
-		int c = fz_read_byte(ctx, f);
+		int c = lex_byte(ctx, f);
 		switch (c)
 		{
 		case EOF:
@@ -572,31 +610,23 @@ pdf_lex_no_string(fz_context *ctx, fz_stream *f, pdf_lexbuf *buf)
 			lex_name(ctx, f, buf);
 			return PDF_TOK_NAME;
 		case '(':
-			continue;
+			return PDF_TOK_ERROR; /* no strings allowed */
 		case ')':
-			continue;
+			return PDF_TOK_ERROR; /* no strings allowed */
 		case '<':
-			c = fz_read_byte(ctx, f);
+			c = lex_byte(ctx, f);
 			if (c == '<')
-			{
 				return PDF_TOK_OPEN_DICT;
-			}
-			else
-			{
-				continue;
-			}
+			if (c != EOF)
+				fz_unread_byte(ctx, f);
+			return PDF_TOK_ERROR; /* no strings allowed */
 		case '>':
-			c = fz_read_byte(ctx, f);
+			c = lex_byte(ctx, f);
 			if (c == '>')
-			{
 				return PDF_TOK_CLOSE_DICT;
-			}
-			if (c == EOF)
-			{
-				return PDF_TOK_EOF;
-			}
-			fz_unread_byte(ctx, f);
-			continue;
+			if (c != EOF)
+				fz_unread_byte(ctx, f);
+			return PDF_TOK_ERROR;
 		case '[':
 			return PDF_TOK_OPEN_ARRAY;
 		case ']':
@@ -647,7 +677,7 @@ void pdf_append_token(fz_context *ctx, fz_buffer *fzbuf, int tok, pdf_lexbuf *bu
 		fz_append_byte(ctx, fzbuf, '}');
 		break;
 	case PDF_TOK_INT:
-		fz_append_printf(ctx, fzbuf, "%d", buf->i);
+		fz_append_printf(ctx, fzbuf, "%ld", buf->i);
 		break;
 	case PDF_TOK_REAL:
 		fz_append_printf(ctx, fzbuf, "%g", buf->f);

@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -45,23 +45,26 @@
 #include "jbig2.h"
 #include "jbig2_priv.h"
 #include "jbig2_image.h"
+#include "jbig2_image_rw.h"
 
 typedef enum {
     usage, dump, render
 } jbig2dec_mode;
 
 typedef enum {
+    jbig2dec_format_none,
     jbig2dec_format_jbig2,
     jbig2dec_format_pbm,
+#ifdef HAVE_LIBPNG
     jbig2dec_format_png,
-    jbig2dec_format_none
+#endif
 } jbig2dec_format;
 
 typedef struct {
     jbig2dec_mode mode;
-    int verbose, hash;
+    int verbose, hash, embedded;
     SHA1_CTX *hash_ctx;
-    char *output_file;
+    char *output_filename;
     jbig2dec_format output_format;
 } jbig2dec_params_t;
 
@@ -140,13 +143,14 @@ parse_options(int argc, char *argv[], jbig2dec_params_t *params)
         {"hash", 0, NULL, 'm'},
         {"output", 1, NULL, 'o'},
         {"format", 1, NULL, 't'},
+        {"embedded", 0, NULL, 'e'},
         {NULL, 0, NULL, 0}
     };
     int option_idx = 1;
     int option;
 
     while (1) {
-        option = getopt_long(argc, argv, "Vh?qv:do:t:", long_options, &option_idx);
+        option = getopt_long(argc, argv, "Vh?qv:do:t:e", long_options, &option_idx);
         if (option == -1)
             break;
 
@@ -181,10 +185,13 @@ parse_options(int argc, char *argv[], jbig2dec_params_t *params)
             params->hash = 1;
             break;
         case 'o':
-            params->output_file = strdup(optarg);
+            params->output_filename = strdup(optarg);
             break;
         case 't':
             set_output_format(params, optarg);
+            break;
+        case 'e':
+            params->embedded = 1;
             break;
         default:
             if (!params->verbose)
@@ -223,9 +230,11 @@ print_usage(void)
             "                   rather than explicitly decoding\n"
             "       --version   program name and version information\n"
             "       --hash      print a hash of the decoded document\n"
+            "    -e --embedded  expect embedded bit stream without file header\n"
             "    -o <file>      send decoded output to <file>\n"
             "                   Defaults to the the input with a different\n"
-            "                   extension. Pass '-' for stdout.\n" "    -t <type>      force a particular output file format\n"
+            "                   extension. Pass '-' for stdout.\n"
+            "    -t <type>      force a particular output file format\n"
 #ifdef HAVE_LIBPNG
             "                   supported options are 'png' and 'pbm'\n"
 #else
@@ -236,7 +245,7 @@ print_usage(void)
     return 1;
 }
 
-static int
+static void
 error_callback(void *error_callback_data, const char *buf, Jbig2Severity severity, int32_t seg_idx)
 {
     const jbig2dec_params_t *params = (jbig2dec_params_t *) error_callback_data;
@@ -246,25 +255,25 @@ error_callback(void *error_callback_data, const char *buf, Jbig2Severity severit
     switch (severity) {
     case JBIG2_SEVERITY_DEBUG:
         if (params->verbose < 3)
-            return 0;
+            return;
         type = "DEBUG";
-        break;;
+        break;
     case JBIG2_SEVERITY_INFO:
         if (params->verbose < 2)
-            return 0;
+            return;
         type = "info";
-        break;;
+        break;
     case JBIG2_SEVERITY_WARNING:
         if (params->verbose < 1)
-            return 0;
+            return;
         type = "WARNING";
-        break;;
+        break;
     case JBIG2_SEVERITY_FATAL:
         type = "FATAL ERROR";
-        break;;
+        break;
     default:
         type = "unknown message";
-        break;;
+        break;
     }
     if (seg_idx == -1)
         segment[0] = '\0';
@@ -272,8 +281,6 @@ error_callback(void *error_callback_data, const char *buf, Jbig2Severity severit
         snprintf(segment, sizeof(segment), "(segment 0x%02x)", seg_idx);
 
     fprintf(stderr, "jbig2dec %s %s %s\n", type, buf, segment);
-
-    return 0;
 }
 
 static char *
@@ -284,7 +291,7 @@ make_output_filename(const char *input_filename, const char *extension)
     int len;
 
     if (extension == NULL) {
-        fprintf(stderr, "make_output_filename called with no extension!\n");
+        fprintf(stderr, "no filename extension; cannot create output filename!\n");
         exit(1);
     }
 
@@ -314,7 +321,7 @@ make_output_filename(const char *input_filename, const char *extension)
     /* allocate enough space for the base + ext */
     output_filename = (char *)malloc(len + strlen(extension) + 1);
     if (output_filename == NULL) {
-        fprintf(stderr, "couldn't allocate memory for output_filename\n");
+        fprintf(stderr, "failed to allocate memory for output filename\n");
         exit(1);
     }
 
@@ -327,38 +334,18 @@ make_output_filename(const char *input_filename, const char *extension)
 }
 
 static int
-write_page_image(jbig2dec_params_t *params, Jbig2Image *image)
+write_page_image(jbig2dec_params_t *params, FILE *out, Jbig2Image *image)
 {
-    if (!strncmp(params->output_file, "-", 2)) {
-        switch (params->output_format) {
+    switch (params->output_format) {
 #ifdef HAVE_LIBPNG
-        case jbig2dec_format_png:
-            jbig2_image_write_png(image, stdout);
-            break;
+    case jbig2dec_format_png:
+        return jbig2_image_write_png(image, out);
 #endif
-        case jbig2dec_format_pbm:
-            jbig2_image_write_pbm(image, stdout);
-            break;
-        default:
-            fprintf(stderr, "unsupported output format.\n");
-            return 1;
-        }
-    } else {
-        if (params->verbose > 1)
-            fprintf(stderr, "saving decoded page as '%s'\n", params->output_file);
-        switch (params->output_format) {
-#ifdef HAVE_LIBPNG
-        case jbig2dec_format_png:
-            jbig2_image_write_png_file(image, params->output_file);
-            break;
-#endif
-        case jbig2dec_format_pbm:
-            jbig2_image_write_pbm_file(image, params->output_file);
-            break;
-        default:
-            fprintf(stderr, "unsupported output format.\n");
-            return 1;
-        }
+    case jbig2dec_format_pbm:
+        return jbig2_image_write_pbm(image, out);
+    default:
+        fprintf(stderr, "unsupported output format.\n");
+        return 1;
     }
 
     return 0;
@@ -369,7 +356,7 @@ write_document_hash(jbig2dec_params_t *params)
 {
     FILE *out;
 
-    if (!strncmp(params->output_file, "-", 2)) {
+    if (!strncmp(params->output_filename, "-", 2)) {
         out = stderr;
     } else {
         out = stdout;
@@ -386,17 +373,20 @@ int
 main(int argc, char **argv)
 {
     FILE *f = NULL, *f_page = NULL;
-    Jbig2Ctx *ctx;
+    Jbig2Ctx *ctx = NULL;
     uint8_t buf[4096];
     jbig2dec_params_t params;
     int filearg;
+    int result = 1;
+    int code;
 
     /* set defaults */
     params.mode = render;
     params.verbose = 1;
     params.hash = 0;
-    params.output_file = NULL;
+    params.output_filename = NULL;
     params.output_format = jbig2dec_format_none;
+    params.embedded = 0;
 
     filearg = parse_options(argc, argv, &params);
 
@@ -413,39 +403,45 @@ main(int argc, char **argv)
         break;
     case render:
 
-        if ((argc - filearg) == 1)
+        if ((argc - filearg) == 1) {
             /* only one argument--open as a jbig2 file */
-        {
             char *fn = argv[filearg];
 
             f = fopen(fn, "rb");
             if (f == NULL) {
                 fprintf(stderr, "error opening %s\n", fn);
-                return 1;
+                goto cleanup;
             }
-        } else if ((argc - filearg) == 2)
+        } else if ((argc - filearg) == 2) {
             /* two arguments open as separate global and page streams */
-        {
             char *fn = argv[filearg];
             char *fn_page = argv[filearg + 1];
 
             f = fopen(fn, "rb");
             if (f == NULL) {
                 fprintf(stderr, "error opening %s\n", fn);
-                return 1;
+                goto cleanup;
             }
 
             f_page = fopen(fn_page, "rb");
             if (f_page == NULL) {
                 fclose(f);
                 fprintf(stderr, "error opening %s\n", fn_page);
-                return 1;
+                goto cleanup;
             }
-        } else
+        } else {
             /* any other number of arguments */
-            return print_usage();
+            result = print_usage();
+            goto cleanup;
+        }
 
-        ctx = jbig2_ctx_new(NULL, (Jbig2Options)(f_page != NULL ? JBIG2_OPTIONS_EMBEDDED : 0), NULL, error_callback, &params);
+        ctx = jbig2_ctx_new(NULL, (Jbig2Options)(f_page != NULL || params.embedded ? JBIG2_OPTIONS_EMBEDDED : 0), NULL, error_callback, &params);
+        if (ctx == NULL) {
+            fclose(f);
+            if (f_page)
+                fclose(f_page);
+            goto cleanup;
+        }
 
         /* pull the whole file/global stream into memory */
         for (;;) {
@@ -463,13 +459,15 @@ main(int argc, char **argv)
             Jbig2GlobalCtx *global_ctx = jbig2_make_global_ctx(ctx);
 
             ctx = jbig2_ctx_new(NULL, JBIG2_OPTIONS_EMBEDDED, global_ctx, error_callback, &params);
-            for (;;) {
-                int n_bytes = fread(buf, 1, sizeof(buf), f_page);
+            if (ctx != NULL) {
+                for (;;) {
+                    int n_bytes = fread(buf, 1, sizeof(buf), f_page);
 
-                if (n_bytes <= 0)
-                    break;
-                if (jbig2_data_in(ctx, buf, n_bytes))
-                    break;
+                    if (n_bytes <= 0)
+                        break;
+                    if (jbig2_data_in(ctx, buf, n_bytes))
+                        break;
+                }
             }
             fclose(f_page);
             jbig2_global_ctx_free(global_ctx);
@@ -478,47 +476,76 @@ main(int argc, char **argv)
         /* retrieve and output the returned pages */
         {
             Jbig2Image *image;
+            FILE *out;
 
-            /* work around broken CVision embedded streams */
-            if (f_page != NULL)
-                jbig2_complete_page(ctx);
+            /* always complete a page, working around streams that lack end of
+            page segments: broken CVision streams, embedded streams or streams
+            with parse errors. */
+            code = jbig2_complete_page(ctx);
+            if (code < 0) {
+                jbig2_error(ctx, JBIG2_SEVERITY_WARNING, -1, "unable to complete page");
+                goto cleanup;
+            }
 
-            if (params.output_file == NULL) {
+            if (params.output_filename == NULL) {
+                switch (params.output_format) {
 #ifdef HAVE_LIBPNG
-                params.output_file = make_output_filename(argv[filearg], ".png");
-                params.output_format = jbig2dec_format_png;
-#else
-                params.output_file = make_output_filename(argv[filearg], ".pbm");
-                params.output_format = jbig2dec_format_pbm;
+                case jbig2dec_format_png:
+                    params.output_filename = make_output_filename(argv[filearg], ".png");
+                    break;
 #endif
+                case jbig2dec_format_pbm:
+                    params.output_filename = make_output_filename(argv[filearg], ".pbm");
+                    break;
+                default:
+                    fprintf(stderr, "unsupported output format: %d\n", params.output_format);
+                    goto cleanup;
+                }
             } else {
-                int len = strlen(params.output_file);
+                int len = strlen(params.output_filename);
 
                 if ((len >= 3) && (params.output_format == jbig2dec_format_none))
                     /* try to set the output type by the given extension */
-                    set_output_format(&params, params.output_file + len - 3);
+                    set_output_format(&params, params.output_filename + len - 3);
+            }
+
+            if (!strncmp(params.output_filename, "-", 2)) {
+                out = stdout;
+            } else {
+                if (params.verbose > 1)
+                    fprintf(stderr, "saving decoded page as '%s'\n", params.output_filename);
+                if ((out = fopen(params.output_filename, "wb")) == NULL) {
+                    fprintf(stderr, "unable to open '%s' for writing\n", params.output_filename);
+                    goto cleanup;
+                }
             }
 
             /* retrieve and write out all the completed pages */
             while ((image = jbig2_page_out(ctx)) != NULL) {
-                write_page_image(&params, image);
+                write_page_image(&params, out, image);
                 if (params.hash)
                     hash_image(&params, image);
                 jbig2_release_page(ctx, image);
             }
+
+            if (out != stdout)
+                fclose(out);
             if (params.hash)
                 write_document_hash(&params);
         }
 
-        jbig2_ctx_free(ctx);
 
     }                           /* end params.mode switch */
 
-    if (params.output_file)
-        free(params.output_file);
+    /* fin */
+    result = 0;
+
+cleanup:
+    jbig2_ctx_free(ctx);
+    if (params.output_filename)
+        free(params.output_filename);
     if (params.hash)
         hash_free(&params);
 
-    /* fin */
-    return 0;
+    return result;
 }

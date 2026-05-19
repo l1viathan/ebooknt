@@ -2,9 +2,11 @@
 
 #include <zlib.h>
 
-typedef struct fz_flate_s fz_flate;
+#include <string.h>
 
-struct fz_flate_s
+typedef struct fz_inflate_state_s fz_inflate_state;
+
+struct fz_inflate_state_s
 {
 	fz_stream *chain;
 	z_stream z;
@@ -24,7 +26,7 @@ static void zfree_flate(void *opaque, void *ptr)
 static int
 next_flated(fz_context *ctx, fz_stream *stm, size_t required)
 {
-	fz_flate *state = stm->state;
+	fz_inflate_state *state = stm->state;
 	fz_stream *chain = state->chain;
 	z_streamp zp = &state->z;
 	int code;
@@ -86,7 +88,7 @@ next_flated(fz_context *ctx, fz_stream *stm, size_t required)
 static void
 close_flated(fz_context *ctx, void *state_)
 {
-	fz_flate *state = (fz_flate *)state_;
+	fz_inflate_state *state = (fz_inflate_state *)state_;
 	int code;
 
 	code = inflateEnd(&state->z);
@@ -100,34 +102,24 @@ close_flated(fz_context *ctx, void *state_)
 fz_stream *
 fz_open_flated(fz_context *ctx, fz_stream *chain, int window_bits)
 {
-	fz_flate *state = NULL;
-	int code = Z_OK;
+	fz_inflate_state *state;
+	int code;
 
-	fz_var(code);
-	fz_var(state);
+	state = fz_malloc_struct(ctx, fz_inflate_state);
+	state->z.zalloc = zalloc_flate;
+	state->z.zfree = zfree_flate;
+	state->z.opaque = ctx;
+	state->z.next_in = NULL;
+	state->z.avail_in = 0;
 
-	fz_try(ctx)
+	code = inflateInit2(&state->z, window_bits);
+	if (code != Z_OK)
 	{
-		state = fz_malloc_struct(ctx, fz_flate);
-		state->chain = chain;
-
-		state->z.zalloc = zalloc_flate;
-		state->z.zfree = zfree_flate;
-		state->z.opaque = ctx;
-		state->z.next_in = NULL;
-		state->z.avail_in = 0;
-
-		code = inflateInit2(&state->z, window_bits);
-		if (code != Z_OK)
-			fz_throw(ctx, FZ_ERROR_GENERIC, "zlib error: inflateInit: %s", state->z.msg);
-	}
-	fz_catch(ctx)
-	{
-		if (state && code == Z_OK)
-			inflateEnd(&state->z);
 		fz_free(ctx, state);
-		fz_drop_stream(ctx, chain);
-		fz_rethrow(ctx);
+		fz_throw(ctx, FZ_ERROR_GENERIC, "zlib error: inflateInit2 failed");
 	}
+
+	state->chain = fz_keep_stream(ctx, chain);
+
 	return fz_new_stream(ctx, state, next_flated, close_flated);
 }

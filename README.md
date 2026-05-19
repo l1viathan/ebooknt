@@ -47,23 +47,19 @@ It sets `android.nonFinalResIds=false`, which is required because the code uses
 Native libraries must be compiled before the Gradle build. From the repo root:
 
 ```
-cd ebooknt/jni/mupdf/mupdf && make generate && cd ../../../..
-cd ebooknt && ndk-build && cd ..
-./gradlew assembleDebug
+ebooknt/jni/mupdf/generate-fonts.sh
+ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ebooknt/jni/Android.mk NDK_APPLICATION_MK=./ebooknt/jni/Application.mk
+./gradlew assembleDebug   # or assembleRelease
 ```
 
-Or for a release build:
+`generate-fonts.sh` converts MuPDF's URW base14 font files (`.cff`) into C
+source arrays under `ebooknt/jni/mupdf/mupdf/generated/`. This directory is
+git-ignored. Only needs to be re-run once, or when the URW `.cff` fonts change.
+Other generated resources (CMap headers, ICC profiles, JS headers)
+ship with the MuPDF 1.14 source tree and do not need regeneration.
 
-```
-cd ebooknt/jni/mupdf/mupdf && make generate && cd ../../../..
-cd ebooknt && ndk-build && cd ..
-./gradlew assembleRelease
-```
-
-`make generate` converts MuPDF font and CMap resources into C source files
-under `ebooknt/jni/mupdf/mupdf/generated/`. Re-run it only if those resources
-change. `ndk-build` reads `ebooknt/jni/` and writes `.so` files to
-`libs/<abi>/`; re-run it whenever C/C++ sources under `ebooknt/jni/` change.
+`ndk-build` reads `ebooknt/jni/` and writes `.so` files to `libs/<abi>/`;
+re-run it whenever C/C++ sources under `ebooknt/jni/` change.
 
 ### Development with Android Studio
 
@@ -91,7 +87,7 @@ along with EbookNT. If not, see <http://www.gnu.org/licenses/>.
 
 ## C Libraries
 
-* **MuPDF** — lightweight PDF, EPUB, CBZ and XPS renderer
+* **MuPDF 1.14** — lightweight PDF, EPUB, CBZ and XPS renderer
   http://www.mupdf.com/ — AGPLv3+
 
 * **DjVuLibre** — DjVu renderer

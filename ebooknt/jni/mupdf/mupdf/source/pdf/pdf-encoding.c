@@ -1,10 +1,14 @@
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
 #include "pdf-encodings.h"
 #include "pdf-glyphlist.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 void
-pdf_load_encoding(const char **estrings, char *encoding)
+pdf_load_encoding(const char **estrings, const char *encoding)
 {
 	const char * const *bstrings = NULL;
 	int i;
@@ -59,7 +63,7 @@ pdf_lookup_agl(const char *name)
 	else if (buf[0] == 'a' && buf[1] != 0 && buf[2] != 0)
 		code = strtol(buf + 1, NULL, 10);
 
-	return (code >= 0 && code <= 0x10ffff) ? code : 0;
+	return (code > 0 && code <= 0x10ffff) ? code : FZ_REPLACEMENT_CHARACTER;
 }
 
 static const char *empty_dup_list[] = { 0 };
@@ -80,4 +84,61 @@ pdf_lookup_agl_duplicates(int ucs)
 			return agl_dup_names + agl_dup_offsets[(m << 1) + 1];
 	}
 	return empty_dup_list;
+}
+
+int pdf_cyrillic_from_unicode(int u)
+{
+	int l = 0;
+	int r = nelem(koi8u_from_unicode) - 1;
+	if (u < 128)
+		return u;
+	while (l <= r)
+	{
+		int m = (l + r) >> 1;
+		if (u < koi8u_from_unicode[m].u)
+			r = m - 1;
+		else if (u > koi8u_from_unicode[m].u)
+			l = m + 1;
+		else
+			return koi8u_from_unicode[m].c;
+	}
+	return -1;
+}
+
+int pdf_greek_from_unicode(int u)
+{
+	int l = 0;
+	int r = nelem(iso8859_7_from_unicode) - 1;
+	if (u < 128)
+		return u;
+	while (l <= r)
+	{
+		int m = (l + r) >> 1;
+		if (u < iso8859_7_from_unicode[m].u)
+			r = m - 1;
+		else if (u > iso8859_7_from_unicode[m].u)
+			l = m + 1;
+		else
+			return iso8859_7_from_unicode[m].c;
+	}
+	return -1;
+}
+
+int pdf_winansi_from_unicode(int u)
+{
+	int l = 0;
+	int r = nelem(winansi_from_unicode) - 1;
+	if (u < 128)
+		return u;
+	while (l <= r)
+	{
+		int m = (l + r) >> 1;
+		if (u < winansi_from_unicode[m].u)
+			r = m - 1;
+		else if (u > winansi_from_unicode[m].u)
+			l = m + 1;
+		else
+			return winansi_from_unicode[m].c;
+	}
+	return -1;
 }

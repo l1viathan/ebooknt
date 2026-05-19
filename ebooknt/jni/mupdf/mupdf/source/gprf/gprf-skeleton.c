@@ -1,5 +1,7 @@
 #include "mupdf/fitz.h"
 
+#include <string.h>
+
 void
 fz_save_gproof(fz_context *ctx, const char *pdf_file, fz_document *doc, const char *filename, int res,
 				const char *print_profile, const char *display_profile)
@@ -15,7 +17,6 @@ fz_save_gproof(fz_context *ctx, const char *pdf_file, fz_document *doc, const ch
 		fz_throw(ctx, FZ_ERROR_GENERIC, "Cannot write a 0 page GProof skeleton file");
 
 	out = fz_new_output_with_path(ctx, filename, 0);
-
 	fz_try(ctx)
 	{
 		/* File Signature: GPRO */
@@ -37,13 +38,13 @@ fz_save_gproof(fz_context *ctx, const char *pdf_file, fz_document *doc, const ch
 			int w, h;
 
 			page = fz_load_page(ctx, doc, i);
-			fz_bound_page(ctx, page, &rect);
+			rect = fz_bound_page(ctx, page);
 			fz_drop_page(ctx, page);
 			page = NULL;
 
 			/* Same lack of rounding as gs uses */
-			w = (int)((rect.x1 - rect.x0) * res / 72.0);
-			h = (int)((rect.y1 - rect.y0) * res / 72.0);
+			w = (int)((rect.x1 - rect.x0) * res / 72.0f);
+			h = (int)((rect.y1 - rect.y0) * res / 72.0f);
 			fz_write_int32_le(ctx, out, w);
 			fz_write_int32_le(ctx, out, h);
 		}
@@ -52,6 +53,8 @@ fz_save_gproof(fz_context *ctx, const char *pdf_file, fz_document *doc, const ch
 		fz_write_data(ctx, out, pdf_file, strlen(pdf_file)+1);
 		fz_write_data(ctx, out, print_profile, strlen(print_profile) + 1);
 		fz_write_data(ctx, out, display_profile, strlen(display_profile) + 1);
+
+		fz_close_output(ctx, out);
 	}
 	fz_always(ctx)
 	{

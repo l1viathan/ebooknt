@@ -1,6 +1,9 @@
 #include "pdfapp.h"
 
+#include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 /*
 	A useful bit of bash script to call this is:
@@ -58,6 +61,16 @@ void winprint(pdfapp_t *app)
 	fprintf(stderr, "The MuPDF library supports printing, but this application currently does not\n");
 }
 
+int winquery(pdfapp_t *app, const char *query)
+{
+	return QUERY_NO;
+}
+
+int wingetcertpath(char *buf, int len)
+{
+	return 0;
+}
+
 static char pd_password[256] = "";
 static char td_textinput[LONGLINE] = "";
 
@@ -78,7 +91,7 @@ char *wintextinput(pdfapp_t *app, char *inittext, int retry)
 	return inittext;
 }
 
-int winchoiceinput(pdfapp_t *app, int nopts, char *opts[], int *nvals, char *vals[])
+int winchoiceinput(pdfapp_t *app, int nopts, const char *opts[], int *nvals, const char *vals[])
 {
 	return 0;
 }
@@ -346,7 +359,7 @@ main(int argc, char *argv[])
 				}
 				else if (match(&line, "OPEN"))
 				{
-					char path[1024];
+					char path[LONGLINE];
 					if (file_open)
 						pdfapp_close(&gapp);
 					if (prefix)
@@ -368,7 +381,7 @@ main(int argc, char *argv[])
 				{
 					char text[1024];
 
-					sprintf(text, output, ++shotcount);
+					fz_snprintf(text, sizeof(text), output, ++shotcount);
 					if (strstr(text, ".pgm") || strstr(text, ".ppm") || strstr(text, ".pnm"))
 						fz_save_pixmap_as_pnm(ctx, gapp.image, text);
 					else
@@ -402,7 +415,7 @@ main(int argc, char *argv[])
 				}
 				else
 				{
-					fprintf(stderr, "Unmatched: %s\n", line);
+					fprintf(stderr, "Ignoring line without script statement.\n");
 				}
 			}
 			while (!feof(script));

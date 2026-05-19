@@ -13,6 +13,8 @@
 #include "mupdf/helpers/mu-threads.h"
 #include "mupdf/memento.h"
 
+#include <assert.h>
+
 enum
 {
 	MuError_OK = 0,
@@ -134,6 +136,16 @@ static void muoffice_unlock(void *user, int lock)
 	MuOfficeLib *mu = (MuOfficeLib *)user;
 
 	mu_unlock_mutex(&mu->mutexes[lock]);
+}
+
+static void muoffice_doc_lock(MuOfficeLib *mu)
+{
+	mu_lock_mutex(&mu->mutexes[DOCLOCK]);
+}
+
+static void muoffice_doc_unlock(MuOfficeLib *mu)
+{
+	mu_unlock_mutex(&mu->mutexes[DOCLOCK]);
 }
 
 static void fin_muoffice_locks(MuOfficeLib *mu)
@@ -337,7 +349,7 @@ static void load_worker(void *arg)
 		return;
 	}
 
-	fz_lock(ctx, DOCLOCK);
+	muoffice_doc_lock(doc->mu);
 
 	fz_try(ctx)
 	{
@@ -375,7 +387,7 @@ static void load_worker(void *arg)
 		err = MuOfficeDocErrorType_UnableToLoadDocument;
 
 fail:
-	fz_unlock(ctx, DOCLOCK);
+	muoffice_doc_unlock(doc->mu);
 
 	if (err)
 		doc->error(doc->cookie, err);
@@ -670,7 +682,7 @@ MuError MuOfficeDoc_getPage(	MuOfficeDoc          *doc,
 	if (page == NULL)
 		return MuError_OOM;
 
-	fz_lock(ctx, DOCLOCK);
+	muoffice_doc_lock(doc->mu);
 
 	fz_try(ctx)
 	{
@@ -689,7 +701,7 @@ MuError MuOfficeDoc_getPage(	MuOfficeDoc          *doc,
 		err = MuError_Generic;
 	}
 
-	fz_unlock(ctx, DOCLOCK);
+	muoffice_doc_unlock(doc->mu);
 
 	return err;
 }
@@ -734,14 +746,14 @@ MuError MuOfficeDoc_run(MuOfficeDoc *doc, void (*fn)(fz_context *ctx, fz_documen
 	if (ctx == NULL)
 		return MuError_OOM;
 
-	fz_lock(ctx, DOCLOCK);
+	muoffice_doc_lock(doc->mu);
 
 	fz_try(ctx)
 		fn(ctx, doc->doc, arg);
 	fz_catch(ctx)
 		err = MuError_Generic;
 
-	fz_unlock(ctx, DOCLOCK);
+	muoffice_doc_unlock(doc->mu);
 
 	fz_drop_context(ctx);
 
@@ -805,7 +817,7 @@ MuError MuOfficePage_getSize(	MuOfficePage *page,
 	if (!doc)
 		return MuError_BadNull;
 
-	fz_bound_page(doc->ctx, page->page, &rect);
+	rect = fz_bound_page(doc->ctx, page->page);
 
 	/* MuPDF measures in points (72ths of an inch). This API wants
 	 * 90ths of an inch, so adjust. */
@@ -846,7 +858,7 @@ MuError MuOfficePage_calculateZoom(	MuOfficePage *page,
 	if (!doc)
 		return MuError_BadNull;
 
-	fz_bound_page(doc->ctx, page->page, &rect);
+	rect = fz_bound_page(doc->ctx, page->page);
 
 	/* MuPDF measures in points (72ths of an inch). This API wants
 	 * 90ths of an inch, so adjust. */
@@ -891,7 +903,7 @@ MuError MuOfficePage_getSizeForZoom(	MuOfficePage *page,
 	if (!doc)
 		return MuError_BadNull;
 
-	fz_bound_page(doc->ctx, page->page, &rect);
+	rect = fz_bound_page(doc->ctx, page->page);
 
 	/* MuPDF measures in points (72ths of an inch). This API wants
 	 * 90ths of an inch, so adjust. */
@@ -899,9 +911,9 @@ MuError MuOfficePage_getSizeForZoom(	MuOfficePage *page,
 	h = 90 * (rect.y1 - rect.y0) / 72;
 
 	if (pWidth)
-		*pWidth = (int)(w * zoom + 0.5);
+		*pWidth = (int)(w * zoom + 0.5f);
 	if (pHeight)
-		*pHeight = (int)(h * zoom + 0.5);
+		*pHeight = (int)(h * zoom + 0.5f);
 
 	return MuError_OK;
 }
@@ -944,14 +956,14 @@ MuError MuOfficePage_run(MuOfficePage *page, void (*fn)(fz_context *ctx, fz_page
 	if (ctx == NULL)
 		return MuError_OOM;
 
-	fz_lock(ctx, DOCLOCK);
+	muoffice_doc_lock(page->doc->mu);
 
 	fz_try(ctx)
 		fn(ctx, page->page, arg);
 	fz_catch(ctx)
 		err = MuError_Generic;
 
-	fz_unlock(ctx, DOCLOCK);
+	muoffice_doc_unlock(page->doc->mu);
 
 	fz_drop_context(ctx);
 
@@ -968,7 +980,6 @@ static void render_worker(void *arg)
 	fz_device *dev = NULL;
 	float scalex;
 	float scaley;
-	fz_matrix matrix;
 	fz_rect page_bounds;
 	int locked = 0;
 
@@ -983,11 +994,11 @@ static void render_worker(void *arg)
 	{
 		if (page->list == NULL)
 		{
-			fz_lock(ctx, DOCLOCK);
+			muoffice_doc_lock(page->doc->mu);
 			locked = 1;
 			page->list = fz_new_display_list_from_page(ctx, page->page);
 			locked = 0;
-			fz_unlock(ctx, DOCLOCK);
+			muoffice_doc_unlock(page->doc->mu);
 		}
 		/* Make a pixmap from the bitmap */
 		if (!render->area_valid)
@@ -1001,6 +1012,7 @@ static void render_worker(void *arg)
 						fz_device_rgb(ctx),
 						render->area.renderArea.width,
 						render->area.renderArea.height,
+						NULL,
 						1,
 						render->bitmap->lineSkip,
 						((unsigned char *)render->bitmap->memptr) +
@@ -1009,16 +1021,16 @@ static void render_worker(void *arg)
 		/* Be a bit clever with the scaling to make sure we get
 		 * integer width/heights. First calculate the target
 		 * width/height. */
-		fz_bound_page(ctx, render->page->page, &page_bounds);
-		scalex = (int)(90 * render->zoom * (page_bounds.x1 - page_bounds.x0) / 72 + 0.5);
-		scaley = (int)(90 * render->zoom * (page_bounds.y1 - page_bounds.y0) / 72 + 0.5);
+		page_bounds = fz_bound_page(ctx, render->page->page);
+		scalex = (int)(90 * render->zoom * (page_bounds.x1 - page_bounds.x0) / 72 + 0.5f);
+		scaley = (int)(90 * render->zoom * (page_bounds.y1 - page_bounds.y0) / 72 + 0.5f);
 		/* Now calculate the actual scale factors required */
 		scalex /= (page_bounds.x1 - page_bounds.x0);
 		scaley /= (page_bounds.y1 - page_bounds.y0);
 		/* Render the list */
 		fz_clear_pixmap_with_value(ctx, pixmap, 0xFF);
-		dev = fz_new_draw_device(ctx, fz_post_scale(fz_translate(&matrix, -page_bounds.x0, -page_bounds.y0), scalex, scaley), pixmap);
-		fz_run_display_list(ctx, page->list, dev, &fz_identity, NULL, NULL);
+		dev = fz_new_draw_device(ctx, fz_post_scale(fz_translate(-page_bounds.x0, -page_bounds.y0), scalex, scaley), pixmap);
+		fz_run_display_list(ctx, page->list, dev, fz_identity, fz_infinite_rect, NULL);
 		fz_close_device(ctx, dev);
 	}
 	fz_always(ctx)
@@ -1029,7 +1041,7 @@ static void render_worker(void *arg)
 	fz_catch(ctx)
 	{
 		if (locked)
-			fz_unlock(ctx, DOCLOCK);
+			muoffice_doc_unlock(page->doc->mu);
 		err = MuError_Generic;
 		goto fail;
 	}

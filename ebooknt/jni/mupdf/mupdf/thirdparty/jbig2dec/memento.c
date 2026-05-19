@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /* Inspired by Fortify by Simon P Bullen. */
@@ -102,7 +102,7 @@ enum {
 /* When we list leaked blocks at the end of execution, we search for pointers
  * between blocks in order to be able to give a nice nested view.
  * Unfortunately, if you have are running your own allocator (such as
- * ghostscripts chunk allocator) you can often find that the header of the
+ * Ghostscript's chunk allocator) you can often find that the header of the
  * block always contains pointers to next or previous blocks. This tends to
  * mean the nesting displayed is "uninteresting" at best :)
  *
@@ -740,7 +740,7 @@ Memento_init(void)
 /* MacOSX has 10240, Ubuntu seems to have 256 */
 #define OPEN_MAX 10240
 
-/* stashed_map[j] = i means that filedescriptor i-1 was duplicated to j */
+/* stashed_map[j] = i means that file descriptor i-1 was duplicated to j */
 int stashed_map[OPEN_MAX];
 
 extern size_t backtrace(void **, int);

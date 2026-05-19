@@ -29,7 +29,6 @@ enum js_OpCode
 	OP_FALSE,
 
 	OP_THIS,
-	OP_GLOBAL,
 	OP_CURRENT,	/* currently executing function object */
 
 	OP_INITLOCAL,	/* <value> -K- */
@@ -122,6 +121,7 @@ struct js_Function
 	const char *name;
 	int script;
 	int lightweight;
+	int strict;
 	int arguments;
 	int numparams;
 
@@ -148,7 +148,7 @@ struct js_Function
 };
 
 js_Function *jsC_compilefunction(js_State *J, js_Ast *prog);
-js_Function *jsC_compile(js_State *J, js_Ast *prog);
+js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict);
 const char *jsC_opcodestring(enum js_OpCode opcode);
 void jsC_dumpfunction(js_State *J, js_Function *fun);
 

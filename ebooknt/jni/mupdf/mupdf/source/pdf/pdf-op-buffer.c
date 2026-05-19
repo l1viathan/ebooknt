@@ -1,3 +1,4 @@
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
 
 typedef struct pdf_output_processor_s pdf_output_processor;
@@ -61,6 +62,26 @@ pdf_out_ri(fz_context *ctx, pdf_processor *proc, const char *intent)
 	fz_output *out = ((pdf_output_processor*)proc)->out;
 	if (!((pdf_output_processor*)proc)->extgstate)
 		fz_write_printf(ctx, out, "/%s ri\n", intent);
+}
+
+static void
+pdf_out_gs_OP(fz_context *ctx, pdf_processor *proc, int b)
+{
+}
+
+static void
+pdf_out_gs_op(fz_context *ctx, pdf_processor *proc, int b)
+{
+}
+
+static void
+pdf_out_gs_OPM(fz_context *ctx, pdf_processor *proc, int i)
+{
+}
+
+static void
+pdf_out_gs_UseBlackPtComp(fz_context *ctx, pdf_processor *proc, pdf_obj *name)
+{
 }
 
 static void
@@ -578,6 +599,8 @@ pdf_out_BI(fz_context *ctx, pdf_processor *proc, fz_image *img)
 		fz_write_string(ctx, out, "/CS/CMYK\n");
 	else if (fz_colorspace_is_indexed(ctx, img->colorspace))
 		fz_write_string(ctx, out, "/CS/I\n");
+	else
+		fz_throw(ctx, FZ_ERROR_GENERIC, "BI operator can only show mask, Gray, RGB, CMYK, or Indexed images");
 	if (img->interpolate)
 		fz_write_string(ctx, out, "/I true\n");
 	fz_write_string(ctx, out, "/D[");
@@ -704,7 +727,7 @@ pdf_out_Do_image(fz_context *ctx, pdf_processor *proc, const char *name, fz_imag
 }
 
 static void
-pdf_out_Do_form(fz_context *ctx, pdf_processor *proc, const char *name, pdf_xobject *xobj, pdf_obj *page_resources)
+pdf_out_Do_form(fz_context *ctx, pdf_processor *proc, const char *name, pdf_obj *xobj, pdf_obj *page_resources)
 {
 	fz_output *out = ((pdf_output_processor*)proc)->out;
 	fz_write_printf(ctx, out, "/%s Do\n", name);
@@ -768,17 +791,25 @@ pdf_out_EX(fz_context *ctx, pdf_processor *proc)
 }
 
 static void
+pdf_close_output_processor(fz_context *ctx, pdf_processor *proc)
+{
+	fz_output *out = ((pdf_output_processor*)proc)->out;
+	fz_close_output(ctx, out);
+}
+
+static void
 pdf_drop_output_processor(fz_context *ctx, pdf_processor *proc)
 {
 	fz_output *out = ((pdf_output_processor*)proc)->out;
 	fz_drop_output(ctx, out);
 }
 
-static pdf_processor *
+pdf_processor *
 pdf_new_output_processor(fz_context *ctx, fz_output *out, int ahxencode)
 {
 	pdf_output_processor *proc = pdf_new_processor(ctx, sizeof *proc);
 	{
+		proc->super.close_processor = pdf_close_output_processor;
 		proc->super.drop_processor = pdf_drop_output_processor;
 
 		/* general graphics state */
@@ -890,6 +921,12 @@ pdf_new_output_processor(fz_context *ctx, fz_output *out, int ahxencode)
 		/* compatibility */
 		proc->super.op_BX = pdf_out_BX;
 		proc->super.op_EX = pdf_out_EX;
+
+		/* extgstate */
+		proc->super.op_gs_OP = pdf_out_gs_OP;
+		proc->super.op_gs_op = pdf_out_gs_op;
+		proc->super.op_gs_OPM = pdf_out_gs_OPM;
+		proc->super.op_gs_UseBlackPtComp = pdf_out_gs_UseBlackPtComp;
 	}
 
 	proc->out = out;
@@ -901,7 +938,7 @@ pdf_new_output_processor(fz_context *ctx, fz_output *out, int ahxencode)
 pdf_processor *
 pdf_new_buffer_processor(fz_context *ctx, fz_buffer *buffer, int ahxencode)
 {
-	pdf_processor *proc;
+	pdf_processor *proc = NULL;
 	fz_output *out = fz_new_output_with_buffer(ctx, buffer);
 	fz_try(ctx)
 	{

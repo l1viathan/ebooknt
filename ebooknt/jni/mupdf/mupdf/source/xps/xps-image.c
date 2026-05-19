@@ -1,6 +1,8 @@
 #include "mupdf/fitz.h"
 #include "xps-imp.h"
 
+#include <string.h>
+
 static fz_image *
 xps_load_image(fz_context *ctx, xps_document *doc, xps_part *part)
 {
@@ -9,19 +11,18 @@ xps_load_image(fz_context *ctx, xps_document *doc, xps_part *part)
 
 /* FIXME: area unused! */
 static void
-xps_paint_image_brush(fz_context *ctx, xps_document *doc, const fz_matrix *ctm, const fz_rect *area, char *base_uri, xps_resource *dict,
+xps_paint_image_brush(fz_context *ctx, xps_document *doc, fz_matrix ctm, fz_rect area, char *base_uri, xps_resource *dict,
 	fz_xml *root, void *vimage)
 {
 	fz_image *image = vimage;
 	float xs, ys;
-	fz_matrix local_ctm = *ctm;
 
 	if (image->xres == 0 || image->yres == 0)
 		return;
 	xs = image->w * 96 / image->xres;
 	ys = image->h * 96 / image->yres;
-	fz_pre_scale(&local_ctm, xs, ys);
-	fz_fill_image(ctx, doc->dev, image, &local_ctm, doc->opacity[doc->opacity_top]);
+	ctm = fz_pre_scale(ctm, xs, ys);
+	fz_fill_image(ctx, doc->dev, image, ctm, doc->opacity[doc->opacity_top], fz_default_color_params(ctx));
 }
 
 static void
@@ -88,11 +89,11 @@ xps_find_image_brush_source_part(fz_context *ctx, xps_document *doc, char *base_
 }
 
 void
-xps_parse_image_brush(fz_context *ctx, xps_document *doc, const fz_matrix *ctm, const fz_rect *area,
+xps_parse_image_brush(fz_context *ctx, xps_document *doc, fz_matrix ctm, fz_rect area,
 	char *base_uri, xps_resource *dict, fz_xml *root)
 {
-	xps_part *part;
-	fz_image *image;
+	xps_part *part = NULL;
+	fz_image *image = NULL;
 
 	fz_try(ctx)
 	{
@@ -120,7 +121,10 @@ xps_parse_image_brush(fz_context *ctx, xps_document *doc, const fz_matrix *ctm, 
 		return;
 	}
 
-	xps_parse_tiling_brush(ctx, doc, ctm, area, base_uri, dict, root, xps_paint_image_brush, image);
-
-	fz_drop_image(ctx, image);
+	fz_try(ctx)
+		xps_parse_tiling_brush(ctx, doc, ctm, area, base_uri, dict, root, xps_paint_image_brush, image);
+	fz_always(ctx)
+		fz_drop_image(ctx, image);
+	fz_catch(ctx)
+		fz_rethrow(ctx);
 }

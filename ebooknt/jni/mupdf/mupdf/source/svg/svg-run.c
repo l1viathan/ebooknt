@@ -1,6 +1,10 @@
 #include "mupdf/fitz.h"
 #include "svg-imp.h"
 
+#include <string.h>
+#include <stdio.h> /* for sscanf */
+#include <math.h>
+
 /* default page size */
 #define DEF_WIDTH 12
 #define DEF_HEIGHT 792
@@ -35,13 +39,13 @@ static void svg_run_element(fz_context *ctx, fz_device *dev, svg_document *doc, 
 static void svg_fill(fz_context *ctx, fz_device *dev, svg_document *doc, fz_path *path, svg_state *state)
 {
 	float opacity = state->opacity * state->fill_opacity;
-	fz_fill_path(ctx, dev, path, state->fill_rule, &state->transform, fz_device_rgb(ctx), state->fill_color, opacity);
+	fz_fill_path(ctx, dev, path, state->fill_rule, state->transform, fz_device_rgb(ctx), state->fill_color, opacity, NULL);
 }
 
 static void svg_stroke(fz_context *ctx, fz_device *dev, svg_document *doc, fz_path *path, svg_state *state)
 {
 	float opacity = state->opacity * state->stroke_opacity;
-	fz_stroke_path(ctx, dev, path, &state->stroke, &state->transform, fz_device_rgb(ctx), state->stroke_color, opacity);
+	fz_stroke_path(ctx, dev, path, &state->stroke, state->transform, fz_device_rgb(ctx), state->stroke_color, opacity, NULL);
 }
 
 static void svg_draw_path(fz_context *ctx, fz_device *dev, svg_document *doc, fz_path *path, svg_state *state)
@@ -61,13 +65,13 @@ static const float MAGIC_CIRCLE = 0.551915f;
 
 static void approx_circle(fz_context *ctx, fz_path *path, float cx, float cy, float rx, float ry)
 {
-	float rxs = rx * MAGIC_CIRCLE;
-	float rys = ry * MAGIC_CIRCLE;
+	float mx = rx * MAGIC_CIRCLE;
+	float my = ry * MAGIC_CIRCLE;
 	fz_moveto(ctx, path, cx, cy+ry);
-	fz_curveto(ctx, path, cx + rxs, cy + ry, cx + rx, cy + rys, cx + rx, cy);
-	fz_curveto(ctx, path, cx + rx, cy - rys, cx + rxs, cy - rys, cx, cy - ry);
-	fz_curveto(ctx, path, cx - rxs, cy - ry, cx - rx, cy - rys, cx - rx, cy);
-	fz_curveto(ctx, path, cx - rx, cy + rys, cx - rxs, cy + rys, cx, cy + ry);
+	fz_curveto(ctx, path, cx + mx, cy + ry, cx + rx, cy + my, cx + rx, cy);
+	fz_curveto(ctx, path, cx + rx, cy - my, cx + mx, cy - ry, cx, cy - ry);
+	fz_curveto(ctx, path, cx - mx, cy - ry, cx - rx, cy - my, cx - rx, cy);
+	fz_curveto(ctx, path, cx - rx, cy + my, cx - mx, cy + ry, cx, cy + ry);
 	fz_closepath(ctx, path);
 }
 
@@ -105,10 +109,10 @@ svg_run_rect(fz_context *ctx, fz_device *dev, svg_document *doc, fz_xml *node, c
 		ry = rx;
 	if (ry_att && !rx_att)
 		rx = ry;
-	if (rx > w * 0.5)
-		rx = w * 0.5;
-	if (ry > h * 0.5)
-		ry = h * 0.5;
+	if (rx > w * 0.5f)
+		rx = w * 0.5f;
+	if (ry > h * 0.5f)
+		ry = h * 0.5f;
 
 	if (w <= 0 || h <= 0)
 		return;
@@ -312,30 +316,30 @@ svg_run_polygon(fz_context *ctx, fz_device *dev, svg_document *doc, fz_xml *node
 }
 
 static void
-svg_add_arc_segment(fz_context *ctx, fz_path *path, const fz_matrix *mtx, float th0, float th1, int iscw)
+svg_add_arc_segment(fz_context *ctx, fz_path *path, fz_matrix mtx, float th0, float th1, int iscw)
 {
 	float t, d;
 	fz_point p;
 
 	while (th1 < th0)
-		th1 += (float)M_PI * 2;
+		th1 += FZ_PI * 2;
 
-	d = (float)M_PI / 180; /* 1-degree precision */
+	d = FZ_PI / 180; /* 1-degree precision */
 
 	if (iscw)
 	{
 		for (t = th0 + d; t < th1 - d/2; t += d)
 		{
-			fz_transform_point_xy(&p, mtx, cosf(t), sinf(t));
+			p = fz_transform_point_xy(cosf(t), sinf(t), mtx);
 			fz_lineto(ctx, path, p.x, p.y);
 		}
 	}
 	else
 	{
-		th0 += (float)M_PI * 2;
+		th0 += FZ_PI * 2;
 		for (t = th0 - d; t > th1 + d/2; t -= d)
 		{
-			fz_transform_point_xy(&p, mtx, cosf(t), sinf(t));
+			p = fz_transform_point_xy(cosf(t), sinf(t), mtx);
 			fz_lineto(ctx, path, p.x, p.y);
 		}
 	}
@@ -386,8 +390,8 @@ svg_add_arc(fz_context *ctx, fz_path *path,
 	else
 		sign = -1;
 
-	fz_rotate(&rotmat, rotation_angle);
-	fz_rotate(&revmat, -rotation_angle);
+	rotmat = fz_rotate(rotation_angle);
+	revmat = fz_rotate(-rotation_angle);
 
 	/* http://www.w3.org/TR/SVG11/implnote.html#ArcImplementationNotes */
 	/* Conversion from endpoint to center parameterization */
@@ -404,7 +408,7 @@ svg_add_arc(fz_context *ctx, fz_path *path,
 	/* F.6.5.1 */
 	pt.x = (x1 - x2) / 2;
 	pt.y = (y1 - y2) / 2;
-	fz_transform_vector(&pt, &revmat);
+	pt = fz_transform_vector(pt, revmat);
 	x1t = pt.x;
 	y1t = pt.y;
 
@@ -430,7 +434,7 @@ svg_add_arc(fz_context *ctx, fz_path *path,
 	/* F.6.5.3 */
 	pt.x = cxt;
 	pt.y = cyt;
-	fz_transform_vector(&pt, &rotmat);
+	pt = fz_transform_vector(pt, rotmat);
 	cx = pt.x + (x1 + x2) / 2;
 	cy = pt.y + (y1 + y2) / 2;
 
@@ -448,13 +452,13 @@ svg_add_arc(fz_context *ctx, fz_path *path,
 		th1 = angle_between(coord1, coord2);
 		dth = angle_between(coord3, coord4);
 		if (dth < 0 && !is_clockwise)
-			dth += (((float)M_PI / 180) * 360);
+			dth += ((FZ_PI / 180) * 360);
 		if (dth > 0 && is_clockwise)
-			dth -= (((float)M_PI / 180) * 360);
+			dth -= ((FZ_PI / 180) * 360);
 	}
 
-	fz_pre_scale(fz_pre_rotate(fz_translate(&mtx, cx, cy), rotation_angle), rx, ry);
-	svg_add_arc_segment(ctx, path, &mtx, th1, th1 + dth, is_clockwise);
+	mtx = fz_pre_scale(fz_pre_rotate(fz_translate(cx, cy), rotation_angle), rx, ry);
+	svg_add_arc_segment(ctx, path, mtx, th1, th1 + dth, is_clockwise);
 
 	fz_lineto(ctx, path, point_x, point_y);
 }
@@ -474,15 +478,15 @@ svg_parse_path_data(fz_context *ctx, svg_document *doc, const char *str)
 
 	/* saved control point for smooth curves */
 	int reset_smooth = 1;
-	float smooth_x = 0.0;
-	float smooth_y = 0.0;
+	float smooth_x = 0.0f;
+	float smooth_y = 0.0f;
 
 	cmd = 0;
 	nargs = 0;
 
 	fz_try(ctx)
 	{
-		fz_moveto(ctx, path, 0.0, 0.0); /* for the case of opening 'm' */
+		fz_moveto(ctx, path, 0.0f, 0.0f); /* for the case of opening 'm' */
 
 		while (*str)
 		{
@@ -513,8 +517,8 @@ svg_parse_path_data(fz_context *ctx, svg_document *doc, const char *str)
 
 			if (reset_smooth)
 			{
-				smooth_x = 0.0;
-				smooth_y = 0.0;
+				smooth_x = 0.0f;
+				smooth_y = 0.0f;
 			}
 
 			reset_smooth = 1;
@@ -838,7 +842,6 @@ void
 svg_parse_common(fz_context *ctx, svg_document *doc, fz_xml *node, svg_state *state)
 {
 	fz_stroke_state *stroke = &state->stroke;
-	fz_matrix *transform = &state->transform;
 
 	char *transform_att = fz_xml_att(node, "transform");
 
@@ -868,7 +871,7 @@ svg_parse_common(fz_context *ctx, svg_document *doc, fz_xml *node, svg_state *st
 
 	if (transform_att)
 	{
-		svg_parse_transform(ctx, doc, transform_att, transform);
+		state->transform = svg_parse_transform(ctx, doc, transform_att, state->transform);
 	}
 
 	if (font_size_att)
@@ -973,7 +976,7 @@ svg_parse_common(fz_context *ctx, svg_document *doc, fz_xml *node, svg_state *st
 	}
 	else
 	{
-		stroke->miterlimit = 4.0;
+		stroke->miterlimit = 4.0f;
 	}
 }
 
@@ -1033,14 +1036,14 @@ svg_run_use(fz_context *ctx, fz_device *dev, svg_document *doc, fz_xml *root, co
 	if (x_att) x = svg_parse_length(x_att, local_state.viewbox_w, local_state.fontsize);
 	if (y_att) y = svg_parse_length(y_att, local_state.viewbox_h, local_state.fontsize);
 
-	fz_pre_translate(&local_state.transform, x, y);
+	local_state.transform = fz_pre_translate(local_state.transform, x, y);
 
 	if (xlink_href_att && xlink_href_att[0] == '#')
 	{
 		fz_xml *linked = fz_tree_lookup(ctx, doc->idmap, xlink_href_att + 1);
 		if (linked)
 		{
-			if (!strcmp(fz_xml_tag(linked), "symbol"))
+			if (fz_xml_is_tag(linked, "symbol"))
 				svg_run_use_symbol(ctx, dev, doc, root, linked, &local_state);
 			else
 				svg_run_element(ctx, dev, doc, linked, &local_state);
@@ -1054,59 +1057,56 @@ svg_run_use(fz_context *ctx, fz_device *dev, svg_document *doc, fz_xml *root, co
 static void
 svg_run_element(fz_context *ctx, fz_device *dev, svg_document *doc, fz_xml *root, const svg_state *state)
 {
-	char *tag = fz_xml_tag(root);
-
-	if (!strcmp(tag, "svg"))
+	if (fz_xml_is_tag(root, "svg"))
 		svg_run_svg(ctx, dev, doc, root, state);
 
-	else if (!strcmp(tag, "g"))
+	else if (fz_xml_is_tag(root, "g"))
 		svg_run_g(ctx, dev, doc, root, state);
 
-	else if (!strcmp(tag, "title"))
+	else if (fz_xml_is_tag(root, "title"))
 		;
-	else if (!strcmp(tag, "desc"))
-		;
-
-	else if (!strcmp(tag, "defs"))
-		;
-	else if (!strcmp(tag, "symbol"))
+	else if (fz_xml_is_tag(root, "desc"))
 		;
 
-	else if (!strcmp(tag, "use"))
+	else if (fz_xml_is_tag(root, "defs"))
+		;
+	else if (fz_xml_is_tag(root, "symbol"))
+		;
+
+	else if (fz_xml_is_tag(root, "use"))
 		svg_run_use(ctx, dev, doc, root, state);
 
-	else if (!strcmp(tag, "path"))
+	else if (fz_xml_is_tag(root, "path"))
 		svg_run_path(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "rect"))
+	else if (fz_xml_is_tag(root, "rect"))
 		svg_run_rect(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "circle"))
+	else if (fz_xml_is_tag(root, "circle"))
 		svg_run_circle(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "ellipse"))
+	else if (fz_xml_is_tag(root, "ellipse"))
 		svg_run_ellipse(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "line"))
+	else if (fz_xml_is_tag(root, "line"))
 		svg_run_line(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "polyline"))
+	else if (fz_xml_is_tag(root, "polyline"))
 		svg_run_polyline(ctx, dev, doc, root, state);
-	else if (!strcmp(tag, "polygon"))
+	else if (fz_xml_is_tag(root, "polygon"))
 		svg_run_polygon(ctx, dev, doc, root, state);
 
 #if 0
-	else if (!strcmp(tag, "image"))
+	else if (fz_xml_is_tag(root, "image"))
 		svg_parse_image(ctx, doc, root);
-	else if (!strcmp(tag, "text"))
+	else if (fz_xml_is_tag(root, "text"))
 		svg_run_text(ctx, dev, doc, root);
-	else if (!strcmp(tag, "tspan"))
+	else if (fz_xml_is_tag(root, "tspan"))
 		svg_run_text_span(ctx, dev, doc, root);
-	else if (!strcmp(tag, "tref"))
+	else if (fz_xml_is_tag(root, "tref"))
 		svg_run_text_ref(ctx, dev, doc, root);
-	else if (!strcmp(tag, "textPath"))
+	else if (fz_xml_is_tag(root, "textPath"))
 		svg_run_text_path(ctx, dev, doc, root);
 #endif
 
 	else
 	{
-		/* debug print unrecognized tags */
-		fz_debug_xml(root, 0);
+		/* ignore unrecognized tags */
 	}
 }
 
@@ -1155,14 +1155,14 @@ svg_parse_document_bounds(fz_context *ctx, svg_document *doc, fz_xml *root)
 }
 
 void
-svg_run_document(fz_context *ctx, svg_document *doc, fz_xml *root, fz_device *dev, const fz_matrix *ctm)
+svg_run_document(fz_context *ctx, svg_document *doc, fz_xml *root, fz_device *dev, fz_matrix ctm)
 {
 	svg_state state;
 
 	svg_parse_document_bounds(ctx, doc, root);
 
 	/* Initial graphics state */
-	state.transform = *ctm;
+	state.transform = ctm;
 	state.stroke = fz_default_stroke_state;
 
 	state.viewport_w = DEF_WIDTH;

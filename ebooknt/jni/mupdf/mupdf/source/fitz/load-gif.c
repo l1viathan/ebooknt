@@ -1,5 +1,8 @@
 #include "fitz-imp.h"
 
+#include <string.h>
+#include <limits.h>
+
 struct info
 {
 	int gif89a;
@@ -23,6 +26,8 @@ struct info
 	int has_transparency;
 	unsigned int transparent;
 	unsigned char *mask;
+
+	fz_pixmap *pix;
 };
 
 /* default color table, where the first two entries are black and white */
@@ -93,8 +98,8 @@ static const unsigned char dct[256 * 3] = {
 	0xfb, 0xfb, 0xfb, 0xfc, 0xfc, 0xfc, 0xfd, 0xfd, 0xfd, 0xfe, 0xfe, 0xfe,
 };
 
-static unsigned char *
-gif_read_subblocks(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end, fz_buffer *buf)
+static const unsigned char *
+gif_read_subblocks(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end, fz_buffer *buf)
 {
 	int len;
 
@@ -118,8 +123,8 @@ gif_read_subblocks(fz_context *ctx, struct info *info, unsigned char *p, unsigne
 	return p;
 }
 
-static unsigned char *
-gif_read_header(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_header(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < 6)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in header in gif image");
@@ -134,8 +139,8 @@ gif_read_header(fz_context *ctx, struct info *info, unsigned char *p, unsigned c
 	return p + 6;
 }
 
-static unsigned char *
-gif_read_lsd(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_lsd(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < 7)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in logical screen descriptor in gif image");
@@ -165,8 +170,8 @@ gif_read_lsd(fz_context *ctx, struct info *info, unsigned char *p, unsigned char
 	return p + 7;
 }
 
-static unsigned char *
-gif_read_gct(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_gct(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < info->gct_entries * 3)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in global color table in gif image");
@@ -177,8 +182,8 @@ gif_read_gct(fz_context *ctx, struct info *info, unsigned char *p, unsigned char
 	return p + info->gct_entries * 3;
 }
 
-static unsigned char *
-gif_read_id(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_id(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < 10)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in image descriptor in gif image");
@@ -196,8 +201,8 @@ gif_read_id(fz_context *ctx, struct info *info, unsigned char *p, unsigned char 
 	return p + 10;
 }
 
-static unsigned char *
-gif_read_lct(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_lct(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < info->lct_entries * 3)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in local color table in gif image");
@@ -209,10 +214,11 @@ gif_read_lct(fz_context *ctx, struct info *info, unsigned char *p, unsigned char
 }
 
 static void
-gif_read_line(fz_context *ctx, struct info *info, unsigned char *dest, int ct_entries, const unsigned char *ct, unsigned int y, unsigned char *sp)
+gif_read_line(fz_context *ctx, struct info *info, int ct_entries, const unsigned char *ct, unsigned int y, unsigned char *sp)
 {
 	unsigned int index = (info->image_top + y) * info->width + info->image_left;
-	unsigned char *dp = &dest[index * 4];
+	unsigned char *samples = fz_pixmap_samples(ctx, info->pix);
+	unsigned char *dp = &samples[index * 4];
 	unsigned char *mp = &info->mask[index];
 	unsigned int x, k;
 
@@ -231,10 +237,10 @@ gif_read_line(fz_context *ctx, struct info *info, unsigned char *dest, int ct_en
 			*mp = 0x00;
 }
 
-static unsigned char *
-gif_read_tbid(fz_context *ctx, struct info *info, unsigned char *dest, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_tbid(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
-	fz_stream *stm, *lzwstm = NULL;
+	fz_stream *stm = NULL, *lzwstm = NULL;
 	unsigned int mincodesize, y;
 	fz_buffer *compressed = NULL, *uncompressed = NULL;
 	const unsigned char *ct;
@@ -255,6 +261,7 @@ gif_read_tbid(fz_context *ctx, struct info *info, unsigned char *dest, unsigned 
 
 	fz_var(compressed);
 	fz_var(lzwstm);
+	fz_var(stm);
 	fz_var(uncompressed);
 
 	fz_try(ctx)
@@ -289,23 +296,24 @@ gif_read_tbid(fz_context *ctx, struct info *info, unsigned char *dest, unsigned 
 		if (info->image_interlaced)
 		{
 			for (y = 0; y < info->image_height; y += 8, sp += info->image_width)
-				gif_read_line(ctx, info, dest, ct_entries, ct, y, sp);
+				gif_read_line(ctx, info, ct_entries, ct, y, sp);
 			for (y = 4; y < info->image_height; y += 8, sp += info->image_width)
-				gif_read_line(ctx, info, dest, ct_entries, ct, y, sp);
+				gif_read_line(ctx, info, ct_entries, ct, y, sp);
 			for (y = 2; y < info->image_height; y += 4, sp += info->image_width)
-				gif_read_line(ctx, info, dest, ct_entries, ct, y, sp);
+				gif_read_line(ctx, info, ct_entries, ct, y, sp);
 			for (y = 1; y < info->image_height; y += 2, sp += info->image_width)
-				gif_read_line(ctx, info, dest, ct_entries, ct, y, sp);
+				gif_read_line(ctx, info, ct_entries, ct, y, sp);
 		}
 		else
 			for (y = 0; y < info->image_height; y++, sp += info->image_width)
-				gif_read_line(ctx, info, dest, ct_entries, ct, y, sp);
+				gif_read_line(ctx, info, ct_entries, ct, y, sp);
 	}
 	fz_always(ctx)
 	{
 		fz_drop_buffer(ctx, uncompressed);
 		fz_drop_buffer(ctx, compressed);
 		fz_drop_stream(ctx, lzwstm);
+		fz_drop_stream(ctx, stm);
 	}
 	fz_catch(ctx)
 	{
@@ -315,8 +323,8 @@ gif_read_tbid(fz_context *ctx, struct info *info, unsigned char *dest, unsigned 
 	return p;
 }
 
-static unsigned char *
-gif_read_gce(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_gce(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < 8)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in graphic control extension in gif image");
@@ -330,20 +338,60 @@ gif_read_gce(fz_context *ctx, struct info *info, unsigned char *p, unsigned char
 	return p + 8;
 }
 
-static unsigned char *
-gif_read_ce(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_ce(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	return gif_read_subblocks(ctx, info, p + 2, end, NULL);
 }
 
-static unsigned char*
-gif_read_pte(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char*
+gif_read_pte(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	if (end - p < 15)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "premature end in plain text extension in gif image");
 	if (p[2] != 0x0c)
 		fz_throw(ctx, FZ_ERROR_GENERIC, "out of range plain text extension block size in gif image");
 	return gif_read_subblocks(ctx, info, p + 15, end, NULL);
+}
+
+static const unsigned char *
+gif_read_icc(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
+{
+	fz_colorspace *cs = NULL;
+	fz_stream *bstm = NULL;
+	fz_pixmap *newpix;
+	fz_buffer *icc;
+
+	icc = fz_new_buffer(ctx, 0);
+
+	fz_var(bstm);
+	fz_var(cs);
+
+	fz_try(ctx)
+	{
+		p = gif_read_subblocks(ctx, info, p, end, icc);
+		bstm = fz_open_buffer(ctx, icc);
+
+		cs = fz_new_icc_colorspace_from_stream(ctx, FZ_COLORSPACE_NONE, bstm);
+		if (fz_colorspace_n(ctx, cs) != 3)
+			fz_throw(ctx, FZ_ERROR_GENERIC, "unsupported number of components in ICC profile");
+
+		newpix = fz_convert_pixmap(ctx, info->pix, cs, NULL, NULL, NULL, 1);
+		fz_drop_pixmap(ctx, info->pix);
+		info->pix = newpix;
+	}
+	fz_always(ctx)
+	{
+		fz_drop_colorspace(ctx, cs);
+		fz_drop_stream(ctx, bstm);
+		fz_drop_buffer(ctx, icc);
+	}
+	fz_catch(ctx)
+	{
+		fz_rethrow(ctx);
+	}
+
+	return p;
 }
 
 /*
@@ -371,11 +419,11 @@ ZGATEXTI5 ZGATILEI5 ZGACTRLI5 ZGANPIMGI5
 ZGAVECTI5 ZGAALPHAI5 ZGATITLE4.0 ZGATEXTI4.0
 	Zoner GIF animator 4.0 and 5.0
 */
-static unsigned char *
-gif_read_ae(fz_context *ctx, struct info *info, unsigned char *p, unsigned char *end)
+static const unsigned char *
+gif_read_ae(fz_context *ctx, struct info *info, const unsigned char *p, const unsigned char *end)
 {
 	static char *ignorable[] = {
-		"NETSACPE2.0", "ANIMEXTS1.0", "ICCRGBG1012", "XMP DataXMP",
+		"NETSACPE2.0", "ANIMEXTS1.0", "XMP DataXMP",
 		"ZGATEXTI5\0\0", "ZGATILEI5\0\0", "ZGANPIMGI5\0", "ZGACTRLI5\0\0",
 		"ZGAVECTI5\0\0", "ZGAALPHAI5\0", "ZGATITLE4.0", "ZGATEXTI4.0",
 	};
@@ -397,27 +445,29 @@ gif_read_ae(fz_context *ctx, struct info *info, unsigned char *p, unsigned char 
 		fz_warn(ctx, "ignoring unsupported application extension '%s' in gif image", extension);
 	}
 
+	if (!memcmp(&p[3], "ICCRGBG1012", 11))
+		return gif_read_icc(ctx, info, p + 14, end);
+
 	return gif_read_subblocks(ctx, info, p + 14, end, NULL);
 }
 
 static void
-gif_mask_transparency(fz_context *ctx, fz_pixmap *image, struct info *info)
+gif_mask_transparency(fz_context *ctx, struct info *info)
 {
 	unsigned char *mp = info->mask;
-	unsigned char *dp = image->samples;
+	unsigned char *dp = fz_pixmap_samples(ctx, info->pix);
 	unsigned int x, y;
 
 	for (y = 0; y < info->height; y++)
-		for (x = 0; x < info->width; x++, mp++, dp += image->n)
+		for (x = 0; x < info->width; x++, mp++, dp += 4)
 			if (*mp == 0x00)
-				dp[image->n - 1] = 0;
+				dp[3] = 0;
 }
 
 static fz_pixmap *
-gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t total, int only_metadata)
+gif_read_image(fz_context *ctx, struct info *info, const unsigned char *p, size_t total, int only_metadata)
 {
-	fz_pixmap *pix;
-	unsigned char *end = p + total;
+	const unsigned char *end = p + total;
 
 	memset(info, 0x00, sizeof (*info));
 
@@ -430,7 +480,7 @@ gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t tota
 	if (only_metadata)
 		return NULL;
 
-	pix = fz_new_pixmap(ctx, fz_device_rgb(ctx), info->width, info->height, 1);
+	info->pix = fz_new_pixmap(ctx, fz_device_rgb(ctx), info->width, info->height, NULL, 1);
 
 	fz_try(ctx)
 	{
@@ -439,7 +489,7 @@ gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t tota
 		/* Read optional global color table */
 		if (info->has_gct)
 		{
-			unsigned char *bp, *dp = pix->samples;
+			unsigned char *bp, *dp = fz_pixmap_samples(ctx, info->pix);
 			unsigned int x, y, k;
 
 			p = gif_read_gct(ctx, info, p, end);
@@ -505,7 +555,7 @@ gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t tota
 					p = gif_read_lct(ctx, info, p, end);
 
 				/* Read table based image data */
-				p = gif_read_tbid(ctx, info, pix->samples, p, end);
+				p = gif_read_tbid(ctx, info, p, end);
 
 				/* Graphic control extension applies only to the graphic rendering block following it */
 				info->transparent = 0;
@@ -524,8 +574,8 @@ gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t tota
 				fz_throw(ctx, FZ_ERROR_GENERIC, "unsupported block indicator %02x in gif image", p[0]);
 		}
 
-		gif_mask_transparency(ctx, pix, info);
-		fz_premultiply_pixmap(ctx, pix);
+		gif_mask_transparency(ctx, info);
+		fz_premultiply_pixmap(ctx, info->pix);
 	}
 	fz_always(ctx)
 	{
@@ -535,15 +585,15 @@ gif_read_image(fz_context *ctx, struct info *info, unsigned char *p, size_t tota
 	}
 	fz_catch(ctx)
 	{
-		fz_drop_pixmap(ctx, pix);
+		fz_drop_pixmap(ctx, info->pix);
 		fz_rethrow(ctx);
 	}
 
-	return pix;
+	return info->pix;
 }
 
 fz_pixmap *
-fz_load_gif(fz_context *ctx, unsigned char *p, size_t total)
+fz_load_gif(fz_context *ctx, const unsigned char *p, size_t total)
 {
 	fz_pixmap *image;
 	struct info gif;
@@ -556,13 +606,12 @@ fz_load_gif(fz_context *ctx, unsigned char *p, size_t total)
 }
 
 void
-fz_load_gif_info(fz_context *ctx, unsigned char *p, size_t total, int *wp, int *hp, int *xresp, int *yresp, fz_colorspace **cspacep)
+fz_load_gif_info(fz_context *ctx, const unsigned char *p, size_t total, int *wp, int *hp, int *xresp, int *yresp, fz_colorspace **cspacep)
 {
 	struct info gif;
 
 	gif_read_image(ctx, &gif, p, total, 1);
-
-	*cspacep = fz_device_rgb(ctx);
+	*cspacep = fz_keep_colorspace(ctx, fz_device_rgb(ctx));
 	*wp = gif.width;
 	*hp = gif.height;
 	*xresp = gif.xres;

@@ -1,6 +1,9 @@
 #include "mupdf/fitz.h"
 #include "xps-imp.h"
 
+#include <string.h>
+#include <stdlib.h>
+
 #define REL_START_PART \
 	"http://schemas.microsoft.com/xps/2005/06/fixedrepresentation"
 #define REL_DOC_STRUCTURE \
@@ -33,28 +36,6 @@ xps_rels_for_part(fz_context *ctx, xps_document *doc, char *buf, char *name, int
  * The FixedDocumentSequence and FixedDocument parts determine
  * which parts correspond to actual pages, and the page order.
  */
-
-void
-xps_print_page_list(fz_context *ctx, xps_document *doc)
-{
-	xps_fixdoc *fixdoc = doc->first_fixdoc;
-	xps_fixpage *page = doc->first_page;
-
-	if (doc->start_part)
-		printf("start part %s\n", doc->start_part);
-
-	while (fixdoc)
-	{
-		printf("fixdoc %s\n", fixdoc->name);
-		fixdoc = fixdoc->next;
-	}
-
-	while (page)
-	{
-		printf("page[%d] %s w=%d h=%d\n", page->number, page->name, page->width, page->height);
-		page = page->next;
-	}
-}
 
 static void
 xps_add_fixed_document(fz_context *ctx, xps_document *doc, char *name)
@@ -124,10 +105,11 @@ xps_add_link_target(fz_context *ctx, xps_document *doc, char *name)
 }
 
 int
-xps_lookup_link_target(fz_context *ctx, xps_document *doc, char *target_uri, float *xp, float *yp)
+xps_lookup_link_target(fz_context *ctx, fz_document *doc_, const char *target_uri, float *xp, float *yp)
 {
+	xps_document *doc = (xps_document*)doc_;
 	xps_target *target;
-	char *needle = strrchr(target_uri, '#');
+	const char *needle = strrchr(target_uri, '#');
 	needle = needle ? needle + 1 : target_uri;
 	for (target = doc->target; target; target = target->next)
 		if (!strcmp(target->name, needle))
@@ -255,7 +237,7 @@ xps_parse_metadata_imp(fz_context *ctx, xps_document *doc, fz_xml *item, xps_fix
 static void
 xps_parse_metadata(fz_context *ctx, xps_document *doc, xps_part *part, xps_fixdoc *fixdoc)
 {
-	fz_xml *root;
+	fz_xml_doc *xml;
 	char buf[1024];
 	char *s;
 
@@ -276,9 +258,9 @@ xps_parse_metadata(fz_context *ctx, xps_document *doc, xps_part *part, xps_fixdo
 	doc->base_uri = buf;
 	doc->part_uri = part->name;
 
-	root = fz_parse_xml(ctx, part->data, 0);
-	xps_parse_metadata_imp(ctx, doc, root, fixdoc);
-	fz_drop_xml(ctx, root);
+	xml = fz_parse_xml(ctx, part->data, 0);
+	xps_parse_metadata_imp(ctx, doc, fz_xml_root(xml), fixdoc);
+	fz_drop_xml(ctx, xml);
 
 	doc->base_uri = NULL;
 	doc->part_uri = NULL;
@@ -337,15 +319,17 @@ xps_read_page_list(fz_context *ctx, xps_document *doc)
 }
 
 int
-xps_count_pages(fz_context *ctx, xps_document *doc)
+xps_count_pages(fz_context *ctx, fz_document *doc_)
 {
+	xps_document *doc = (xps_document*)doc_;
 	return doc->page_count;
 }
 
-static fz_xml *
+static fz_xml_doc *
 xps_load_fixed_page(fz_context *ctx, xps_document *doc, xps_fixpage *page)
 {
 	xps_part *part;
+	fz_xml_doc *xml = NULL;
 	fz_xml *root;
 	char *width_att;
 	char *height_att;
@@ -353,7 +337,32 @@ xps_load_fixed_page(fz_context *ctx, xps_document *doc, xps_fixpage *page)
 	part = xps_read_part(ctx, doc, page->name);
 	fz_try(ctx)
 	{
-		root = fz_parse_xml(ctx, part->data, 0);
+		xml = fz_parse_xml(ctx, part->data, 0);
+
+		root = fz_xml_root(xml);
+		if (!root)
+			fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing root element");
+
+		if (fz_xml_is_tag(root, "AlternateContent"))
+		{
+			fz_xml *node = xps_lookup_alternate_content(ctx, doc, root);
+			if (!node)
+				fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing alternate root element");
+			fz_detach_xml(ctx, xml, node);
+			root = node;
+		}
+
+		if (!fz_xml_is_tag(root, "FixedPage"))
+			fz_throw(ctx, FZ_ERROR_GENERIC, "expected FixedPage element");
+		width_att = fz_xml_att(root, "Width");
+		if (!width_att)
+			fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing required attribute: Width");
+		height_att = fz_xml_att(root, "Height");
+		if (!height_att)
+			fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing required attribute: Height");
+
+		page->width = atoi(width_att);
+		page->height = atoi(height_att);
 	}
 	fz_always(ctx)
 	{
@@ -361,73 +370,39 @@ xps_load_fixed_page(fz_context *ctx, xps_document *doc, xps_fixpage *page)
 	}
 	fz_catch(ctx)
 	{
-		fz_rethrow_if(ctx, FZ_ERROR_TRYLATER);
-		root = NULL;
-	}
-	if (!root)
-		fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing root element");
-
-	if (fz_xml_is_tag(root, "AlternateContent"))
-	{
-		fz_xml *node = xps_lookup_alternate_content(ctx, doc, root);
-		if (!node)
-		{
-			fz_drop_xml(ctx, root);
-			fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing alternate root element");
-		}
-		fz_detach_xml(node);
-		fz_drop_xml(ctx, root);
-		root = node;
+		fz_drop_xml(ctx, xml);
+		fz_rethrow(ctx);
 	}
 
-	if (!fz_xml_is_tag(root, "FixedPage"))
-	{
-		fz_drop_xml(ctx, root);
-		fz_throw(ctx, FZ_ERROR_GENERIC, "expected FixedPage element");
-	}
-
-	width_att = fz_xml_att(root, "Width");
-	if (!width_att)
-	{
-		fz_drop_xml(ctx, root);
-		fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing required attribute: Width");
-	}
-
-	height_att = fz_xml_att(root, "Height");
-	if (!height_att)
-	{
-		fz_drop_xml(ctx, root);
-		fz_throw(ctx, FZ_ERROR_GENERIC, "FixedPage missing required attribute: Height");
-	}
-
-	page->width = atoi(width_att);
-	page->height = atoi(height_att);
-
-	return root;
+	return xml;
 }
 
-static fz_rect *
-xps_bound_page(fz_context *ctx, xps_page *page, fz_rect *bounds)
+static fz_rect
+xps_bound_page(fz_context *ctx, fz_page *page_)
 {
-	bounds->x0 = bounds->y0 = 0;
-	bounds->x1 = page->fix->width * 72.0f / 96.0f;
-	bounds->y1 = page->fix->height * 72.0f / 96.0f;
+	xps_page *page = (xps_page*)page_;
+	fz_rect bounds;
+	bounds.x0 = bounds.y0 = 0;
+	bounds.x1 = page->fix->width * 72.0f / 96.0f;
+	bounds.y1 = page->fix->height * 72.0f / 96.0f;
 	return bounds;
 }
 
 static void
-xps_drop_page_imp(fz_context *ctx, xps_page *page)
+xps_drop_page_imp(fz_context *ctx, fz_page *page_)
 {
+	xps_page *page = (xps_page*)page_;
 	fz_drop_document(ctx, &page->doc->super);
-	fz_drop_xml(ctx, page->root);
+	fz_drop_xml(ctx, page->xml);
 }
 
-xps_page *
-xps_load_page(fz_context *ctx, xps_document *doc, int number)
+fz_page *
+xps_load_page(fz_context *ctx, fz_document *doc_, int number)
 {
+	xps_document *doc = (xps_document*)doc_;
 	xps_page *page = NULL;
 	xps_fixpage *fix;
-	fz_xml *root;
+	fz_xml_doc *xml;
 	int n = 0;
 
 	fz_var(page);
@@ -436,25 +411,25 @@ xps_load_page(fz_context *ctx, xps_document *doc, int number)
 	{
 		if (n == number)
 		{
-			root = xps_load_fixed_page(ctx, doc, fix);
+			xml = xps_load_fixed_page(ctx, doc, fix);
 			fz_try(ctx)
 			{
 				page = fz_new_derived_page(ctx, xps_page);
-				page->super.load_links = (fz_page_load_links_fn *)xps_load_links;
-				page->super.bound_page = (fz_page_bound_page_fn *)xps_bound_page;
-				page->super.run_page_contents = (fz_page_run_page_contents_fn *)xps_run_page;
-				page->super.drop_page = (fz_page_drop_page_fn *)xps_drop_page_imp;
+				page->super.load_links = xps_load_links;
+				page->super.bound_page = xps_bound_page;
+				page->super.run_page_contents = xps_run_page;
+				page->super.drop_page = xps_drop_page_imp;
 
-				page->doc = (xps_document*) fz_keep_document(ctx, &doc->super);
+				page->doc = (xps_document*) fz_keep_document(ctx, (fz_document*)doc);
 				page->fix = fix;
-				page->root = root;
+				page->xml = xml;
 			}
 			fz_catch(ctx)
 			{
-				fz_drop_xml(ctx, root);
+				fz_drop_xml(ctx, xml);
 				fz_rethrow(ctx);
 			}
-			return page;
+			return (fz_page*)page;
 		}
 		n ++;
 	}
@@ -465,26 +440,31 @@ xps_load_page(fz_context *ctx, xps_document *doc, int number)
 static int
 xps_recognize(fz_context *ctx, const char *magic)
 {
-	char *ext = strrchr(magic, '.');
-
-	if (ext)
-	{
-		if (!fz_strcasecmp(ext, ".xps") || !fz_strcasecmp(ext, ".oxps"))
-			return 100;
-	}
 	if (strstr(magic, "/_rels/.rels") || strstr(magic, "\\_rels\\.rels"))
-		return 100;
-	if (!strcmp(magic, "xps") || !strcmp(magic, "oxps") ||
-		!strcmp(magic, "application/vnd.ms-xpsdocument") ||
-		!strcmp(magic, "application/xps") ||
-		!strcmp(magic, "application/oxps"))
 		return 100;
 	return 0;
 }
 
+static const char *xps_extensions[] =
+{
+	"oxps",
+	"xps",
+	NULL
+};
+
+static const char *xps_mimetypes[] =
+{
+	"application/oxps",
+	"application/vnd.ms-xpsdocument",
+	"application/xps",
+	NULL
+};
+
 fz_document_handler xps_document_handler =
 {
 	xps_recognize,
-	(fz_document_open_fn *) xps_open_document,
-	(fz_document_open_with_stream_fn *) xps_open_document_with_stream
+	xps_open_document,
+	xps_open_document_with_stream,
+	xps_extensions,
+	xps_mimetypes
 };

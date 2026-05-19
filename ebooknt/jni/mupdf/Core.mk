@@ -12,9 +12,10 @@ include $(CLEAR_VARS)
 MY_ROOT := $(LOCAL_PATH)/mupdf
 
 LOCAL_CFLAGS += -Wall
-LOCAL_CFLAGS += -DTOFU_CJK_LANG
-LOCAL_CFLAGS += -DTOFU_CJK_EXT
+LOCAL_CFLAGS += -DTOFU_CJK
 LOCAL_CFLAGS += -DTOFU_NOTO
+LOCAL_CFLAGS += -DTOFU_SIL
+LOCAL_CFLAGS += -DOPJ_HAVE_STDINT_H -DOPJ_HAVE_INTTYPES_H
 
 ifeq ($(TARGET_ARCH),arm)
 LOCAL_CFLAGS += -DARCH_ARM -DARCH_THUMB -DARCH_ARM_CAN_LOAD_UNALIGNED
@@ -41,16 +42,15 @@ LOCAL_C_INCLUDES := \
 	$(MY_ROOT)/thirdparty/mujs \
 	$(MY_ROOT)/thirdparty/zlib \
 	$(MY_ROOT)/thirdparty/freetype/include \
+	$(MY_ROOT)/thirdparty/lcms2/include \
 	$(MY_ROOT)/source/fitz \
 	$(MY_ROOT)/source/pdf \
 	$(MY_ROOT)/source/xps \
 	$(MY_ROOT)/source/svg \
 	$(MY_ROOT)/source/cbz \
-	$(MY_ROOT)/source/img \
-	$(MY_ROOT)/source/tiff \
+	$(MY_ROOT)/source/helpers \
 	$(MY_ROOT)/scripts/freetype \
 	$(MY_ROOT)/scripts/libjpeg \
-	$(MY_ROOT)/generated \
 	$(MY_ROOT)/resources \
 	$(MY_ROOT)/include \
 	$(MY_ROOT)
@@ -71,7 +71,6 @@ LOCAL_SRC_FILES := \
 		$(wildcard $(MY_ROOT)/source/cbz/*.c) \
 		$(wildcard $(MY_ROOT)/source/gprf/*.c) \
 		$(wildcard $(MY_ROOT)/source/html/*.c) \
-		$(wildcard $(MY_ROOT)/generated/*.c) \
 	)
 
 ifdef SUPPORT_GPROOF

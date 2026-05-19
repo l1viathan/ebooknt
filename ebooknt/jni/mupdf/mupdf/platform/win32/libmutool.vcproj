@@ -20,7 +20,7 @@
 		<Configuration
 			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\$(ProjectName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="4"
 			CharacterSet="2"
 			>
@@ -789,6 +789,10 @@
 	</References>
 	<Files>
 		<File
+			RelativePath="..\..\source\tools\cmapdump.c"
+			>
+		</File>
+		<File
 			RelativePath="..\..\source\tools\muconvert.c"
 			>
 		</File>
@@ -798,6 +802,10 @@
 		</File>
 		<File
 			RelativePath="..\..\source\tools\murun.c"
+			>
+		</File>
+		<File
+			RelativePath="..\..\source\tools\mutrace.c"
 			>
 		</File>
 		<File
@@ -834,6 +842,10 @@
 		</File>
 		<File
 			RelativePath="..\..\source\tools\pdfshow.c"
+			>
+		</File>
+		<File
+			RelativePath="..\..\source\tools\pdfsign.c"
 			>
 		</File>
 	</Files>

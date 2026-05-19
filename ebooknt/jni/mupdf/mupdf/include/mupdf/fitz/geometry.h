@@ -47,8 +47,7 @@ float fz_atof(const char *s);
 	atoi that copes with NULL
 */
 int fz_atoi(const char *s);
-
-fz_off_t fz_atoo(const char *s);
+int64_t fz_atoi64(const char *s);
 
 /*
 	Some standard math functions, done as static inlines for speed.
@@ -90,7 +89,7 @@ static inline int fz_maxi(int a, int b)
 	return (a > b ? a : b);
 }
 
-static inline fz_off_t fz_maxo(fz_off_t a, fz_off_t b)
+static inline int64_t fz_maxi64(int64_t a, int64_t b)
 {
 	return (a > b ? a : b);
 }
@@ -126,6 +125,12 @@ struct fz_point_s
 	float x, y;
 };
 
+static inline fz_point fz_make_point(float x, float y)
+{
+	fz_point p = { x, y };
+	return p;
+}
+
 /*
 	fz_rect is a rectangle represented by two diagonally opposite
 	corners at arbitrary coordinates.
@@ -151,20 +156,10 @@ struct fz_rect_s
 	float x1, y1;
 };
 
-/*
-	fz_rect_min: get the minimum point from a rectangle as a fz_point.
-*/
-static inline fz_point *fz_rect_min(fz_rect *f)
+static inline fz_rect fz_make_rect(float x0, float y0, float x1, float y1)
 {
-	return (fz_point *)&f->x0;
-}
-
-/*
-	fz_rect_max: get the maximum point from a rectangle as a fz_point.
-*/
-static inline fz_point *fz_rect_max(fz_rect *f)
-{
-	return (fz_point *)&f->x1;
+	fz_rect r = { x0, y0, x1, y1 };
+	return r;
 }
 
 /*
@@ -178,6 +173,12 @@ struct fz_irect_s
 	int x0, y0;
 	int x1, y1;
 };
+
+static inline fz_irect fz_make_irect(int x0, int y0, int x1, int y1)
+{
+	fz_irect r = { x0, y0, x1, y1 };
+	return r;
+}
 
 /*
 	A rectangle with sides of length one.
@@ -209,16 +210,14 @@ extern const fz_irect fz_infinite_irect;
 
 	An empty rectangle is defined as one whose area is zero.
 */
-static inline int
-fz_is_empty_rect(const fz_rect *r)
+static inline int fz_is_empty_rect(fz_rect r)
 {
-	return ((r)->x0 == (r)->x1 || (r)->y0 == (r)->y1);
+	return (r.x0 == r.x1 || r.y0 == r.y1);
 }
 
-static inline int
-fz_is_empty_irect(const fz_irect *r)
+static inline int fz_is_empty_irect(fz_irect r)
 {
-	return ((r)->x0 == (r)->x1 || (r)->y0 == (r)->y1);
+	return (r.x0 == r.x1 || r.y0 == r.y1);
 }
 
 /*
@@ -227,10 +226,9 @@ fz_is_empty_irect(const fz_irect *r)
 	An infinite rectangle is defined as one where either of the
 	two relationships between corner coordinates are not true.
 */
-static inline int
-fz_is_infinite_rect(const fz_rect *r)
+static inline int fz_is_infinite_rect(fz_rect r)
 {
-	return ((r)->x0 > (r)->x1 || (r)->y0 > (r)->y1);
+	return (r.x0 > r.x1 || r.y0 > r.y1);
 }
 
 /*
@@ -240,10 +238,9 @@ fz_is_infinite_rect(const fz_rect *r)
 	An infinite rectangle is defined as one where either of the
 	two relationships between corner coordinates are not true.
 */
-static inline int
-fz_is_infinite_irect(const fz_irect *r)
+static inline int fz_is_infinite_irect(fz_irect r)
 {
-	return ((r)->x0 > (r)->x1 || (r)->y0 > (r)->y1);
+	return (r.x0 > r.x1 || r.y0 > r.y1);
 }
 
 /*
@@ -270,11 +267,17 @@ struct fz_matrix_s
 */
 extern const fz_matrix fz_identity;
 
-static inline fz_matrix *fz_copy_matrix(fz_matrix *restrict m, const fz_matrix *restrict s)
+static inline fz_matrix fz_make_matrix(float a, float b, float c, float d, float e, float f)
 {
-	*m = *s;
+	fz_matrix m = { a, b, c, d, e, f };
 	return m;
 }
+
+static inline int fz_is_identity(fz_matrix m)
+{
+	return m.a == 1 && m.b == 0 && m.c == 0 && m.d == 1 && m.e == 0 && m.f == 0;
+}
+
 
 /*
 	fz_concat: Multiply two matrices.
@@ -283,10 +286,8 @@ static inline fz_matrix *fz_copy_matrix(fz_matrix *restrict m, const fz_matrix *
 	multiplication is not commutative.
 
 	Returns result.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_concat(fz_matrix *result, const fz_matrix *left, const fz_matrix *right);
+fz_matrix fz_concat(fz_matrix left, fz_matrix right);
 
 /*
 	fz_scale: Create a scaling matrix.
@@ -300,10 +301,8 @@ fz_matrix *fz_concat(fz_matrix *result, const fz_matrix *left, const fz_matrix *
 	axis.
 
 	Returns m.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_scale(fz_matrix *m, float sx, float sy);
+fz_matrix fz_scale(float sx, float sy);
 
 /*
 	fz_pre_scale: Scale a matrix by premultiplication.
@@ -315,10 +314,8 @@ fz_matrix *fz_scale(fz_matrix *m, float sx, float sy);
 	axis.
 
 	Returns m (updated).
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_pre_scale(fz_matrix *m, float sx, float sy);
+fz_matrix fz_pre_scale(fz_matrix m, float sx, float sy);
 
 /*
 	fz_post_scale: Scale a matrix by postmultiplication.
@@ -330,10 +327,8 @@ fz_matrix *fz_pre_scale(fz_matrix *m, float sx, float sy);
 	axis.
 
 	Returns m (updated).
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_post_scale(fz_matrix *m, float sx, float sy);
+fz_matrix fz_post_scale(fz_matrix m, float sx, float sy);
 
 /*
 	fz_shear: Create a shearing matrix.
@@ -346,10 +341,8 @@ fz_matrix *fz_post_scale(fz_matrix *m, float sx, float sy);
 	cause any shearing along the relevant axis.
 
 	Returns m.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_shear(fz_matrix *m, float sx, float sy);
+fz_matrix fz_shear(float sx, float sy);
 
 /*
 	fz_pre_shear: Premultiply a matrix with a shearing matrix.
@@ -362,10 +355,8 @@ fz_matrix *fz_shear(fz_matrix *m, float sx, float sy);
 	cause any shearing along the relevant axis.
 
 	Returns m (updated).
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_pre_shear(fz_matrix *m, float sx, float sy);
+fz_matrix fz_pre_shear(fz_matrix m, float sx, float sy);
 
 /*
 	fz_rotate: Create a rotation matrix.
@@ -379,10 +370,8 @@ fz_matrix *fz_pre_shear(fz_matrix *m, float sx, float sy);
 	than zero and greater than 360 are handled as expected.
 
 	Returns m.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_rotate(fz_matrix *m, float degrees);
+fz_matrix fz_rotate(float degrees);
 
 /*
 	fz_pre_rotate: Rotate a transformation by premultiplying.
@@ -396,10 +385,8 @@ fz_matrix *fz_rotate(fz_matrix *m, float degrees);
 	than zero and greater than 360 are handled as expected.
 
 	Returns m (updated).
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_pre_rotate(fz_matrix *m, float degrees);
+fz_matrix fz_pre_rotate(fz_matrix m, float degrees);
 
 /*
 	fz_translate: Create a translation matrix.
@@ -413,10 +400,8 @@ fz_matrix *fz_pre_rotate(fz_matrix *m, float degrees);
 	relevant axis.
 
 	Returns m.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_translate(fz_matrix *m, float tx, float ty);
+fz_matrix fz_translate(float tx, float ty);
 
 /*
 	fz_pre_translate: Translate a matrix by premultiplication.
@@ -428,10 +413,16 @@ fz_matrix *fz_translate(fz_matrix *m, float tx, float ty);
 	relevant axis.
 
 	Returns m.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_pre_translate(fz_matrix *m, float tx, float ty);
+fz_matrix fz_pre_translate(fz_matrix m, float tx, float ty);
+
+/*
+	fz_transform_page: Create transform matrix to draw page
+	at a given resolution and rotation. Adjusts the scaling
+	factors so that the page covers whole number of
+	pixels and adjust the page origin to be at 0,0.
+*/
+fz_matrix fz_transform_page(fz_rect mediabox, float resolution, float rotate);
 
 /*
 	fz_invert_matrix: Create an inverse matrix.
@@ -443,10 +434,8 @@ fz_matrix *fz_pre_translate(fz_matrix *m, float tx, float ty);
 	original matrix is returned instead.
 
 	Returns inverse.
-
-	Does not throw exceptions.
 */
-fz_matrix *fz_invert_matrix(fz_matrix *inverse, const fz_matrix *matrix);
+fz_matrix fz_invert_matrix(fz_matrix matrix);
 
 /*
 	fz_try_invert_matrix: Attempt to create an inverse matrix.
@@ -457,10 +446,8 @@ fz_matrix *fz_invert_matrix(fz_matrix *inverse, const fz_matrix *matrix);
 	determinant is equal to zero, can not be inverted.
 
 	Returns 1 if matrix is degenerate (singular), or 0 otherwise.
-
-	Does not throw exceptions.
 */
- int fz_try_invert_matrix(fz_matrix *inverse, const fz_matrix *matrix);
+int fz_try_invert_matrix(fz_matrix *inv, fz_matrix src);
 
 /*
 	fz_is_rectilinear: Check if a transformation is rectilinear.
@@ -469,15 +456,13 @@ fz_matrix *fz_invert_matrix(fz_matrix *inverse, const fz_matrix *matrix);
 	rotations present are a multiple of 90 degrees. Usually this
 	is used to make sure that axis-aligned rectangles before the
 	transformation are still axis-aligned rectangles afterwards.
-
-	Does not throw exceptions.
 */
-int fz_is_rectilinear(const fz_matrix *m);
+int fz_is_rectilinear(fz_matrix m);
 
 /*
 	fz_matrix_expansion: Calculate average scaling factor of matrix.
 */
-float fz_matrix_expansion(const fz_matrix *m); /* sumatrapdf */
+float fz_matrix_expansion(fz_matrix m);
 
 /*
 	fz_intersect_rect: Compute intersection of two rectangles.
@@ -489,20 +474,16 @@ float fz_matrix_expansion(const fz_matrix *m); /* sumatrapdf */
 	then the intersection is simply the non-infinite rectangle.
 	Should both rectangles be infinite, then the intersection is
 	also infinite.
-
-	Does not throw exceptions.
 */
-fz_rect *fz_intersect_rect(fz_rect *restrict a, const fz_rect *restrict b);
+fz_rect fz_intersect_rect(fz_rect a, fz_rect b);
 
 /*
 	fz_intersect_irect: Compute intersection of two bounding boxes.
 
 	Similar to fz_intersect_rect but operates on two bounding
 	boxes instead of two rectangles.
-
-	Does not throw exceptions.
 */
-fz_irect *fz_intersect_irect(fz_irect *restrict a, const fz_irect *restrict b);
+fz_irect fz_intersect_irect(fz_irect a, fz_irect b);
 
 /*
 	fz_union_rect: Compute union of two rectangles.
@@ -513,10 +494,8 @@ fz_irect *fz_intersect_irect(fz_irect *restrict a, const fz_irect *restrict b);
 	If either rectangle is empty then the union is simply the
 	non-empty rectangle. Should both rectangles be empty, then the
 	union is also empty.
-
-	Does not throw exceptions.
 */
-fz_rect *fz_union_rect(fz_rect *restrict a, const fz_rect *restrict b);
+fz_rect fz_union_rect(fz_rect a, fz_rect b);
 
 /*
 	fz_irect_from_rect: Convert a rect into the minimal bounding box
@@ -532,11 +511,9 @@ fz_rect *fz_union_rect(fz_rect *restrict a, const fz_rect *restrict b);
 	downwards and to the right.
 
 	Returns bbox (updated).
-
-	Does not throw exceptions.
 */
 
-fz_irect *fz_irect_from_rect(fz_irect *restrict bbox, const fz_rect *restrict rect);
+fz_irect fz_irect_from_rect(fz_rect rect);
 
 /*
 	fz_round_rect: Round rectangle coordinates.
@@ -551,10 +528,8 @@ fz_irect *fz_irect_from_rect(fz_irect *restrict bbox, const fz_rect *restrict re
 	can cause whole extra pixels to be added). fz_round_rect
 	allows for a small amount of rounding error when calculating
 	the bbox.
-
-	Does not throw exceptions.
 */
-fz_irect *fz_round_rect(fz_irect *restrict bbox, const fz_rect *restrict rect);
+fz_irect fz_round_rect(fz_rect rect);
 
 /*
 	fz_rect_from_irect: Convert a bbox into a rect.
@@ -567,17 +542,14 @@ fz_irect *fz_round_rect(fz_irect *restrict bbox, const fz_rect *restrict rect);
 	bbox: The bbox to convert.
 
 	Returns rect (updated).
-
-	Does not throw exceptions.
 */
-fz_rect *fz_rect_from_irect(fz_rect *restrict rect, const fz_irect *restrict bbox);
+fz_rect fz_rect_from_irect(fz_irect bbox);
 
 /*
 	fz_expand_rect: Expand a bbox by a given amount in all directions.
-
-	Does not throw exceptions.
 */
-fz_rect *fz_expand_rect(fz_rect *b, float expand);
+fz_rect fz_expand_rect(fz_rect b, float expand);
+fz_irect fz_expand_irect(fz_irect a, int expand);
 
 /*
 	fz_include_point_in_rect: Expand a bbox to include a given point.
@@ -585,25 +557,22 @@ fz_rect *fz_expand_rect(fz_rect *b, float expand);
 	rectangle must first be set to be the empty rectangle at one of
 	the points before including the others.
 */
-fz_rect *fz_include_point_in_rect(fz_rect *r, const fz_point *p);
+fz_rect fz_include_point_in_rect(fz_rect r, fz_point p);
 
 /*
 	fz_translate_irect: Translate bounding box.
 
 	Translate a bbox by a given x and y offset. Allows for overflow.
-
-	Does not throw exceptions.
 */
-fz_irect *fz_translate_irect(fz_irect *a, int xoff, int yoff);
+fz_rect fz_translate_rect(fz_rect a, float xoff, float yoff);
+fz_irect fz_translate_irect(fz_irect a, int xoff, int yoff);
 
 /*
 	fz_contains_rect: Test rectangle inclusion.
 
 	Return true if a entirely contains b.
-
-	Does not throw exceptions.
 */
-int fz_contains_rect(const fz_rect *a, const fz_rect *b);
+int fz_contains_rect(fz_rect a, fz_rect b);
 
 /*
 	fz_transform_point: Apply a transformation to a point.
@@ -615,11 +584,9 @@ int fz_contains_rect(const fz_rect *a, const fz_rect *b);
 	point: Pointer to point to update.
 
 	Returns transform (unchanged).
-
-	Does not throw exceptions.
 */
-fz_point *fz_transform_point(fz_point *restrict point, const fz_matrix *restrict transform);
-fz_point *fz_transform_point_xy(fz_point *restrict point, const fz_matrix *restrict transform, float x, float y);
+fz_point fz_transform_point(fz_point point, fz_matrix m);
+fz_point fz_transform_point_xy(float x, float y, fz_matrix m);
 
 /*
 	fz_transform_vector: Apply a transformation to a vector.
@@ -629,10 +596,8 @@ fz_point *fz_transform_point_xy(fz_point *restrict point, const fz_matrix *restr
 	translation will be ignored.
 
 	vector: Pointer to vector to update.
-
-	Does not throw exceptions.
 */
-fz_point *fz_transform_vector(fz_point *restrict vector, const fz_matrix *restrict transform);
+fz_point fz_transform_vector(fz_point vector, fz_matrix m);
 
 /*
 	fz_transform_rect: Apply a transform to a rectangle.
@@ -648,18 +613,28 @@ fz_point *fz_transform_vector(fz_point *restrict vector, const fz_matrix *restri
 	rect: Rectangle to be transformed. The two special cases
 	fz_empty_rect and fz_infinite_rect, may be used but are
 	returned unchanged as expected.
-
-	Does not throw exceptions.
 */
-fz_rect *fz_transform_rect(fz_rect *restrict rect, const fz_matrix *restrict transform);
+fz_rect fz_transform_rect(fz_rect rect, fz_matrix m);
 
 /*
 	fz_normalize_vector: Normalize a vector to length one.
 */
-void fz_normalize_vector(fz_point *p);
+fz_point fz_normalize_vector(fz_point p);
 
-void fz_gridfit_matrix(int as_tiled, fz_matrix *m);
+fz_matrix fz_gridfit_matrix(int as_tiled, fz_matrix m);
 
-float fz_matrix_max_expansion(const fz_matrix *m);
+float fz_matrix_max_expansion(fz_matrix m);
+
+typedef struct fz_quad_s fz_quad;
+struct fz_quad_s
+{
+	fz_point ul, ur, ll, lr;
+};
+
+fz_rect fz_rect_from_quad(fz_quad q);
+fz_quad fz_transform_quad(fz_quad q, fz_matrix m);
+
+int fz_is_point_inside_rect(fz_point p, fz_rect r);
+int fz_is_point_inside_irect(int x, int y, fz_irect r);
 
 #endif

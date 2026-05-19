@@ -4,7 +4,7 @@
 
 #include <time.h>
 
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 #include <sys/time.h>
 #elif defined(_WIN32)
 #include <sys/timeb.h>
@@ -14,7 +14,7 @@
 
 static double Now(void)
 {
-#if defined(__unix__)
+#if defined(__unix__) || defined(__APPLE__)
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return floor(tv.tv_sec * 1000.0 + tv.tv_usec / 1000.0);
@@ -629,7 +629,7 @@ static void Dp_setHours(js_State *J)
 {
 	double t = LocalTime(js_todate(J, 0));
 	double h = js_tonumber(J, 1);
-	double m = js_optnumber(J, 2, HourFromTime(t));
+	double m = js_optnumber(J, 2, MinFromTime(t));
 	double s = js_optnumber(J, 3, SecFromTime(t));
 	double ms = js_optnumber(J, 4, msFromTime(t));
 	js_setdate(J, 0, UTC(MakeDate(Day(t), MakeTime(h, m, s, ms))));

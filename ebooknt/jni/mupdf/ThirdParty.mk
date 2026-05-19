@@ -7,12 +7,14 @@ MY_ROOT := $(LOCAL_PATH)/mupdf
 LOCAL_C_INCLUDES := \
 	$(MY_ROOT)/include/ \
 	$(MY_ROOT)/thirdparty/harfbuzz/src \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ucdn \
 	$(MY_ROOT)/thirdparty/jbig2dec \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2 \
 	$(MY_ROOT)/thirdparty/libjpeg \
 	$(MY_ROOT)/thirdparty/mujs \
 	$(MY_ROOT)/thirdparty/zlib \
 	$(MY_ROOT)/thirdparty/freetype/include \
+	$(MY_ROOT)/thirdparty/lcms2/include \
 	$(MY_ROOT)/scripts/freetype \
 	$(MY_ROOT)/scripts/libjpeg
 
@@ -21,9 +23,12 @@ LOCAL_CFLAGS := \
 	-DOPJ_HAVE_STDINT_H -DOPJ_HAVE_INTTYPES_H -DUSE_JPIP \
 	'-DFT_CONFIG_MODULES_H="slimftmodules.h"' \
 	'-DFT_CONFIG_OPTIONS_H="slimftoptions.h"' \
-	-Dhb_malloc_impl=hb_malloc -Dhb_calloc_impl=hb_calloc \
-	-Dhb_realloc_impl=hb_realloc -Dhb_free_impl=hb_free \
-	-DHAVE_OT -DHAVE_UCDN -DHB_NO_MT
+	-Dhb_malloc_impl=fz_hb_malloc -Dhb_calloc_impl=fz_hb_calloc \
+	-Dhb_realloc_impl=fz_hb_realloc -Dhb_free_impl=fz_hb_free \
+	-DHAVE_FALLBACK=1 -DHAVE_OT -DHAVE_UCDN -DHB_NO_MT
+
+LOCAL_CPPFLAGS := \
+	-fno-rtti -fno-exceptions
 ifdef NDK_PROFILER
 LOCAL_CFLAGS += -pg -DNDK_PROFILER -O2
 endif
@@ -39,6 +44,7 @@ MY_ROOT := mupdf
 LOCAL_MODULE := mupdfthirdparty
 LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/mujs/one.c \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-aat-layout.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-blob.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-buffer.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-buffer-serialize.cc \
@@ -47,15 +53,20 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-fallback-shape.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-font.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ft.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-map.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-color.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-face.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-font.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-layout.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-map.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-math.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-arabic.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-default.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-hangul.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-hebrew.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-indic-table.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-indic.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-khmer.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-myanmar.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-thai.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-complex-tibetan.cc \
@@ -65,10 +76,12 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape-normalize.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-shape.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-tag.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ot-var.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-set.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-shape-plan.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-shape.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-shaper.cc \
+	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-static.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-ucdn.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-unicode.cc \
 	$(MY_ROOT)/thirdparty/harfbuzz/src/hb-warning.cc \
@@ -80,7 +93,6 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_halftone.c \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_huffman.c \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_image.c \
-	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_metadata.c \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_mmr.c \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_page.c \
 	$(MY_ROOT)/thirdparty/jbig2dec/jbig2_refinement.c \
@@ -103,7 +115,7 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/phix_manager.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/pi.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/ppix_manager.c \
-	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/raw.c \
+	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/sparse_array.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/t1.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/t2.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/tcd.c \
@@ -111,6 +123,32 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/thix_manager.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/thread.c \
 	$(MY_ROOT)/thirdparty/openjpeg/src/lib/openjp2/tpix_manager.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsalpha.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmscam02.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmscgats.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmscnvrt.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmserr.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsgamma.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsgmt.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmshalf.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsintrp.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsio0.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsio1.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmslut.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsmd5.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsmtrx.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsnamed.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsopt.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmspack.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmspcs.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsplugin.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsps2.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmssamp.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmssm.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmstypes.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsvirt.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmswtpnt.c \
+	$(MY_ROOT)/thirdparty/lcms2/src/cmsxform.c \
 	$(MY_ROOT)/thirdparty/libjpeg/jaricom.c \
 	$(MY_ROOT)/thirdparty/libjpeg/jcomapi.c \
 	$(MY_ROOT)/thirdparty/libjpeg/jdapimin.c \
@@ -175,7 +213,21 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/thirdparty/freetype/src/smooth/smooth.c \
 	$(MY_ROOT)/thirdparty/freetype/src/sfnt/sfnt.c \
 	$(MY_ROOT)/thirdparty/freetype/src/truetype/truetype.c \
-	$(MY_ROOT)/thirdparty/freetype/src/type1/type1.c
+	$(MY_ROOT)/thirdparty/freetype/src/type1/type1.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/Dingbats.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusMonoPS-Bold.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusMonoPS-BoldItalic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusMonoPS-Italic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusMonoPS-Regular.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusRoman-Bold.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusRoman-BoldItalic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusRoman-Italic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusRoman-Regular.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-Bold.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-BoldItalic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-Italic.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-Regular.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/urw/StandardSymbolsPS.cff.c
 
 #LOCAL_SRC_FILES := $(addprefix ../, $(LOCAL_SRC_FILES))
 

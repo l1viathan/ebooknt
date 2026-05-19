@@ -71,13 +71,13 @@
 	MURASTER_CONFIG_WIDTH: The printable page width
 	(in inches)
 */
-/* #define MURASTER_CONFIG_WIDTH 8.27 */
+/* #define MURASTER_CONFIG_WIDTH 8.27f */
 
 /*
 	MURASTER_CONFIG_HEIGHT: The printable page height
 	(in inches)
 */
-/* #define MURASTER_CONFIG_HEIGHT 11.69 */
+/* #define MURASTER_CONFIG_HEIGHT 11.69f */
 
 /*
 	MURASTER_CONFIG_STORE_SIZE: The maximum size to use
@@ -139,6 +139,18 @@
 #include "mupdf/fitz.h"
 #include "mupdf/helpers/mu-threads.h"
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#ifdef _MSC_VER
+struct timeval;
+struct timezone;
+int gettimeofday(struct timeval *tv, struct timezone *tz);
+#else
+#include <sys/time.h>
+#endif
+
 /*
 	After this point, we convert the #defines set (or not set)
 	above into sensible values we can work with. Don't edit
@@ -160,13 +172,13 @@
 #ifdef MURASTER_CONFIG_WIDTH
 #define PAPER_WIDTH MURASTER_CONFIG_WIDTH
 #else
-#define PAPER_WIDTH 8.27
+#define PAPER_WIDTH 8.27f
 #endif
 
 #ifdef MURASTER_CONFIG_HEIGHT
 #define PAPER_HEIGHT MURASTER_CONFIG_HEIGHT
 #else
-#define PAPER_HEIGHT 11.69
+#define PAPER_HEIGHT 11.69f
 #endif
 
 #ifdef MURASTER_CONFIG_STORE_SIZE
@@ -361,9 +373,6 @@ static char *layout_css = NULL;
 static int layout_use_doc_css = 1;
 
 static int showtime = 0;
-static size_t memtrace_current = 0;
-static size_t memtrace_peak = 0;
-static size_t memtrace_total = 0;
 static int showmemory = 0;
 
 static int ignore_errors = 0;
@@ -372,7 +381,6 @@ static int alphabits_graphics = 8;
 
 static int min_band_height;
 static size_t max_band_memory;
-int band_height;
 
 static int errored = 0;
 static fz_colorspace *colorspace;
@@ -514,7 +522,7 @@ static int gettime(void)
 	return (now.tv_sec - first.tv_sec) * 1000 + (now.tv_usec - first.tv_usec) / 1000;
 }
 
-static int drawband(fz_context *ctx, fz_page *page, fz_display_list *list, const fz_matrix *ctm, const fz_rect *tbounds, fz_cookie *cookie, int band_start, fz_pixmap *pix, fz_bitmap **bit)
+static int drawband(fz_context *ctx, fz_page *page, fz_display_list *list, fz_matrix ctm, fz_rect tbounds, fz_cookie *cookie, int band_start, fz_pixmap *pix, fz_bitmap **bit)
 {
 	fz_device *dev = NULL;
 
@@ -524,7 +532,7 @@ static int drawband(fz_context *ctx, fz_page *page, fz_display_list *list, const
 	{
 		fz_clear_pixmap_with_value(ctx, pix, 255);
 
-		dev = fz_new_draw_device(ctx, NULL, pix);
+		dev = fz_new_draw_device(ctx, fz_identity, pix);
 		if (alphabits_graphics == 0)
 			fz_enable_device_hints(ctx, dev, FZ_DONT_INTERPOLATE_IMAGES);
 		if (list)
@@ -590,7 +598,7 @@ static int dodrawpage(fz_context *ctx, int pagenum, fz_cookie *cookie, render_de
 				if (remaining_height < band_height)
 					ibounds.y1 = ibounds.y0 + remaining_height;
 				remaining_height -= band_height;
-				w->pix = fz_new_pixmap_with_bbox(ctx, colorspace, &ibounds, 0);
+				w->pix = fz_new_pixmap_with_bbox(ctx, colorspace, ibounds, NULL, 0);
 				fz_set_pixmap_resolution(ctx, w->pix, x_resolution, y_resolution);
 				DEBUG_THREADS(("Worker %d, Pre-triggering band %d\n", band, band));
 				w->started = 1;
@@ -601,10 +609,10 @@ static int dodrawpage(fz_context *ctx, int pagenum, fz_cookie *cookie, render_de
 		}
 		else
 		{
-			pix = fz_new_pixmap_with_bbox(ctx, colorspace, &ibounds, 0);
+			pix = fz_new_pixmap_with_bbox(ctx, colorspace, ibounds, NULL, 0);
 			fz_set_pixmap_resolution(ctx, pix, x_resolution, y_resolution);
 		}
-		fz_write_header(ctx, render->bander, pix->w, total_height, pix->n, pix->alpha, pix->xres, pix->yres, pagenum);
+		fz_write_header(ctx, render->bander, pix->w, total_height, pix->n, pix->alpha, pix->xres, pix->yres, pagenum, pix->colorspace, pix->seps);
 
 		for (band = 0; band < bands; band++)
 		{
@@ -628,7 +636,7 @@ static int dodrawpage(fz_context *ctx, int pagenum, fz_cookie *cookie, render_de
 				cookie->errors += w->cookie.errors;
 			}
 			else
-				status = drawband(ctx, render->page, render->list, &ctm, &tbounds, cookie, band_start, pix, &bit);
+				status = drawband(ctx, render->page, render->list, ctm, tbounds, cookie, band_start, pix, &bit);
 
 			if (status != RENDER_OK)
 				fz_throw(ctx, FZ_ERROR_GENERIC, "Render failed");
@@ -707,7 +715,7 @@ static int try_render_page(fz_context *ctx, int pagenum, fz_cookie *cookie, int 
 		{
 			int w = render->ibounds.x1 - render->ibounds.x0;
 			int h = render->ibounds.y1 - render->ibounds.y0;
-			fz_write_header(ctx, render->bander, w, h, render->n, 0, 0, 0, 0);
+			fz_write_header(ctx, render->bander, w, h, 0, render->n, 0, 0, 0, 0, NULL);
 		}
 		fz_catch(ctx)
 		{
@@ -841,7 +849,7 @@ get_page_render_details(fz_context *ctx, fz_page *page, render_details *render)
 	render->list = NULL;
 	render->num_workers = num_workers;
 
-	fz_bound_page(ctx, page, &render->bounds);
+	render->bounds = fz_bound_page(ctx, page);
 	page_width = (render->bounds.x1 - render->bounds.x0)/72;
 	page_height = (render->bounds.y1 - render->bounds.y0)/72;
 
@@ -908,9 +916,9 @@ get_page_render_details(fz_context *ctx, fz_page *page, render_details *render)
 		rot = rotation;
 	}
 
-	fz_pre_scale(fz_rotate(&render->ctm, rot), s_x, s_y);
-	render->tbounds = render->bounds;
-	fz_round_rect(&render->ibounds, fz_transform_rect(&render->tbounds, &render->ctm));
+	render->ctm = fz_pre_scale(fz_rotate(rot), s_x, s_y);
+	render->tbounds = fz_transform_rect(render->bounds, render->ctm);;
+	render->ibounds = fz_round_rect(render->tbounds);
 }
 
 static void
@@ -1032,14 +1040,14 @@ static void drawpage(fz_context *ctx, fz_document *doc, int pagenum)
 		/* Make the display list, and see if we need color */
 		fz_try(ctx)
 		{
-			list = fz_new_display_list(ctx, &render.bounds);
+			list = fz_new_display_list(ctx, render.bounds);
 			list_dev = fz_new_list_device(ctx, list);
 #if GREY_FALLBACK != 0
 			test_dev = fz_new_test_device(ctx, &is_color, 0.01f, 0, list_dev);
-			fz_run_page(ctx, page, test_dev, &fz_identity, &cookie);
+			fz_run_page(ctx, page, test_dev, fz_identity, &cookie);
 			fz_close_device(ctx, test_dev);
 #else
-			fz_run_page(ctx, page, list_dev, &fz_identity, &cookie);
+			fz_run_page(ctx, page, list_dev, fz_identity, &cookie);
 #endif
 			fz_close_device(ctx, list_dev);
 		}
@@ -1069,7 +1077,7 @@ static void drawpage(fz_context *ctx, fz_document *doc, int pagenum)
 			fz_try(ctx)
 			{
 				test_dev = fz_new_test_device(ctx, &is_color, 0.01f, 0, test_dev);
-				fz_run_page(ctx, page, test_dev, &fz_identity, &cookie);
+				fz_run_page(ctx, page, test_dev, fz_identity, &cookie);
 				fz_close_device(ctx, test_dev);
 			}
 			fz_always(ctx)
@@ -1244,9 +1252,17 @@ typedef struct
 #endif
 } trace_header;
 
+typedef struct
+{
+	size_t current;
+	size_t peak;
+	size_t total;
+} trace_info;
+
 static void *
 trace_malloc(void *arg, size_t size)
 {
+	trace_info *info = (trace_info *) arg;
 	trace_header *p;
 	if (size == 0)
 		return NULL;
@@ -1254,27 +1270,29 @@ trace_malloc(void *arg, size_t size)
 	if (p == NULL)
 		return NULL;
 	p[0].size = size;
-	memtrace_current += size;
-	memtrace_total += size;
-	if (memtrace_current > memtrace_peak)
-		memtrace_peak = memtrace_current;
+	info->current += size;
+	info->total += size;
+	if (info->current > info->peak)
+		info->peak = info->current;
 	return (void *)&p[1];
 }
 
 static void
 trace_free(void *arg, void *p_)
 {
+	trace_info *info = (trace_info *) arg;
 	trace_header *p = (trace_header *)p_;
 
 	if (p == NULL)
 		return;
-	memtrace_current -= p[-1].size;
+	info->current -= p[-1].size;
 	free(&p[-1]);
 }
 
 static void *
 trace_realloc(void *arg, void *p_, size_t size)
 {
+	trace_info *info = (trace_info *) arg;
 	trace_header *p = (trace_header *)p_;
 	size_t oldsize;
 
@@ -1289,11 +1307,11 @@ trace_realloc(void *arg, void *p_, size_t size)
 	p = realloc(&p[-1], size + sizeof(trace_header));
 	if (p == NULL)
 		return NULL;
-	memtrace_current += size - oldsize;
+	info->current += size - oldsize;
 	if (size > oldsize)
-		memtrace_total += size - oldsize;
-	if (memtrace_current > memtrace_peak)
-		memtrace_peak = memtrace_current;
+		info->total += size - oldsize;
+	if (info->current > info->peak)
+		info->peak = info->current;
 	p[0].size = size;
 	return &p[1];
 }
@@ -1310,7 +1328,7 @@ static void worker_thread(void *arg)
 		DEBUG_THREADS(("Worker %d woken for band_start %d\n", me->num, me->band_start));
 		me->status = RENDER_OK;
 		if (me->band_start >= 0)
-			me->status = drawband(me->ctx, NULL, me->list, &me->ctm, &me->tbounds, &me->cookie, me->band_start, me->pix, &me->bit);
+			me->status = drawband(me->ctx, NULL, me->list, me->ctm, me->tbounds, &me->cookie, me->band_start, me->pix, &me->bit);
 		DEBUG_THREADS(("Worker %d completed band_start %d (status=%d)\n", me->num, me->band_start, me->status));
 		mu_trigger_semaphore(&me->stop);
 	}
@@ -1390,7 +1408,8 @@ int main(int argc, char **argv)
 	fz_document *doc = NULL;
 	int c;
 	fz_context *ctx;
-	fz_alloc_context alloc_ctx = { NULL, trace_malloc, trace_realloc, trace_free };
+	trace_info info = { 0, 0, 0 };
+	fz_alloc_context alloc_ctx = { &info, trace_malloc, trace_realloc, trace_free };
 	fz_locks_context *locks = NULL;
 
 	fz_var(doc);
@@ -1699,6 +1718,7 @@ int main(int argc, char **argv)
 	}
 #endif /* DISABLE_MUTHREADS */
 
+	fz_close_output(ctx, out);
 	fz_drop_output(ctx, out);
 	out = NULL;
 
@@ -1709,9 +1729,9 @@ int main(int argc, char **argv)
 
 	if (showmemory)
 	{
-		fprintf(stderr, "Total memory use = " FMT_zu " bytes\n", memtrace_total);
-		fprintf(stderr, "Peak memory use = " FMT_zu " bytes\n", memtrace_peak);
-		fprintf(stderr, "Current memory use = " FMT_zu " bytes\n", memtrace_current);
+		char buf[100];
+		fz_snprintf(buf, sizeof buf, "Memory use total=%zu peak=%zu current=%zu", info.total, info.peak, info.current);
+		fprintf(stderr, "%s\n", buf);
 	}
 
 	return (errored != 0);

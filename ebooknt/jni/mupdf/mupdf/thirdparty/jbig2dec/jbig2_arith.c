@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -40,8 +40,6 @@ struct _Jbig2ArithState {
 
     Jbig2WordStream *ws;
     int offset;
-
-    Jbig2Ctx *ctx;
 };
 
 #undef SOFTWARE_CONVENTION
@@ -60,9 +58,10 @@ struct _Jbig2ArithState {
 
  */
 
-static int
+static void
 jbig2_arith_bytein(Jbig2ArithState *as)
 {
+    int new_bytes;
     byte B;
 
     /* invariant: as->next_word_bytes > 0 */
@@ -75,11 +74,10 @@ jbig2_arith_bytein(Jbig2ArithState *as)
         if (as->next_word_bytes == 1) {
             Jbig2WordStream *ws = as->ws;
 
-            if (ws->get_next_word(ws, as->offset, &as->next_word)) {
-                jbig2_error(as->ctx, JBIG2_SEVERITY_FATAL, -1, "end of jbig2 buffer reached at offset %d", as->offset);
-                return -1;
-            }
-            as->offset += 4;
+            new_bytes = ws->get_next_word(ws, as->offset, &as->next_word);
+            as->next_word_bytes = new_bytes;
+            as->offset += new_bytes;
+
             B1 = (byte)((as->next_word >> 24) & 0xFF);
             if (B1 > 0x8F) {
 #ifdef JBIG2_DEBUG_ARITH
@@ -89,8 +87,9 @@ jbig2_arith_bytein(Jbig2ArithState *as)
                 as->C += 0xFF00;
 #endif
                 as->CT = 8;
-                as->next_word = (0xFF00 | B1) << 16;
-                as->next_word_bytes = 2;
+                as->next_word = 0xFF000000 | (as->next_word >> 8);
+                as->next_word_bytes = 4;
+                as->offset--;
             } else {
 #ifdef JBIG2_DEBUG_ARITH
                 fprintf(stderr, "read %02x (a)\n", B);
@@ -101,7 +100,6 @@ jbig2_arith_bytein(Jbig2ArithState *as)
                 as->C += B1 << 9;
 #endif
                 as->CT = 7;
-                as->next_word_bytes = 4;
             }
         } else {
             B1 = (byte)((as->next_word >> 16) & 0xFF);
@@ -138,12 +136,9 @@ jbig2_arith_bytein(Jbig2ArithState *as)
         if (as->next_word_bytes == 0) {
             Jbig2WordStream *ws = as->ws;
 
-            if (ws->get_next_word(ws, as->offset, &as->next_word)) {
-                jbig2_error(as->ctx, JBIG2_SEVERITY_FATAL, -1, "end of jbig2 buffer reached at offset %d", as->offset);
-                return -1;
-            }
-            as->offset += 4;
-            as->next_word_bytes = 4;
+            new_bytes = ws->get_next_word(ws, as->offset, &as->next_word);
+            as->offset += new_bytes;
+            as->next_word_bytes = new_bytes;
         }
         B = (byte)((as->next_word >> 24) & 0xFF);
 #ifdef SOFTWARE_CONVENTION
@@ -152,16 +147,7 @@ jbig2_arith_bytein(Jbig2ArithState *as)
         as->C += (B << 8);
 #endif
     }
-    return 0;
 }
-
-#if defined(JBIG2_DEBUG) || defined(JBIG2_DEBUG_ARITH)
-static void
-jbig2_arith_trace(Jbig2ArithState *as, Jbig2ArithCx cx)
-{
-    fprintf(stderr, "I = %2d, MPS = %d, A = %04x, CT = %2d, C = %08x\n", cx & 0x7f, cx >> 7, as->A, as->CT, as->C);
-}
-#endif
 
 /** Allocate and initialize a new arithmetic coding state
  *  the returned pointer can simply be freed; this does
@@ -171,23 +157,19 @@ Jbig2ArithState *
 jbig2_arith_new(Jbig2Ctx *ctx, Jbig2WordStream *ws)
 {
     Jbig2ArithState *result;
+    int new_bytes;
 
     result = jbig2_new(ctx, Jbig2ArithState, 1);
     if (result == NULL) {
-        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "failed to allocate Jbig2ArithState in jbig2_arith_new");
-        return result;
+        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "failed to allocate arithmetic coding state");
+        return NULL;
     }
 
     result->ws = ws;
-    result->ctx = ctx;
 
-    if (ws->get_next_word(ws, 0, &result->next_word)) {
-        jbig2_error(ctx, JBIG2_SEVERITY_FATAL, -1, "unable to get first word in jbig2_arith_new");
-        jbig2_free(ctx->allocator, result);
-        return NULL;
-    }
-    result->next_word_bytes = 4;
-    result->offset = 4;
+    new_bytes = ws->get_next_word(ws, 0, &result->next_word);
+    result->next_word_bytes = new_bytes;
+    result->offset = new_bytes;
 
     /* Figure E.20 */
 #ifdef SOFTWARE_CONVENTION
@@ -196,10 +178,7 @@ jbig2_arith_new(Jbig2Ctx *ctx, Jbig2WordStream *ws)
     result->C = (result->next_word >> 8) & 0xFF0000;
 #endif
 
-    if (jbig2_arith_bytein(result)) {
-        jbig2_free(ctx->allocator, result);
-        return NULL;
-    }
+    jbig2_arith_bytein(result);
     result->C <<= 7;
     result->CT -= 7;
     result->A = 0x8000;
@@ -266,22 +245,21 @@ const Jbig2ArithQe jbig2_arith_Qe[MAX_QE_ARRAY_SIZE] = {
     {0x5601, 46 ^ 46, 46 ^ 46}
 };
 
-static int
+static void
 jbig2_arith_renormd(Jbig2ArithState *as)
 {
     /* Figure E.18 */
     do {
-        if ((as->CT == 0) && (jbig2_arith_bytein(as) < 0))
-            return -1;
+        if (as->CT == 0)
+            jbig2_arith_bytein(as);
         as->A <<= 1;
         as->C <<= 1;
         as->CT--;
     } while ((as->A & 0x8000) == 0);
-    return 0;
 }
 
 bool
-jbig2_arith_decode(Jbig2ArithState *as, Jbig2ArithCx *pcx)
+jbig2_arith_decode(Jbig2ArithState *as, Jbig2ArithCx *pcx, int *code)
 {
     Jbig2ArithCx cx = *pcx;
     const Jbig2ArithQe *pqe;
@@ -289,7 +267,8 @@ jbig2_arith_decode(Jbig2ArithState *as, Jbig2ArithCx *pcx)
     bool D;
 
     if (index >= MAX_QE_ARRAY_SIZE) {
-        return -1;
+        *code = -1;
+        return 0;
     } else {
         pqe = &jbig2_arith_Qe[index];
     }
@@ -316,11 +295,13 @@ jbig2_arith_decode(Jbig2ArithState *as, Jbig2ArithCx *pcx)
                 D = cx >> 7;
                 *pcx ^= pqe->mps_xor;
             }
-            if (jbig2_arith_renormd(as))
-                return -1;
+            jbig2_arith_renormd(as);
+            *code = 0;
             return D;
-        } else
+        } else {
+            *code = 0;
             return cx >> 7;
+        }
     } else {
 #ifdef SOFTWARE_CONVENTION
         as->C -= (as->A) << 16;
@@ -335,33 +316,58 @@ jbig2_arith_decode(Jbig2ArithState *as, Jbig2ArithCx *pcx)
             D = 1 - (cx >> 7);
             *pcx ^= pqe->lps_xor;
         }
-        if (jbig2_arith_renormd(as))
-            return -1;
+        jbig2_arith_renormd(as);
+        *code = 0;
         return D;
     }
 }
 
-bool
-jbig2_arith_has_reached_marker(Jbig2ArithState *as)
-{
-    return as->next_word_bytes == 2 && (as->next_word >> 16) > 0xFF8F;
-}
-
 #ifdef TEST
 
-static int
-test_get_word(Jbig2WordStream *self, int offset, uint32_t *word)
+static const byte test_stream[] = {
+    0x84, 0xC7, 0x3B, 0xFC, 0xE1, 0xA1, 0x43, 0x04, 0x02, 0x20, 0x00, 0x00,
+    0x41, 0x0D, 0xBB, 0x86, 0xF4, 0x31, 0x7F, 0xFF, 0x88, 0xFF, 0x37, 0x47,
+    0x1A, 0xDB, 0x6A, 0xDF, 0xFF, 0xAC,
+    0x00, 0x00
+};
+
+#if defined(JBIG2_DEBUG) || defined(JBIG2_DEBUG_ARITH)
+static void
+jbig2_arith_trace(Jbig2ArithState *as, Jbig2ArithCx cx)
 {
-    byte stream[] = {
-        0x84, 0xC7, 0x3B, 0xFC, 0xE1, 0xA1, 0x43, 0x04, 0x02, 0x20, 0x00, 0x00,
-        0x41, 0x0D, 0xBB, 0x86, 0xF4, 0x31, 0x7F, 0xFF, 0x88, 0xFF, 0x37, 0x47,
-        0x1A, 0xDB, 0x6A, 0xDF, 0xFF, 0xAC,
-        0x00, 0x00
-    };
-    if (offset >= sizeof(stream))
+    fprintf(stderr, "I = %2d, MPS = %d, A = %04x, CT = %2d, C = %08x\n", cx & 0x7f, cx >> 7, as->A, as->CT, as->C);
+}
+#endif
+
+static int
+test_get_word(Jbig2WordStream *self, size_t offset, uint32_t *word)
+{
+    uint32_t val = 0;
+    int ret = 0;
+
+    if (self == NULL || word == NULL)
         return -1;
-    *word = (stream[offset] << 24) | (stream[offset + 1] << 16) | (stream[offset + 2] << 8) | stream[offset + 3];
-    return 0;
+    if (offset >= sizeof (test_stream))
+        return 0;
+
+    if (offset < sizeof(test_stream)) {
+        val |= test_stream[offset] << 24;
+        ret++;
+    }
+    if (offset + 1 < sizeof(test_stream)) {
+        val |= test_stream[offset + 1] << 16;
+        ret++;
+    }
+    if (offset + 2 < sizeof(test_stream)) {
+        val |= test_stream[offset + 2] << 8;
+        ret++;
+    }
+    if (offset + 3 < sizeof(test_stream)) {
+        val |= test_stream[offset + 3];
+        ret++;
+    }
+    *word = val;
+    return ret;
 }
 
 int
@@ -372,6 +378,7 @@ main(int argc, char **argv)
     Jbig2ArithState *as;
     int i;
     Jbig2ArithCx cx = 0;
+    int code;
 
     ctx = jbig2_ctx_new(NULL, 0, NULL, NULL, NULL);
 
@@ -387,7 +394,7 @@ main(int argc, char **argv)
 #else
         (void)
 #endif
-            jbig2_arith_decode(as, &cx);
+            jbig2_arith_decode(as, &cx, &code);
 
 #ifdef JBIG2_DEBUG_ARITH
         fprintf(stderr, "%3d: D = %d, ", i, D);

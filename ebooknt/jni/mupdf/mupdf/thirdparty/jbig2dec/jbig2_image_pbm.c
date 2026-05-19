@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2012 Artifex Software, Inc.
+/* Copyright (C) 2001-2018 Artifex Software, Inc.
    All Rights Reserved.
 
    This software is provided AS-IS with no warranty, either express or
@@ -9,8 +9,8 @@
    of the license contained in the file LICENSE in this distribution.
 
    Refer to licensing information at http://www.artifex.com or contact
-   Artifex Software, Inc.,  7 Mt. Lassen Drive - Suite A-134, San Rafael,
-   CA  94903, U.S.A., +1(415)492-9861, for further information.
+   Artifex Software, Inc.,  1305 Grant Avenue - Suite 200, Novato,
+   CA 94945, U.S.A., +1(415)492-9861, for further information.
 */
 
 /*
@@ -28,6 +28,7 @@
 #include "jbig2.h"
 #include "jbig2_priv.h"
 #include "jbig2_image.h"
+#include "jbig2_image_rw.h"
 
 /* take an image structure and write it to a file in pbm format */
 
@@ -35,17 +36,17 @@ int
 jbig2_image_write_pbm_file(Jbig2Image *image, char *filename)
 {
     FILE *out;
-    int error;
+    int code;
 
     if ((out = fopen(filename, "wb")) == NULL) {
         fprintf(stderr, "unable to open '%s' for writing", filename);
         return 1;
     }
 
-    error = jbig2_image_write_pbm(image, out);
+    code = jbig2_image_write_pbm(image, out);
 
     fclose(out);
-    return (error);
+    return (code);
 }
 
 /* write out an image struct as a pbm stream to an open file pointer */
@@ -135,7 +136,7 @@ jbig2_image_read_pbm(Jbig2Ctx *ctx, FILE *in)
             }
             buf[i] = '\0';
             if (sscanf(buf, "%d", &dim[done]) != 1) {
-                fprintf(stderr, "couldn't read pbm image dimensions\n");
+                fprintf(stderr, "failed to read pbm image dimensions\n");
                 return NULL;
             }
             i = 0;
@@ -145,7 +146,7 @@ jbig2_image_read_pbm(Jbig2Ctx *ctx, FILE *in)
     /* allocate image structure */
     image = jbig2_image_new(ctx, dim[0], dim[1]);
     if (image == NULL) {
-        fprintf(stderr, "could not allocate %dx%d image for pbm file\n", dim[0], dim[1]);
+        fprintf(stderr, "failed to allocate %dx%d image for pbm file\n", dim[0], dim[1]);
         return NULL;
     }
     /* the pbm data is byte-aligned, so we can

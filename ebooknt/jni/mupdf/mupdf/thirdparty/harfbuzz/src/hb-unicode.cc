@@ -28,9 +28,9 @@
  * Google Author(s): Behdad Esfahbod
  */
 
-#include "hb-private.hh"
+#include "hb.hh"
 
-#include "hb-unicode-private.hh"
+#include "hb-unicode.hh"
 
 
 
@@ -64,7 +64,7 @@ hb_unicode_general_category_nil (hb_unicode_funcs_t *ufuncs    HB_UNUSED,
 
 static hb_codepoint_t
 hb_unicode_mirroring_nil (hb_unicode_funcs_t *ufuncs    HB_UNUSED,
-			  hb_codepoint_t      unicode   HB_UNUSED,
+			  hb_codepoint_t      unicode,
 			  void               *user_data HB_UNUSED)
 {
   return unicode;
@@ -131,12 +131,12 @@ hb_unicode_funcs_get_default (void)
 #define HB_UNICODE_FUNCS_IMPLEMENT(set) \
   return hb_##set##_get_unicode_funcs ();
 
-#ifdef HAVE_GLIB
+#if defined(HAVE_UCDN)
+  HB_UNICODE_FUNCS_IMPLEMENT(ucdn)
+#elif defined(HAVE_GLIB)
   HB_UNICODE_FUNCS_IMPLEMENT(glib)
 #elif defined(HAVE_ICU) && defined(HAVE_ICU_BUILTIN)
   HB_UNICODE_FUNCS_IMPLEMENT(icu)
-#elif defined(HAVE_UCDN)
-  HB_UNICODE_FUNCS_IMPLEMENT(ucdn)
 #else
 #define HB_UNICODE_FUNCS_NIL 1
   HB_UNICODE_FUNCS_IMPLEMENT(nil)
@@ -185,10 +185,11 @@ hb_unicode_funcs_create (hb_unicode_funcs_t *parent)
 }
 
 
-const hb_unicode_funcs_t _hb_unicode_funcs_nil = {
+DEFINE_NULL_INSTANCE (hb_unicode_funcs_t) =
+{
   HB_OBJECT_HEADER_STATIC,
 
-  NULL, /* parent */
+  nullptr, /* parent */
   true, /* immutable */
   {
 #define HB_UNICODE_FUNC_IMPLEMENT(name) hb_unicode_##name##_nil,
@@ -209,7 +210,7 @@ const hb_unicode_funcs_t _hb_unicode_funcs_nil = {
 hb_unicode_funcs_t *
 hb_unicode_funcs_get_empty (void)
 {
-  return const_cast<hb_unicode_funcs_t *> (&_hb_unicode_funcs_nil);
+  return const_cast<hb_unicode_funcs_t *> (&Null(hb_unicode_funcs_t));
 }
 
 /**
@@ -365,7 +366,7 @@ hb_unicode_funcs_set_##name##_func (hb_unicode_funcs_t		   *ufuncs,	\
   } else {									\
     ufuncs->func.name = ufuncs->parent->func.name;				\
     ufuncs->user_data.name = ufuncs->parent->user_data.name;			\
-    ufuncs->destroy.name = NULL;						\
+    ufuncs->destroy.name = nullptr;						\
   }										\
 }
 
@@ -449,7 +450,7 @@ hb_unicode_decompose_compatibility (hb_unicode_funcs_t *ufuncs,
 }
 
 
-/* See hb-unicode-private.hh for details. */
+/* See hb-unicode.hh for details. */
 const uint8_t
 _hb_modified_combining_class[256] =
 {

@@ -9,7 +9,12 @@
  * TODO: linearize document for fast web view
  */
 
+#include "mupdf/fitz.h"
 #include "mupdf/pdf.h"
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 static void usage(void)
 {
@@ -26,7 +31,8 @@ static void usage(void)
 		"\t-z\tdeflate uncompressed streams\n"
 		"\t-f\tcompress font streams\n"
 		"\t-i\tcompress image streams\n"
-		"\t-s\tclean content streams\n"
+		"\t-c\tclean content streams\n"
+		"\t-s\tsanitize content streams\n"
 		"\tpages\tcomma separated list of page numbers and ranges\n"
 		);
 	exit(1);
@@ -45,7 +51,7 @@ int pdfclean_main(int argc, char **argv)
 	opts.continue_on_error = 1;
 	opts.errors = &errors;
 
-	while ((c = fz_getopt(argc, argv, "adfgilp:sz")) != -1)
+	while ((c = fz_getopt(argc, argv, "adfgilp:scz")) != -1)
 	{
 		switch (c)
 		{
@@ -58,7 +64,8 @@ int pdfclean_main(int argc, char **argv)
 		case 'a': opts.do_ascii += 1; break;
 		case 'g': opts.do_garbage += 1; break;
 		case 'l': opts.do_linear += 1; break;
-		case 's': opts.do_clean += 1; break;
+		case 'c': opts.do_clean += 1; break;
+		case 's': opts.do_sanitize += 1; break;
 		default: usage(); break;
 		}
 	}
