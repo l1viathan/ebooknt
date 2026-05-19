@@ -21,8 +21,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
@@ -446,10 +451,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     public void onCreateContextMenu(final ContextMenu menu, final View v, final ContextMenuInfo menuInfo) {
         menu.clear();
-        menu.setHeaderTitle(R.string.app_name);
         menu.setHeaderIcon(R.drawable.application_icon);
         final MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.mainmenu_context, menu);
+        enableMenuGroupDividers(menu);
         updateMenuItems(menu);
     }
 
@@ -604,6 +609,102 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         }
 
         return super.dispatchKeyEvent(event);
+    }
+
+    private static void enableMenuGroupDividers(final android.view.Menu menu) {
+        // android.view.Menu.setGroupDividerEnabled exists since API 28
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            menu.setGroupDividerEnabled(true);
+            return;
+        }
+        // On older APIs, try reflection (e.g. support-lib MenuBuilder)
+        try {
+            menu.getClass().getMethod("setGroupDividerEnabled", boolean.class).invoke(menu, true);
+        } catch (final Exception ignored) {}
+    }
+
+    public void showViewerContextMenu() {
+        final PopupMenu pm = new PopupMenu(this, view.getView());
+        pm.inflate(R.menu.mainmenu_context);
+        final Menu menu = pm.getMenu();
+        updateMenuItems(menu);
+        view.changeLayoutLock(true);
+        showContextMenuLevel(menu);
+    }
+
+    private void showContextMenuLevel(final Menu menu) {
+        final List<MenuItem> visible = new ArrayList<>();
+        for (int i = 0; i < menu.size(); i++) {
+            final MenuItem item = menu.getItem(i);
+            if (item.isVisible()) visible.add(item);
+        }
+        if (visible.isEmpty()) {
+            view.changeLayoutLock(false);
+            return;
+        }
+
+        final ListView lv = new ListView(this);
+        lv.setDivider(new ColorDrawable(0xFFDDDDDD));
+        lv.setDividerHeight(2);
+        lv.setAdapter(new BaseAdapter() {
+            @Override public int getCount() { return visible.size(); }
+            @Override public Object getItem(int pos) { return visible.get(pos); }
+            @Override public long getItemId(int pos) { return pos; }
+            @Override public View getView(int pos, View convertView, final ViewGroup parent) {
+                if (convertView == null) {
+                    final LinearLayout row = new LinearLayout(ViewerActivity.this);
+                    row.setOrientation(LinearLayout.HORIZONTAL);
+                    row.setGravity(Gravity.CENTER_VERTICAL);
+                    final ImageView iv = new ImageView(ViewerActivity.this);
+                    iv.setLayoutParams(new LinearLayout.LayoutParams(80, 80));
+                    iv.setPadding(32, 0, 0, 0);
+                    final TextView tv = new TextView(ViewerActivity.this);
+                    final LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(
+                        0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+                    tv.setLayoutParams(tvLp);
+                    tv.setPadding(24, 28, 0, 28);
+                    tv.setTextSize(16);
+                    final TextView arrow = new TextView(ViewerActivity.this);
+                    arrow.setPadding(0, 28, 32, 28);
+                    arrow.setTextSize(16);
+                    arrow.setText("›");
+                    row.addView(iv);
+                    row.addView(tv);
+                    row.addView(arrow);
+                    convertView = row;
+                }
+                final LinearLayout row = (LinearLayout) convertView;
+                final ImageView iv = (ImageView) row.getChildAt(0);
+                final TextView tv = (TextView) row.getChildAt(1);
+                final TextView arrow = (TextView) row.getChildAt(2);
+                final MenuItem item = visible.get(pos);
+                iv.setImageDrawable(item.getIcon());
+                tv.setText(item.getTitle());
+                tv.setAlpha(item.isEnabled() ? 1f : 0.4f);
+                arrow.setVisibility(item.hasSubMenu() ? View.VISIBLE : View.INVISIBLE);
+                return convertView;
+            }
+        });
+
+        final AlertDialog dialog = new AlertDialog.Builder(this)
+            .setView(lv)
+            .setOnCancelListener(d -> view.changeLayoutLock(false))
+            .create();
+
+        lv.setOnItemClickListener((adp, v, pos, id) -> {
+            final MenuItem item = visible.get(pos);
+            if (!item.isEnabled()) return;
+            dialog.setOnCancelListener(null);
+            dialog.dismiss();
+            if (item.hasSubMenu()) {
+                showContextMenuLevel(item.getSubMenu());
+            } else {
+                onOptionsItemSelected(item);
+                view.changeLayoutLock(false);
+            }
+        });
+
+        dialog.show();
     }
 
     public void showToastText(final int duration, final int resId, final Object... args) {

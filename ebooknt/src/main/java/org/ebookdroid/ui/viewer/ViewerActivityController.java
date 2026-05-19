@@ -455,7 +455,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.actions_openOptionsMenu)
     public void openOptionsMenu(final ActionEx action) {
-        UIManagerAppCompat.openOptionsMenu(getManagedComponent(), getManagedComponent().view.getView());
+        final ViewerActivity activity = getManagedComponent();
+        if (UIManagerAppCompat.isToolbarVisible(activity)) {
+            activity.getSupportActionBar().openOptionsMenu();
+        } else {
+            activity.showViewerContextMenu();
+        }
     }
 
     @ActionMethod(ids = R.id.actions_gotoOutlineItem)
