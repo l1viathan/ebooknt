@@ -149,8 +149,6 @@ public class BookshelfView extends GridView implements OnItemClickListener {
 
         if ((date >= 23 && month == Calendar.DECEMBER) || (date <= 13 && month == Calendar.JANUARY)) {
             pine.draw(canvas, top, shelfHeight, width);
-        } else {
-            web.draw(canvas, top, shelfHeight, width);
         }
     }
 
