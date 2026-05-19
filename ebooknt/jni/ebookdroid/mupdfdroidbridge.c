@@ -1064,6 +1064,173 @@ JNI_FN(MuPdfPage_search)(JNIEnv * env, jobject thiz, jlong dochandle, jlong page
 
 
 //Outline
+
+static int outline_count(fz_outline *node)
+{
+    int n = 0;
+    while (node) {
+        if (node->title) n++;
+        n += outline_count(node->down);
+        node = node->next;
+    }
+    return n;
+}
+
+typedef struct {
+    float width, height;
+    int valid;
+} page_dims_t;
+
+static void page_dims_lookup(fz_context *ctx, fz_document *document,
+    int page_idx, page_dims_t *dims_cache, int page_count)
+{
+    if (page_idx < 0 || page_idx >= page_count || dims_cache[page_idx].valid)
+        return;
+
+    pdf_document *pdoc = pdf_specifics(ctx, document);
+    if (pdoc) {
+        fz_try(ctx) {
+            pdf_obj *pageobj = pdf_lookup_page_obj(ctx, pdoc, page_idx);
+            fz_rect box = pdf_to_rect(ctx,
+                pdf_dict_get_inheritable(ctx, pageobj, PDF_NAME(MediaBox)));
+            dims_cache[page_idx].width = box.x1 - box.x0;
+            dims_cache[page_idx].height = box.y1 - box.y0;
+        } fz_catch(ctx) {
+            dims_cache[page_idx].width = 1;
+            dims_cache[page_idx].height = 1;
+        }
+    } else {
+        fz_page *pg = NULL;
+        fz_try(ctx) {
+            pg = fz_load_page(ctx, document, page_idx);
+            fz_rect bounds = fz_bound_page(ctx, pg);
+            dims_cache[page_idx].width = bounds.x1 - bounds.x0;
+            dims_cache[page_idx].height = bounds.y1 - bounds.y0;
+        } fz_always(ctx) {
+            if (pg) fz_drop_page(ctx, pg);
+        } fz_catch(ctx) {
+            dims_cache[page_idx].width = 1;
+            dims_cache[page_idx].height = 1;
+        }
+    }
+    dims_cache[page_idx].valid = 1;
+}
+
+static void outline_flatten(fz_context *ctx, fz_document *document,
+    fz_outline *node, int level,
+    jstring *titles, int *pages, float *xs, float *ys, int *levels,
+    int *pos, JNIEnv *env,
+    page_dims_t *dims_cache, int page_count)
+{
+    while (node) {
+        if (node->title) {
+            int i = *pos;
+            titles[i] = (*env)->NewStringUTF(env, node->title ? node->title : "");
+            levels[i] = level;
+            pages[i] = -1;
+            xs[i] = 0.0f;
+            ys[i] = 0.0f;
+
+            if (node->uri && !fz_is_external_link(ctx, node->uri)) {
+                float x = 0.0f, y = 0.0f;
+                int resolved = fz_resolve_link(ctx, document, node->uri, &x, &y);
+                if (resolved >= 0) {
+                    pages[i] = resolved + 1;
+                    if (x != 0.0f || y != 0.0f) {
+                        page_dims_lookup(ctx, document, resolved, dims_cache, page_count);
+                        if (resolved < page_count) {
+                            float w = dims_cache[resolved].width;
+                            float h = dims_cache[resolved].height;
+                            xs[i] = (w > 0) ? x / w : 0.0f;
+                            ys[i] = (h > 0) ? y / h : 0.0f;
+                        }
+                    }
+                }
+            }
+            (*pos)++;
+        }
+        outline_flatten(ctx, document, node->down, level + 1,
+            titles, pages, xs, ys, levels, pos, env,
+            dims_cache, page_count);
+        node = node->next;
+    }
+}
+
+JNIEXPORT jobjectArray JNICALL
+JNI_FN(MuPdfOutline_getOutlineFlat)(JNIEnv *env, jclass clazz, jlong dochandle)
+{
+    renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
+
+    if (!doc->outline) {
+        jni_lock(doc->ctx);
+        fz_try(doc->ctx) {
+            doc->outline = fz_load_outline(doc->ctx, doc->document);
+        } fz_catch(doc->ctx) {
+            doc->outline = NULL;
+        }
+        jni_unlock(doc->ctx);
+    }
+    if (!doc->outline)
+        return NULL;
+
+    int count = outline_count(doc->outline);
+    if (count <= 0)
+        return NULL;
+
+    jstring *c_titles = (jstring *)calloc(count, sizeof(jstring));
+    int *c_pages = (int *)calloc(count, sizeof(int));
+    float *c_xs = (float *)calloc(count, sizeof(float));
+    float *c_ys = (float *)calloc(count, sizeof(float));
+    int *c_levels = (int *)calloc(count, sizeof(int));
+
+    if (!c_titles || !c_pages || !c_xs || !c_ys || !c_levels) {
+        free(c_titles); free(c_pages); free(c_xs); free(c_ys); free(c_levels);
+        return NULL;
+    }
+
+    jni_lock(doc->ctx);
+    int page_count = fz_count_pages(doc->ctx, doc->document);
+    page_dims_t *dims_cache = (page_dims_t *)calloc(page_count, sizeof(page_dims_t));
+    int pos = 0;
+    outline_flatten(doc->ctx, doc->document, doc->outline, 0,
+        c_titles, c_pages, c_xs, c_ys, c_levels, &pos, env,
+        dims_cache, page_count);
+    jni_unlock(doc->ctx);
+
+    free(dims_cache);
+
+    fz_drop_outline(doc->ctx, doc->outline);
+    doc->outline = NULL;
+
+    jobjectArray result = (*env)->NewObjectArray(env, 5, (*env)->FindClass(env, "java/lang/Object"), NULL);
+
+    jobjectArray jTitles = (*env)->NewObjectArray(env, count, (*env)->FindClass(env, "java/lang/String"), NULL);
+    for (int i = 0; i < count; i++)
+        (*env)->SetObjectArrayElement(env, jTitles, i, c_titles[i]);
+
+    jintArray jPages = (*env)->NewIntArray(env, count);
+    (*env)->SetIntArrayRegion(env, jPages, 0, count, c_pages);
+
+    jfloatArray jXs = (*env)->NewFloatArray(env, count);
+    (*env)->SetFloatArrayRegion(env, jXs, 0, count, c_xs);
+
+    jfloatArray jYs = (*env)->NewFloatArray(env, count);
+    (*env)->SetFloatArrayRegion(env, jYs, 0, count, c_ys);
+
+    jintArray jLevels = (*env)->NewIntArray(env, count);
+    (*env)->SetIntArrayRegion(env, jLevels, 0, count, c_levels);
+
+    (*env)->SetObjectArrayElement(env, result, 0, jTitles);
+    (*env)->SetObjectArrayElement(env, result, 1, jPages);
+    (*env)->SetObjectArrayElement(env, result, 2, jXs);
+    (*env)->SetObjectArrayElement(env, result, 3, jYs);
+    (*env)->SetObjectArrayElement(env, result, 4, jLevels);
+
+    free(c_titles); free(c_pages); free(c_xs); free(c_ys); free(c_levels);
+
+    return result;
+}
+
 JNIEXPORT jlong JNICALL
 JNI_FN(MuPdfOutline_open)(JNIEnv *env, jclass clazz, jlong dochandle)
 {
@@ -1084,7 +1251,6 @@ JNIEXPORT void JNICALL
 JNI_FN(MuPdfOutline_free)(JNIEnv *env, jclass clazz, jlong dochandle)
 {
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
-//    DEBUG("PdfOutline_free(%p)", doc);
     if (doc)
     {
         if (doc->outline)
@@ -1097,7 +1263,6 @@ JNIEXPORT jstring JNICALL
 JNI_FN(MuPdfOutline_getTitle)(JNIEnv *env, jclass clazz, jlong outlinehandle)
 {
     fz_outline *outline = (fz_outline*) (uintptr_t) outlinehandle;
-//	DEBUG("PdfOutline_getTitle(%p)",outline);
     if (outline)
         return (*env)->NewStringUTF(env, outline->title);
     return NULL;
@@ -1109,7 +1274,6 @@ JNI_FN(MuPdfOutline_getLink)(JNIEnv *env, jclass clazz, jlong outlinehandle, jlo
     fz_outline *outline = (fz_outline*) (uintptr_t) outlinehandle;
     renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
 
-    // DEBUG("PdfOutline_getLink(%p)",outline);
     if (!outline || !outline->uri)
         return NULL;
 
@@ -1162,7 +1326,6 @@ JNIEXPORT jlong JNICALL
 JNI_FN(MuPdfOutline_getNext)(JNIEnv *env, jclass clazz, jlong outlinehandle)
 {
     fz_outline *outline = (fz_outline*) (uintptr_t) outlinehandle;
-//	DEBUG("MuPdfOutline_getNext(%p)",outline);
     return (jlong)(uintptr_t)(outline?outline->next:NULL);
 }
 
@@ -1170,6 +1333,5 @@ JNIEXPORT jlong JNICALL
 JNI_FN(MuPdfOutline_getChild)(JNIEnv *env, jclass clazz, jlong outlinehandle)
 {
     fz_outline *outline = (fz_outline*) (uintptr_t) outlinehandle;
-//	DEBUG("MuPdfOutline_getChild(%p)",outline);
     return (jlong)(uintptr_t)(outline?outline->down:NULL);
 }

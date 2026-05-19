@@ -28,6 +28,12 @@ public class OutlineLink implements CharSequence {
         }
     }
 
+    public OutlineLink(final String title, final int level, final int targetPage) {
+        this.title = title;
+        this.level = level;
+        this.targetPage = targetPage;
+    }
+
     /**
      * {@inheritDoc}
      *
