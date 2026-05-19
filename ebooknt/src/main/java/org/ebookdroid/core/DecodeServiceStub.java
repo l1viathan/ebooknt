@@ -27,6 +27,10 @@ public class DecodeServiceStub implements DecodeService {
     public void open(final String fileName, final String password) {
     }
 
+    @Override
+    public void openFd(final int fd, final String password) {
+    }
+
     /**
      * {@inheritDoc}
      *

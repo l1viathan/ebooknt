@@ -9,4 +9,9 @@ public class FB2Context extends MuPdfContext {
     public CodecDocument openDocument(final String fileName, final String password) {
         return new MuPdfDocument(this, MuPdfDocument.FORMAT_FB2, fileName, password);
     }
+
+    @Override
+    public CodecDocument openDocumentFd(final int fd, final String password) {
+        return new MuPdfDocument(this, MuPdfDocument.FORMAT_FB2, fd, password);
+    }
 }

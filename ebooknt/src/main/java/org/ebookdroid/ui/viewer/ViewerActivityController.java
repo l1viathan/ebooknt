@@ -68,6 +68,8 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import android.os.ParcelFileDescriptor;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -1291,13 +1293,20 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         protected Throwable doInBackground(final String... params) {
             LCTX.d("BookLoadTask.doInBackground(): start");
             try {
-                final File cached = scheme.loadToCache(intent.getData(), codecType.getDefaultExtension(), this);
-                if (cached != null) {
-                    m_fileName = cached.getAbsolutePath();
-                    setProgressDialogMessage(startProgressStringId);
+                if (scheme == ContentScheme.CONTENT) {
+                    final ParcelFileDescriptor pfd = getManagedComponent().getContentResolver()
+                            .openFileDescriptor(intent.getData(), "r");
+                    if (pfd != null) {
+                        final int fd = pfd.detachFd();
+                        getView().waitForInitialization();
+                        documentModel.openFd(fd, m_password);
+                    } else {
+                        throw new IOException("Cannot open content URI: " + intent.getData());
+                    }
+                } else {
+                    getView().waitForInitialization();
+                    documentModel.open(m_fileName, m_password);
                 }
-                getView().waitForInitialization();
-                documentModel.open(m_fileName, m_password);
                 getDocumentController().init(this);
                 return null;
             } catch (final MuPdfPasswordException pex) {

@@ -9,4 +9,9 @@ public class EpubContext extends MuPdfContext {
     public CodecDocument openDocument(final String fileName, final String password) {
         return new MuPdfDocument(this, MuPdfDocument.FORMAT_EPUB, fileName, password);
     }
+
+    @Override
+    public CodecDocument openDocumentFd(final int fd, final String password) {
+        return new MuPdfDocument(this, MuPdfDocument.FORMAT_EPUB, fd, password);
+    }
 }

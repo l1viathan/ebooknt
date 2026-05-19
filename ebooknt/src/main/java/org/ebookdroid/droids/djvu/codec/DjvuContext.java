@@ -27,6 +27,11 @@ public class DjvuContext extends AbstractCodecContext {
     }
 
     @Override
+    public DjvuDocument openDocumentFd(final int fd, final String password) {
+        return new DjvuDocument(this, fd);
+    }
+
+    @Override
     protected void freeContext() {
         try {
             free(getContextHandle());

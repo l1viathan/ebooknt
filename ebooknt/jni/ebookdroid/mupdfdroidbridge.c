@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <android/log.h>
 
@@ -325,6 +326,101 @@ JNI_FN(MuPdfDocument_open)(JNIEnv *env, jclass clazz, jint storememory, jint for
     (*env)->ReleaseStringUTFChars(env, pwd, password);
 
     // DEBUG("MuPdfDocument.nativeOpen(): return handle = %p", doc);
+    return (jlong) (long) doc;
+}
+
+static const char* format_to_magic(int format)
+{
+    switch (format) {
+        case FORMAT_PDF:  return "x.pdf";
+        case FORMAT_XPS:  return "x.xps";
+        case FORMAT_CBZ:  return "x.cbz";
+        case FORMAT_EPUB: return "x.epub";
+        default:          return "x.pdf";
+    }
+}
+
+JNIEXPORT jlong JNICALL
+JNI_FN(MuPdfDocument_openFd)(JNIEnv *env, jclass clazz, jint storememory, jint format, jint fd,
+                                                      jstring pwd)
+{
+    renderdocument_t *doc;
+    jboolean iscopy;
+    char *password;
+
+    password = (char*) (*env)->GetStringUTFChars(env, pwd, &iscopy);
+
+    doc = malloc(sizeof(renderdocument_t));
+    if (!doc)
+    {
+        mupdf_throw_exception(env, "Out of Memory");
+        goto cleanup;
+    }
+    DEBUG("MuPdfDocument.openFd(): storememory = %d, fd = %d", storememory, fd);
+
+    fz_locks_context *locks = jni_new_locks();
+    if (!locks)
+    {
+        DEBUG("MuPdfDocument.openFd(): no locks available");
+    }
+    doc->ctx = fz_new_context(NULL, locks, storememory);
+    if (!doc->ctx)
+    {
+        free(doc);
+        mupdf_throw_exception(env, "Out of Memory");
+        goto cleanup;
+    }
+    fz_register_document_handlers(doc->ctx);
+
+    doc->document = NULL;
+    doc->outline = NULL;
+    doc->format = format;
+
+    fz_try(doc->ctx) {
+        int myfd = dup(fd);
+        close(fd);
+        if (myfd < 0) {
+            fz_throw(doc->ctx, FZ_ERROR_GENERIC, "dup() failed on fd %d", fd);
+        }
+        FILE *file = fdopen(myfd, "rb");
+        if (!file) {
+            close(myfd);
+            fz_throw(doc->ctx, FZ_ERROR_GENERIC, "fdopen() failed on fd %d", myfd);
+        }
+        fz_stream *stream = fz_open_file_ptr(doc->ctx, file);
+        const char *magic = format_to_magic(format);
+        doc->document = fz_open_document_with_stream(doc->ctx, magic, stream);
+        fz_drop_stream(doc->ctx, stream);
+    } fz_catch(doc->ctx) {
+        mupdf_free_document(doc);
+        mupdf_throw_exception(env, "PDF file not found or corrupted");
+        goto cleanup;
+    }
+
+    if (fz_needs_password(doc->ctx, doc->document))
+    {
+        if (strlen(password))
+        {
+            int ok = fz_authenticate_password(doc->ctx, doc->document, password);
+            if (!ok)
+            {
+                mupdf_free_document(doc);
+                mupdf_throw_exception_ex(env, WRONG_PASSWORD_EXCEPTION, "Wrong password given");
+                goto cleanup;
+            }
+        }
+        else
+        {
+            mupdf_free_document(doc);
+            mupdf_throw_exception_ex(env, PASSWORD_REQUIRED_EXCEPTION, "Document needs a password!");
+            goto cleanup;
+        }
+    }
+
+    cleanup:
+
+    (*env)->ReleaseStringUTFChars(env, pwd, password);
+
     return (jlong) (long) doc;
 }
 

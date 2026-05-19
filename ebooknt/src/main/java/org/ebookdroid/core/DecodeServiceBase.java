@@ -86,6 +86,12 @@ public class DecodeServiceBase implements DecodeService {
     }
 
     @Override
+    @WorkerThread
+    public void openFd(final int fd, final String password) {
+        document = codecContext.openDocumentFd(fd, password);
+    }
+
+    @Override
     public CodecPageInfo getUnifiedPageInfo() {
         return document != null ? document.getUnifiedPageInfo() : null;
     }

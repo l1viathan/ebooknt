@@ -15,6 +15,8 @@ public interface DecodeService extends CodecFeatures {
 
     void open(String fileName, String password);
 
+    void openFd(int fd, String password);
+
     void decodePage(ViewState viewState, PageTreeNode node);
 
     void searchText(Page page, String pattern, SearchCallback callback);

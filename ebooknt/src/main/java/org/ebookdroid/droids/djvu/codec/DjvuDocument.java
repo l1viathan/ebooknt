@@ -17,6 +17,10 @@ public class DjvuDocument extends AbstractCodecDocument {
         super(djvuContext, open(djvuContext.getContextHandle(), fileName));
     }
 
+    DjvuDocument(final DjvuContext djvuContext, final int fd) {
+        super(djvuContext, openFd(djvuContext.getContextHandle(), fd));
+    }
+
     @Override
     public List<OutlineLink> getOutline() {
         final DjvuOutline ou = new DjvuOutline();
@@ -52,6 +56,8 @@ public class DjvuDocument extends AbstractCodecDocument {
     private native static int getPageInfo(long docHandle, int pageNumber, long contextHandle, CodecPageInfo cpi);
 
     private native static long open(long contextHandle, String fileName);
+
+    private native static long openFd(long contextHandle, int fd);
 
     private native static long getPage(long docHandle, int pageNumber);
 

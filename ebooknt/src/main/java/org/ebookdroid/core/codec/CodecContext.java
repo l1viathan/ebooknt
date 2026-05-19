@@ -15,6 +15,10 @@ public interface CodecContext extends CodecFeatures {
      */
     CodecDocument openDocument(String fileName, String password);
 
+    default CodecDocument openDocumentFd(int fd, String password) {
+        throw new UnsupportedOperationException("fd-based open not supported for this codec");
+    }
+
     /**
      * @return context handler
      */

@@ -84,6 +84,11 @@ public class DocumentModel extends ListenerProxy {
         decodeService.open(fileName, password);
     }
 
+    @WorkerThread
+    public void openFd(final int fd, final String password) {
+        decodeService.openFd(fd, password);
+    }
+
     public Page[] getPages() {
         return pages;
     }

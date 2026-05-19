@@ -7,6 +7,8 @@
 
 #include <jni.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <ddjvuapi.h>
 #include <miniexp.h>
 
@@ -343,6 +345,30 @@ JNI_DJVU_FN(DjvuDocument_open)(JNIEnv *env, jclass cls, jlong contextHandle, jst
     {
         waitAndHandleMessages(env, contextHandle);
     }
+
+    return (jlong) doc;
+}
+
+extern "C" jlong
+JNI_DJVU_FN(DjvuDocument_openFd)(JNIEnv *env, jclass cls, jlong contextHandle, jint fd)
+{
+    char path[64];
+    snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
+    DEBUG("Opening document by fd: %s", path);
+
+    ddjvu_document_t* doc = ddjvu_document_create_by_filename((ddjvu_context_t*) (contextHandle), path, FALSE);
+    if (!doc) {
+        close(fd);
+        ThrowError(env, "DJVU file not found or corrupted.");
+        return (jlong) 0;
+    }
+
+    ddjvu_fileinfo_t info;
+    while(ddjvu_document_get_fileinfo(doc, 0, &info) < DDJVU_JOB_OK)
+    {
+        waitAndHandleMessages(env, contextHandle);
+    }
+    close(fd);
 
     return (jlong) doc;
 }

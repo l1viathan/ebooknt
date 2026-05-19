@@ -22,6 +22,10 @@ public class MuPdfDocument extends AbstractCodecDocument {
         super(context, open(AppSettings.current().pdfStorageSize << 20, format, fname, pwd));
     }
 
+    MuPdfDocument(final MuPdfContext context, final int format, final int fd, final String pwd) {
+        super(context, openFd(AppSettings.current().pdfStorageSize << 20, format, fd, pwd));
+    }
+
     @Override
     public List<OutlineLink> getOutline() {
         final MuPdfOutline ou = new MuPdfOutline();
@@ -77,6 +81,8 @@ public class MuPdfDocument extends AbstractCodecDocument {
     native static int getPageInfo(long docHandle, int pageNumber, CodecPageInfo cpi);
 
     private static native long open(int storememory, int format, String fname, String pwd);
+
+    private static native long openFd(int storememory, int format, int fd, String pwd);
 
     private static native void free(long handle);
 
