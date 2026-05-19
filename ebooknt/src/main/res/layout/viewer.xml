@@ -12,12 +12,22 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <FrameLayout
-            android:id="@+id/framelayout"
+        <!-- Toolbar stacked above GL view; toolbar topMargin is set at runtime
+             to push it below the status bar (via window insets listener). -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
-        <include layout="@layout/toolbar_actionbar" />
+            <include layout="@layout/toolbar_actionbar" />
+
+            <FrameLayout
+                android:id="@+id/framelayout"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+        </LinearLayout>
 
     </FrameLayout>
 

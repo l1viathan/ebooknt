@@ -20,6 +20,7 @@ import org.ebookdroid.ui.viewer.views.SearchControls;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
@@ -180,6 +181,19 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        // Push toolbar below the status bar when SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN is active.
+        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
+            final int sbInset = insets.getSystemWindowInsetTop();
+            final android.widget.LinearLayout.LayoutParams lp =
+                    (android.widget.LinearLayout.LayoutParams) v.getLayoutParams();
+            if (lp.topMargin != sbInset) {
+                lp.topMargin = sbInset;
+                v.setLayoutParams(lp);
+            }
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(toolbar);
 
         openBooksAdapter = new OpenBooksAdapter(this);
 
@@ -622,6 +636,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             menu.getClass().getMethod("setGroupDividerEnabled", boolean.class).invoke(menu, true);
         } catch (final Exception ignored) {}
     }
+
 
     public void showViewerContextMenu() {
         final PopupMenu pm = new PopupMenu(this, view.getView());

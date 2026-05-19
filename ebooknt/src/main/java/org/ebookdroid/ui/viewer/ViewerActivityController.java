@@ -445,12 +445,9 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @Override
     public int getTopInset() {
-        final ViewerActivity activity = getManagedComponent();
-        if (activity == null) return 0;
-        final ActionBar bar = activity.getSupportActionBar();
-        if (bar == null || !bar.isShowing()) return 0;
-        if ((activity.view.getView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN) == 0) return 0;
-        return bar.getHeight();
+        // GL view is already positioned below the toolbar by the LinearLayout;
+        // no additional rendering offset is needed.
+        return 0;
     }
 
     @ActionMethod(ids = R.id.actions_openOptionsMenu)
