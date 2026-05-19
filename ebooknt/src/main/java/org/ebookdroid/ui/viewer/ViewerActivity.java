@@ -358,7 +358,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         final int pv = (int) (8 * dp);
         tv.setPadding(ph, pv, ph, pv);
         final GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0xCC000000);
+        bg.setColor(0x80000000);
         bg.setCornerRadius(pv);
         tv.setBackground(bg);
         tv.setVisibility(View.GONE);
