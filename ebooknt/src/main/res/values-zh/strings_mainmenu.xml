@@ -34,4 +34,5 @@
     <string name="menu_show_files">"显示文件"</string>
     <string name="menu_search">"搜索"</string>
     <string name="drawer_action_library">主界面</string>
+    <string name="drawer_action_close">关闭</string>
 </resources>

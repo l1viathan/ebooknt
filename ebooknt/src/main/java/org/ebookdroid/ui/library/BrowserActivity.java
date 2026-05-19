@@ -37,8 +37,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
 import org.ebookdroid.ui.viewer.OpenBooksManager;
 import org.ebookdroid.ui.viewer.ViewerActivity;
+import android.support.v4.widget.DrawerLayout;
+import android.widget.ListView;
 
 import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.AbstractActionActivity;
@@ -52,6 +55,9 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     private static final String CURRENT_DIRECTORY = "currentDirectory";
 
     ViewFlipper viewflipper;
+
+    private DrawerLayout drawerLayout;
+    private OpenBooksDrawerHelper.Adapter openBooksAdapter;
 
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
@@ -81,6 +87,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     @Override
     protected void onCreateImpl(final Bundle savedInstanceState) {
         setContentView(R.layout.browser);
+
+        drawerLayout = (DrawerLayout) findViewById(R.id.browser_drawer_layout);
+        openBooksAdapter = OpenBooksDrawerHelper.setup(
+            this, drawerLayout, (ListView) findViewById(R.id.browser_drawer_list));
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -128,6 +138,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     @Override
     protected void onResumeImpl() {
+        if (openBooksAdapter != null) openBooksAdapter.refresh();
         rebuildLocationSpinner();
     }
 

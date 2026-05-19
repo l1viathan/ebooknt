@@ -91,6 +91,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     private float edgeSwipeStartX = -1;
     private float edgeSwipeStartY = -1;
+    private float drawerSwipeStartX = -1;
+    private float drawerSwipeStartY = -1;
 
     /**
      * Instantiates a new base viewer activity.
@@ -174,8 +176,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
-
         openBooksAdapter = new OpenBooksAdapter(this);
 
         final View headerSpacer = new View(this);
@@ -189,6 +189,12 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             @Override
             public void onDrawerOpened(final View drawerView) {
                 centerDrawerItems(headerSpacer, footerSpacer);
+            }
+            @Override
+            public void onDrawerClosed(final View drawerView) {
+                if (view != null && view.getView() != null) {
+                    view.getView().requestLayout();
+                }
             }
         });
 
@@ -204,6 +210,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 } else if (item == OpenBooksAdapter.LIBRARY_SENTINEL) {
                     getController().goToLibrary(null);
                 }
+                // QUIT_SENTINEL and other cases: close the drawer.
                 if (drawerLayout != null) {
                     drawerLayout.closeDrawers();
                 }
@@ -232,11 +239,17 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             final float minSwipe = 60 * density;
             switch (ev.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    if (ev.getX() < edgeSize && !drawerLayout.isDrawerOpen(Gravity.START)) {
+                    if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                        drawerSwipeStartX = ev.getX();
+                        drawerSwipeStartY = ev.getY();
+                        edgeSwipeStartX = -1;
+                    } else if (ev.getX() < edgeSize) {
                         edgeSwipeStartX = ev.getX();
                         edgeSwipeStartY = ev.getY();
+                        drawerSwipeStartX = -1;
                     } else {
                         edgeSwipeStartX = -1;
+                        drawerSwipeStartX = -1;
                     }
                     break;
                 case MotionEvent.ACTION_MOVE:
@@ -252,11 +265,34 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                             edgeSwipeStartX = -1;
                             ev.setAction(MotionEvent.ACTION_CANCEL);
                         }
+                    } else if (drawerSwipeStartX >= 0) {
+                        final float dx = ev.getX() - drawerSwipeStartX;
+                        final float dy = Math.abs(ev.getY() - drawerSwipeStartY);
+                        if (dx < -minSwipe && dy < -dx) {
+                            drawerLayout.closeDrawers();
+                            drawerSwipeStartX = -1;
+                            ev.setAction(MotionEvent.ACTION_CANCEL);
+                        }
                     }
                     break;
                 case MotionEvent.ACTION_UP:
+                    if (drawerLayout.isDrawerOpen(Gravity.START) && drawerSwipeStartX >= 0) {
+                        final float upX = ev.getX();
+                        final float upY = ev.getY();
+                        final float moveDx = Math.abs(upX - drawerSwipeStartX);
+                        final float moveDy = Math.abs(upY - drawerSwipeStartY);
+                        if (moveDx < 10 * density && moveDy < 10 * density
+                                && isOnQuitSentinel(upX, upY)) {
+                            drawerLayout.closeDrawers();
+                            ev.setAction(MotionEvent.ACTION_CANCEL);
+                        }
+                    }
+                    edgeSwipeStartX = -1;
+                    drawerSwipeStartX = -1;
+                    break;
                 case MotionEvent.ACTION_CANCEL:
                     edgeSwipeStartX = -1;
+                    drawerSwipeStartX = -1;
                     break;
             }
         }
@@ -574,6 +610,26 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         Toast.makeText(getApplicationContext(), getResources().getString(resId, args), duration).show();
     }
 
+    private boolean isOnQuitSentinel(final float winX, final float winY) {
+        if (openBooksAdapter == null || drawerList == null) return false;
+        final int count = openBooksAdapter.getCount();
+        if (count == 0) return false;
+        // QUIT_SENTINEL is the last adapter item; ListView position = adapter pos + 1 header
+        final int quitListPos = count; // adapter pos (count-1) + 1 header = count
+        final int firstVis = drawerList.getFirstVisiblePosition();
+        final int childIdx = quitListPos - firstVis;
+        if (childIdx < 0 || childIdx >= drawerList.getChildCount()) return false;
+        final View quitView = drawerList.getChildAt(childIdx);
+        if (quitView == null) return false;
+        final int[] loc = new int[2];
+        drawerList.getLocationInWindow(loc);
+        final float top = loc[1] + quitView.getTop();
+        final float bot = loc[1] + quitView.getBottom();
+        final float left = loc[0] + quitView.getLeft();
+        final float right = loc[0] + quitView.getRight();
+        return winX >= left && winX <= right && winY >= top && winY <= bot;
+    }
+
     private void centerDrawerItems(final View headerSpacer, final View footerSpacer) {
         drawerList.post(new Runnable() {
             @Override
@@ -601,6 +657,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     static final class OpenBooksAdapter extends BaseAdapter {
 
         static final Object LIBRARY_SENTINEL = new Object();
+        static final Object QUIT_SENTINEL = new Object();
 
         static final class BookItem {
             final String path;
@@ -630,6 +687,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 items.add(new BookItem(path, path.equals(currentPath)));
             }
             items.add(LIBRARY_SENTINEL);
+            items.add(QUIT_SENTINEL);
             notifyDataSetChanged();
         }
 
@@ -659,6 +717,9 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 final TextView tv = new TextView(ctx);
                 tv.setPadding(48, 32, 48, 32);
                 tv.setTextSize(15);
+                tv.setLayoutParams(new android.widget.AbsListView.LayoutParams(
+                    android.widget.AbsListView.LayoutParams.MATCH_PARENT,
+                    android.widget.AbsListView.LayoutParams.WRAP_CONTENT));
                 convertView = tv;
             }
             final TextView tv = (TextView) convertView;
@@ -670,10 +731,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     ? android.graphics.Typeface.DEFAULT_BOLD
                     : android.graphics.Typeface.DEFAULT);
                 tv.setTextColor(book.isCurrent ? 0xFF1976D2 : 0xFF212121);
-            } else {
+            } else if (item == LIBRARY_SENTINEL) {
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);
                 tv.setTextColor(0xFF1976D2);
+            } else {
+                tv.setText(R.string.drawer_action_close);
+                tv.setTypeface(android.graphics.Typeface.DEFAULT);
+                tv.setTextColor(0xFF212121);
             }
             return convertView;
         }

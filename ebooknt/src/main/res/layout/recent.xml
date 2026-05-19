@@ -1,18 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/mainscreen"
-    android:orientation="vertical"
+    android:id="@+id/recent_drawer_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <include layout="@layout/toolbar_recent" />
+    <LinearLayout
+        android:id="@+id/mainscreen"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
-    <ViewFlipper
-        android:id="@+id/recentflip"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:gravity="center"
-        android:orientation="vertical" />
+        <include layout="@layout/toolbar_recent" />
 
-</LinearLayout>
+        <ViewFlipper
+            android:id="@+id/recentflip"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:gravity="center"
+            android:orientation="vertical" />
+
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/recent_drawer_list"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#FAFAFA"
+        android:divider="#E0E0E0"
+        android:dividerHeight="1dp" />
+
+</android.support.v4.widget.DrawerLayout>

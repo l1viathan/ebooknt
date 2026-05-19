@@ -56,8 +56,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
 import org.ebookdroid.ui.viewer.OpenBooksManager;
 import org.ebookdroid.ui.viewer.ViewerActivity;
+import android.support.v4.widget.DrawerLayout;
+import android.widget.ListView;
 
 import org.emdev.BaseDroidApp;
 import org.emdev.common.android.AndroidVersion;
@@ -74,6 +77,9 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     public static final int VIEW_SEARCH = 2;
 
     private ViewFlipper viewflipper;
+
+    private DrawerLayout drawerLayout;
+    private OpenBooksDrawerHelper.Adapter openBooksAdapter;
 
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
@@ -107,6 +113,10 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     @Override
     protected void onCreateImpl(final Bundle savedInstanceState) {
         setContentView(R.layout.recent);
+
+        drawerLayout = (DrawerLayout) findViewById(R.id.recent_drawer_layout);
+        openBooksAdapter = OpenBooksDrawerHelper.setup(
+            this, drawerLayout, (ListView) findViewById(R.id.recent_drawer_list));
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -142,6 +152,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
      */
     @Override
     protected void onResumeImpl() {
+        if (openBooksAdapter != null) openBooksAdapter.refresh();
         rebuildLocationSpinner();
         UIManagerAppCompat.invalidateOptionsMenu(this);
 
