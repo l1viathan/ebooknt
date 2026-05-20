@@ -15,4 +15,5 @@
     <string name="bookmenu_move">"Sposta libro in..."</string>
     <string name="bookmenu_delete">"Cancella libro"</string>
 
+    <string name="bookmenu_createshortcut">"Crea collegamento"</string>
 </resources>

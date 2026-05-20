@@ -235,6 +235,14 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         }
     }
 
+    @ActionMethod(ids = R.id.bookmenu_createshortcut)
+    public void createShortcut(final ActionEx action) {
+        final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
+        if (file != null) {
+            ShortcutHelper.createShortcut(getManagedComponent(), file.getAbsolutePath());
+        }
+    }
+
     @ActionMethod(ids = R.id.bookmenu_removefromrecent)
     public void removeBookFromRecents(final ActionEx action) {
         final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);

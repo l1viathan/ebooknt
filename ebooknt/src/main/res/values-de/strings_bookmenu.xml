@@ -15,4 +15,5 @@
     <string name="bookmenu_move">"Verschieben"</string>
     <string name="bookmenu_delete">"Löschen"</string>
 
+    <string name="bookmenu_createshortcut">"Verknüpfung erstellen"</string>
 </resources>

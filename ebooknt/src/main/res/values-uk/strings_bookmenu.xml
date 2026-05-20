@@ -15,4 +15,5 @@
 <!--<string name="bookmenu_move">"Move book to..."</string>-->
 <!--<string name="bookmenu_delete">"Delete book"</string>-->
 
+    <string name="bookmenu_createshortcut">"Створити ярлик"</string>
 </resources>

@@ -207,6 +207,14 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         }
     }
 
+    @ActionMethod(ids = R.id.bookmenu_createshortcut)
+    public void createShortcut(final ActionEx action) {
+        final BookNode book = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
+        if (book != null) {
+            ShortcutHelper.createShortcut(getManagedComponent(), book.path);
+        }
+    }
+
     @ActionMethod(ids = R.id.bookmenu_removefromrecent)
     public void removeBookFromRecents(final ActionEx action) {
         final BookNode book = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);

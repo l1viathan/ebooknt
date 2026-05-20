@@ -15,4 +15,5 @@
     <string name="bookmenu_move">"Переместить книгу в…"</string>
     <string name="bookmenu_delete">"Удалить книгу"</string>
 
+    <string name="bookmenu_createshortcut">"Создать ярлык"</string>
 </resources>

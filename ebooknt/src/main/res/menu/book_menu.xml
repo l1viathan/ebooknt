@@ -31,6 +31,9 @@
         </menu>
     </item>
     <item
+        android:id="@+id/bookmenu_createshortcut"
+        android:title="@string/bookmenu_createshortcut"/>
+    <item
         android:id="@+id/bookmenu_filegroup"
         android:title="@string/bookmenu_filegroup">
         <menu>

@@ -9,6 +9,9 @@
     <string name="bookmenu_removefromrecent">"清空浏览记录"</string>
     <string name="bookmenu_cleardata">"清除缓存的数据"</string>
     <string name="bookmenu_deletesettings">"恢复默认值"</string>
+    <string name="bookmenu_createshortcut">"创建桌面快捷方式"</string>
+    <string name="bookmenu_shortcut_created">"快捷方式已创建"</string>
+    <string name="bookmenu_shortcut_unsupported">"此设备不支持创建快捷方式"</string>
     <string name="bookmenu_filegroup">"文件操作"</string>
     <string name="bookmenu_copy">"复制"</string>
     <string name="bookmenu_rename">"重命名"</string>

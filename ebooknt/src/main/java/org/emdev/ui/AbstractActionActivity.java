@@ -67,13 +67,15 @@ public abstract class AbstractActionActivity<A extends Activity, C extends Abstr
     @SuppressWarnings({ "unchecked", "deprecation" })
     protected final void onCreate(final Bundle savedInstanceState) {
         if (shouldBeTaskRoot && !isTaskRoot()) {
-            super.onCreate(savedInstanceState);
-            // Workaround for Android 2.1-
-            if (LCTX.isDebugEnabled()) {
-                LCTX.d("onCreate(): close duplicated activity");
+            final Intent launchIntent = getIntent();
+            if (launchIntent == null || android.content.Intent.ACTION_MAIN.equals(launchIntent.getAction())) {
+                super.onCreate(savedInstanceState);
+                if (LCTX.isDebugEnabled()) {
+                    LCTX.d("onCreate(): close duplicated activity");
+                }
+                finish();
+                return;
             }
-            finish();
-            return;
         }
 
         if (LCTX.isDebugEnabled()) {

@@ -9,6 +9,9 @@
     <string name="bookmenu_removefromrecent">Exclude from recents</string>
     <string name="bookmenu_cleardata">Clear cached data</string>
     <string name="bookmenu_deletesettings">Remove book settings</string>
+    <string name="bookmenu_createshortcut">Create shortcut</string>
+    <string name="bookmenu_shortcut_created">Shortcut created</string>
+    <string name="bookmenu_shortcut_unsupported">Shortcuts not supported on this device</string>
     <string name="bookmenu_filegroup">File operations...</string>
     <string name="bookmenu_copy">Copy book to...</string>
     <string name="bookmenu_rename">Rename book...</string>

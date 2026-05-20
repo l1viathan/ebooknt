@@ -15,4 +15,5 @@
 <string name="bookmenu_move">다음으로 책 이동...</string>
 <string name="bookmenu_delete">책 삭제</string>
 
+    <string name="bookmenu_createshortcut">바로가기 만들기</string>
 </resources>

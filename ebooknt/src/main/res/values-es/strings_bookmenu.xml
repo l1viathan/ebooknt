@@ -15,4 +15,5 @@
     <string name="bookmenu_move">Mover libro a…</string>
     <string name="bookmenu_delete">Eliminar libro</string>
 
+    <string name="bookmenu_createshortcut">Crear acceso directo</string>
 </resources>

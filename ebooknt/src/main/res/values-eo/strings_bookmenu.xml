@@ -15,4 +15,5 @@
     <string name="bookmenu_move">Movi libron al…</string>
     <string name="bookmenu_delete">Forigi libron</string>
 
+    <string name="bookmenu_createshortcut">Create shortcut</string>
 </resources>

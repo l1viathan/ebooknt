@@ -15,4 +15,5 @@
     <string name="bookmenu_move">Przenieś książkę do...</string>
     <string name="bookmenu_delete">Usuń książkę</string>
 
+    <string name="bookmenu_createshortcut">Utwórz skrót</string>
 </resources>

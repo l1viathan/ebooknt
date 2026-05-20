@@ -15,4 +15,5 @@
     <string name="bookmenu_move">本を移動...</string>
     <string name="bookmenu_delete">本を削除</string>
 
+    <string name="bookmenu_createshortcut">ショートカットを作成</string>
 </resources>

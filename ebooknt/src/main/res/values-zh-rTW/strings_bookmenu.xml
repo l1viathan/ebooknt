@@ -15,4 +15,5 @@
     <string name="bookmenu_move">"另存為"</string>
     <string name="bookmenu_delete">"刪除"</string>
 
+    <string name="bookmenu_createshortcut">"建立桌面捷徑"</string>
 </resources>

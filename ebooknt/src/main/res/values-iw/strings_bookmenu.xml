@@ -15,4 +15,5 @@
     <string name="bookmenu_move">"הזז את הספר ..."</string>
     <string name="bookmenu_delete">"הסר את הספר"</string>
 
+    <string name="bookmenu_createshortcut">Create shortcut</string>
 </resources>
