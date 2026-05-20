@@ -157,7 +157,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             LayoutUtils.fillInParent(frameLayout, view.getView());
 
             frameLayout.addView(view.getView());
-            frameLayout.addView(getZoomControls());
+            frameLayout.addView(getZoomControls(), new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.BOTTOM));
             frameLayout.addView(getManualCropControls());
             frameLayout.addView(getSearchControls());
             frameLayout.addView(getTouchView());
@@ -427,7 +430,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     public PageViewZoomControls getZoomControls() {
         if (zoomControls == null) {
             zoomControls = new PageViewZoomControls(this, getController().getZoomModel());
-            zoomControls.setGravity(Gravity.RIGHT | Gravity.BOTTOM);
+            zoomControls.setOnDismissListener(new Runnable() {
+                @Override
+                public void run() {
+                    if (view != null) {
+                        view.redrawView();
+                    }
+                }
+            });
         }
         return zoomControls;
     }
