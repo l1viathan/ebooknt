@@ -83,4 +83,8 @@
     <string name="pref_template_delete_confirm">"删除此模板？"</string>
     <string name="pref_template_none">"暂无已保存的模板"</string>
 
+    <string name="pref_picture_enhancement_title">"图像增强"</string>
+    <string name="pref_picture_enhancement_summary">"对比度、伽马、曝光等"</string>
+    <string name="pic_enhance_default">"默认"</string>
+    <string name="pic_enhance_reset">"重置"</string>
 </resources>

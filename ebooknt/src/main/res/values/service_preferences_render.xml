@@ -105,9 +105,9 @@
     <string translatable="false" name="pref_threshold_maxvalue">50</string>
 
     <string translatable="false" name="pref_smoothness_id">smoothness</string>
-    <string translatable="false" name="pref_smoothness_defvalue">10</string>
-    <string translatable="false" name="pref_smoothness_minvalue">10</string>
-    <string translatable="false" name="pref_smoothness_maxvalue">80</string>
+    <string translatable="false" name="pref_smoothness_defvalue">100</string>
+    <string translatable="false" name="pref_smoothness_minvalue">100</string>
+    <string translatable="false" name="pref_smoothness_maxvalue">800</string>
 
     <string translatable="false" name="pref_splitpages_id">splitpages</string>
     <string translatable="false" name="pref_splitpages_defvalue">false</string>

@@ -145,6 +145,11 @@
             android:theme="@style/ebookdroid_prefs"
             android:exported="false" />
         <activity
+            android:name="org.ebookdroid.ui.settings.PictureEnhancementActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="false"
+            android:theme="@style/ebookdroid_prefs" />
+        <activity
             android:name="org.ebookdroid.ui.library.BrowserActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
             android:exported="false" />

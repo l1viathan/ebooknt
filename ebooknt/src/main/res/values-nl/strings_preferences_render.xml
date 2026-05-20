@@ -64,4 +64,8 @@
 <!--<string name="pref_autolevels_title">"Auto levels"</string>-->
 <!--<string name="pref_autolevels_summary">"Use auto levels correction"</string>-->
 
+    <string name="pref_picture_enhancement_title">Beeldverbetering</string>
+    <string name="pref_picture_enhancement_summary">Contrast, gamma, belichting en meer</string>
+    <string name="pic_enhance_default">Standaard</string>
+    <string name="pic_enhance_reset">Herstellen</string>
 </resources>

@@ -93,4 +93,8 @@
 
     <string name="pref_rtl_title">Dekstre-al-maldekstre</string>
     <string name="pref_rtl_summary">Ordigo de paĝoj por reĝimoj “horizontala rulumado” kaj “unuobla paĝo”</string>
+    <string name="pref_picture_enhancement_title">Bildplibonigo</string>
+    <string name="pref_picture_enhancement_summary">Kontrasto, gamo, ekspono kaj pli</string>
+    <string name="pic_enhance_default">Defaŭlta</string>
+    <string name="pic_enhance_reset">Restarigi</string>
 </resources>

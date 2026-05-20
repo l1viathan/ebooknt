@@ -64,4 +64,8 @@
     <string name="pref_autolevels_title">"רמות אוטומטיות"</string>
     <string name="pref_autolevels_summary">"תיקון המבוסס על ההיסטוגרמה"</string>
 
+    <string name="pref_picture_enhancement_title">שיפור תמונה</string>
+    <string name="pref_picture_enhancement_summary">ניגודיות, גמא, חשיפה ועוד</string>
+    <string name="pic_enhance_default">ברירת מחדל</string>
+    <string name="pic_enhance_reset">איפוס</string>
 </resources>

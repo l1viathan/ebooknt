@@ -93,4 +93,8 @@
 
     <string name="pref_rtl_title">Od prawej do lewej</string>
     <string name="pref_rtl_summary">Kolejnośc stron w trybach Przewijalny poziomo i Pojedyncza strona</string>
+    <string name="pref_picture_enhancement_title">Poprawa obrazu</string>
+    <string name="pref_picture_enhancement_summary">Kontrast, gamma, ekspozycja i więcej</string>
+    <string name="pic_enhance_default">Domyślne</string>
+    <string name="pic_enhance_reset">Resetuj</string>
 </resources>

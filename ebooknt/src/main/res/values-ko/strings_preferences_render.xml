@@ -85,4 +85,8 @@
 <string name="pref_autolevels_title">자동 레벨</string>
 <string name="pref_autolevels_summary">자동 레벨 보정 사용</string>
 
+    <string name="pref_picture_enhancement_title">화상 보정</string>
+    <string name="pref_picture_enhancement_summary">대비, 감마, 노출 등</string>
+    <string name="pic_enhance_default">기본값</string>
+    <string name="pic_enhance_reset">초기화</string>
 </resources>

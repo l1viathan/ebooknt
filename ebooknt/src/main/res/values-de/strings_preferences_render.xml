@@ -69,4 +69,8 @@
     <string name="pref_autolevels_summary">"Verwende automatische Wertekorrektur"</string>
     <string name="pref_rtl_title">Rechts nach Links</string>
     <string name="pref_rtl_summary">Seitenreihenfolge für Waagrechte Schriftrolle und Einzelseitenmodus</string>
+    <string name="pref_picture_enhancement_title">Bildverbesserung</string>
+    <string name="pref_picture_enhancement_summary">Kontrast, Gamma, Belichtung und mehr</string>
+    <string name="pic_enhance_default">Standard</string>
+    <string name="pic_enhance_reset">Zurücksetzen</string>
 </resources>

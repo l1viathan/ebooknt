@@ -36,6 +36,7 @@ import org.ebookdroid.core.models.ZoomModel;
 import org.ebookdroid.droids.mupdf.codec.exceptions.MuPdfPasswordException;
 import org.ebookdroid.ui.library.RecentActivity;
 import org.ebookdroid.ui.library.dialogs.FolderDlg;
+import org.ebookdroid.ui.settings.PictureEnhancementContext;
 import org.ebookdroid.ui.settings.SettingsUI;
 import org.ebookdroid.ui.viewer.dialogs.GoToPageDialog;
 import org.ebookdroid.ui.viewer.dialogs.OutlineDialog;
@@ -552,6 +553,9 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.mainmenu_booksettings)
     public void showBookSettings(final ActionEx action) {
+        final DecodeService ds = getDecodeService();
+        final int pageNo = bookSettings.currentPage != null ? bookSettings.currentPage.viewIndex : 0;
+        PictureEnhancementContext.set(ds, pageNo);
         SettingsUI.showBookSettings(getManagedComponent(), bookSettings.fileName);
     }
 

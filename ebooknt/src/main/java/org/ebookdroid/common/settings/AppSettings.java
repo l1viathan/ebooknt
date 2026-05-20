@@ -159,9 +159,22 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     /* =============================================== */
 
+    public static void migrateSmoothness(final SharedPreferences prefs, final String key) {
+        try {
+            final String str = prefs.getString(key, "");
+            if (str != null && !str.isEmpty()) {
+                final int val = Integer.parseInt(str);
+                if (val > 0 && val < 100) {
+                    prefs.edit().putString(key, Integer.toString(val * 10)).commit();
+                }
+            }
+        } catch (final Exception e) { /* ignore */ }
+    }
+
     private AppSettings() {
         BackupManager.addAgent(this);
         final SharedPreferences prefs = SettingsManager.prefs;
+        migrateSmoothness(prefs, SMOOTHNESS.key);
         /* =============== UI settings =============== */
         lang = LANG.getPreferenceValue(prefs);
         loadRecent = LOAD_RECENT.getPreferenceValue(prefs);
@@ -344,6 +357,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.exposure = BOOK_EXPOSURE.getPreferenceValue(prefs, current.exposure);
         bs.autoLevels = BOOK_AUTO_LEVELS.getPreferenceValue(prefs, current.autoLevels);
         bs.threshold = BOOK_THRESHOLD.getPreferenceValue(prefs, current.threshold);
+        migrateSmoothness(prefs, BOOK_SMOOTHNESS.key);
         bs.smoothness = BOOK_SMOOTHNESS.getPreferenceValue(prefs, current.smoothness);
         bs.splitPages = BOOK_SPLIT_PAGES.getPreferenceValue(prefs, current.splitPages);
         bs.splitRTL = BOOK_SPLIT_RTL.getPreferenceValue(prefs, current.splitRTL);

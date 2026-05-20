@@ -93,4 +93,8 @@
 
     <string name="pref_rtl_title">Derecha-a-izquierda</string>
     <string name="pref_rtl_summary">Orden de página para modos de desplazamiento horizontal y de página única</string>
+    <string name="pref_picture_enhancement_title">Mejora de imagen</string>
+    <string name="pref_picture_enhancement_summary">Contraste, gamma, exposición y más</string>
+    <string name="pic_enhance_default">Predeterminado</string>
+    <string name="pic_enhance_reset">Restablecer</string>
 </resources>

@@ -103,55 +103,11 @@
             android:summary="@string/pref_tint_color_summary"
             android:title="@string/pref_tint_color_title" />
 
-        <org.emdev.ui.preference.SeekBarPreference
-            android:defaultValue="@string/pref_contrast_defvalue"
-            android:key="@string/pref_book_contrast_id"
-            ebookdroid:minValue="@string/pref_contrast_minvalue"
-            ebookdroid:maxValue="@string/pref_contrast_maxvalue"
-            android:summary="@string/pref_contrast_summary"
-            android:title="@string/pref_contrast_title" />
-
-        <org.emdev.ui.preference.SeekBarPreference
-            android:defaultValue="@string/pref_gamma_defvalue"
-            android:key="@string/pref_book_gamma_id"
-            ebookdroid:minValue="@string/pref_gamma_minvalue"
-            ebookdroid:maxValue="@string/pref_gamma_maxvalue"
-            ebookdroid:displayDivisor="100"
-            android:summary="@string/pref_gamma_summary"
-            android:title="@string/pref_gamma_title" />
-
-
-        <org.emdev.ui.preference.SeekBarPreference
-            android:defaultValue="@string/pref_exposure_defvalue"
-            android:key="@string/pref_book_exposure_id"
-            ebookdroid:minValue="@string/pref_exposure_minvalue"
-            ebookdroid:maxValue="@string/pref_exposure_maxvalue"
-            android:summary="@string/pref_exposure_summary"
-            android:title="@string/pref_exposure_title" />
-
-        <CheckBoxPreference
-            android:defaultValue="@string/pref_autolevels_defvalue"
-            android:key="@string/pref_book_autolevels_id"
-            android:summary="@string/pref_autolevels_summary"
-            android:title="@string/pref_autolevels_title" />
-
-        <org.emdev.ui.preference.SeekBarPreference
-            android:defaultValue="@string/pref_threshold_defvalue"
-            android:key="@string/pref_book_threshold_id"
-            ebookdroid:minValue="@string/pref_threshold_minvalue"
-            ebookdroid:maxValue="@string/pref_threshold_maxvalue"
-            ebookdroid:displayDivisor="100"
-            android:summary="@string/pref_threshold_summary"
-            android:title="@string/pref_threshold_title" />
-
-        <org.emdev.ui.preference.SeekBarPreference
-            android:defaultValue="@string/pref_smoothness_defvalue"
-            android:key="@string/pref_book_smoothness_id"
-            ebookdroid:minValue="@string/pref_smoothness_minvalue"
-            ebookdroid:maxValue="@string/pref_smoothness_maxvalue"
-            ebookdroid:displayDivisor="10"
-            android:summary="@string/pref_smoothness_summary"
-            android:title="@string/pref_smoothness_title" />
+        <Preference
+            android:key="pref_picture_enhancement"
+            android:summary="@string/pref_picture_enhancement_summary"
+            android:title="@string/pref_picture_enhancement_title"
+            android:widgetLayout="@layout/pref_widget_arrow" />
 
     </PreferenceCategory>
 

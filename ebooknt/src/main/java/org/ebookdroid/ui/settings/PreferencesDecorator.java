@@ -14,6 +14,7 @@ import org.ebookdroid.core.curl.PageAnimationType;
 import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebooknt.viewer.R;
 
+import android.content.Intent;
 import android.preference.TwoStatePreference;
 
 import android.app.Activity;
@@ -82,6 +83,19 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
         addViewModeAlignListener(BOOK_VIEW_MODE.key, BOOK_CROP_PAGES.key, BOOK_PAGE_ALIGN.key);
 
         enableSinglePageModeSetting(bs.viewMode, BOOK_PAGE_ALIGN.key, BOOK_ANIMATION_TYPE.key);
+
+        final Preference enhancementPref = findPreference("pref_picture_enhancement");
+        if (enhancementPref != null) {
+            enhancementPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final Activity activity = getActivity();
+                    final Intent intent = new Intent(activity, PictureEnhancementActivity.class);
+                    activity.startActivity(intent);
+                    return true;
+                }
+            });
+        }
     }
 
     public void decorateBrowserSettings() {

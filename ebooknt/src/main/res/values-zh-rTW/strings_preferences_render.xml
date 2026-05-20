@@ -75,4 +75,8 @@
     <string name="pref_rtl_title">"從右往左"</string>
     <string name="pref_rtl_summary">"水平滾動和單頁模式的頁面順序"</string>
 
+    <string name="pref_picture_enhancement_title">"圖像增強"</string>
+    <string name="pref_picture_enhancement_summary">"對比度、伽瑪、曝光等"</string>
+    <string name="pic_enhance_default">"預設"</string>
+    <string name="pic_enhance_reset">"重設"</string>
 </resources>

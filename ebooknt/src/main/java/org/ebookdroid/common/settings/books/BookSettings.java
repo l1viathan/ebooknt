@@ -192,7 +192,8 @@ public class BookSettings implements CurrentPageListener {
         this.gamma = object.optInt("gamma", AppPreferences.GAMMA.defValue);
         this.autoLevels = object.optBoolean("autoLevels", false);
         this.threshold = object.optInt("threshold", AppPreferences.THRESHOLD.defValue);
-        this.smoothness = object.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
+        final int rawSmoothness = object.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
+        this.smoothness = rawSmoothness < 100 ? rawSmoothness * 10 : rawSmoothness;
         this.rtl = object.optBoolean("rtl", BookPreferences.BOOK_RTL.getDefaultValue());
 
         final JSONArray bookmarks = object.optJSONArray("bookmarks");

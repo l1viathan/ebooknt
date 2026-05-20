@@ -107,4 +107,9 @@
     <string name="pref_template_saved">Template \"%s\" saved</string>
     <string name="pref_template_delete_confirm">Delete this template?</string>
     <string name="pref_template_none">No templates saved yet</string>
+
+    <string name="pref_picture_enhancement_title">Picture enhancement</string>
+    <string name="pref_picture_enhancement_summary">Contrast, gamma, exposure, and more</string>
+    <string name="pic_enhance_default">Default</string>
+    <string name="pic_enhance_reset">Reset</string>
 </resources>

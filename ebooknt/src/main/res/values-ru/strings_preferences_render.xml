@@ -64,4 +64,8 @@
     <string name="pref_autolevels_title">"Авто–уровни"</string>
     <string name="pref_autolevels_summary">"Коррекция на основе гистограмм"</string>
 
+    <string name="pref_picture_enhancement_title">Улучшение изображения</string>
+    <string name="pref_picture_enhancement_summary">Контраст, гамма, экспозиция и другое</string>
+    <string name="pic_enhance_default">По умолчанию</string>
+    <string name="pic_enhance_reset">Сбросить</string>
 </resources>

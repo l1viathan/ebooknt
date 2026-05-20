@@ -64,4 +64,8 @@
     <string name="pref_autolevels_title">"Livelli automatici"</string>
     <string name="pref_autolevels_summary">"Correzione automatica dei livelli"</string>
 
+    <string name="pref_picture_enhancement_title">Miglioramento immagine</string>
+    <string name="pref_picture_enhancement_summary">Contrasto, gamma, esposizione e altro</string>
+    <string name="pic_enhance_default">Predefinito</string>
+    <string name="pic_enhance_reset">Ripristina</string>
 </resources>

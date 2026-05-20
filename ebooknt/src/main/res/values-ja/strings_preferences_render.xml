@@ -77,4 +77,8 @@
     <string name="pref_autolevels_title">自動レベル</string>
     <string name="pref_autolevels_summary">自動レベル補正を使用します</string>
 
+    <string name="pref_picture_enhancement_title">画像補正</string>
+    <string name="pref_picture_enhancement_summary">コントラスト、ガンマ、露出など</string>
+    <string name="pic_enhance_default">デフォルト</string>
+    <string name="pic_enhance_reset">リセット</string>
 </resources>

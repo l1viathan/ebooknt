@@ -64,4 +64,8 @@
 <!--<string name="pref_autolevels_title">"Auto levels"</string>-->
 <!--<string name="pref_autolevels_summary">"Use auto levels correction"</string>-->
 
+    <string name="pref_picture_enhancement_title">Покращення зображення</string>
+    <string name="pref_picture_enhancement_summary">Контраст, гама, експозиція та інше</string>
+    <string name="pic_enhance_default">За замовчуванням</string>
+    <string name="pic_enhance_reset">Скинути</string>
 </resources>

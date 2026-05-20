@@ -78,7 +78,8 @@ public class BookSettingsTemplate {
         this.gamma = obj.optInt("gamma", AppPreferences.GAMMA.defValue);
         this.autoLevels = obj.optBoolean("autoLevels", false);
         this.threshold = obj.optInt("threshold", AppPreferences.THRESHOLD.defValue);
-        this.smoothness = obj.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
+        final int rawSmoothness = obj.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
+        this.smoothness = rawSmoothness < 100 ? rawSmoothness * 10 : rawSmoothness;
         this.rtl = obj.optBoolean("rtl", false);
     }
 

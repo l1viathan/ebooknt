@@ -457,7 +457,7 @@ JNIEXPORT void JNICALL
 Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeSmoothness(JNIEnv* env, jclass classObject, jobject srcBuffer,
                                                                      jint width, jint height, jint smoothness)
 {
-    if (smoothness <= 10 || width < 1 || height < 1) return;
+    if (smoothness <= 100 || width < 1 || height < 1) return;
 
     uint8_t* src;
     src = (uint8_t*) ((*env)->GetDirectBufferAddress(env, srcBuffer));
@@ -475,9 +475,9 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeSmoothness(JNIEnv* env
         return;
     }
 
-    int strength_x10 = smoothness - 10;
-    int fullPasses = strength_x10 / 10;
-    int blend_x10 = strength_x10 % 10;
+    int strength = smoothness - 100;
+    int fullPasses = strength / 100;
+    int blend = strength % 100;
     int p, i;
 
     for (p = 0; p < fullPasses; p++)
@@ -486,9 +486,9 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeSmoothness(JNIEnv* env
         memcpy(src, tmp, bufSize);
     }
 
-    if (blend_x10 > 0)
+    if (blend > 0)
     {
-        int alpha = blend_x10 * 256 / 10;
+        int alpha = blend * 256 / 100;
         int inv_alpha = 256 - alpha;
 
         min3x3_filter(src, tmp, width, height);
