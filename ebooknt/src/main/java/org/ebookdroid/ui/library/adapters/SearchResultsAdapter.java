@@ -11,7 +11,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
-import java.util.Set;
 
 import org.emdev.ui.adapters.BaseViewHolder;
 import org.emdev.utils.FileUtils;
@@ -67,18 +66,12 @@ public class SearchResultsAdapter extends BaseAdapter {
     }
 
     private static String relativePath(final String filePath) {
-        final Set<String> scanDirs = LibSettings.current().scanDirs;
-        String bestPrefix = null;
-        for (final String dir : scanDirs) {
-            final String prefix = dir.endsWith("/") ? dir : dir + "/";
+        final String libPath = LibSettings.current().libraryPath;
+        if (libPath != null && !libPath.isEmpty()) {
+            final String prefix = libPath.endsWith("/") ? libPath : libPath + "/";
             if (filePath.startsWith(prefix)) {
-                if (bestPrefix == null || prefix.length() > bestPrefix.length()) {
-                    bestPrefix = prefix;
-                }
+                return filePath.substring(prefix.length());
             }
-        }
-        if (bestPrefix != null) {
-            return filePath.substring(bestPrefix.length());
         }
         return filePath;
     }

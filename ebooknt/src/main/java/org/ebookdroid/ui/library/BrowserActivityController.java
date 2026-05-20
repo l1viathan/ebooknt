@@ -30,7 +30,6 @@ import android.widget.ImageView;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.Set;
 
 import org.emdev.BaseDroidApp;
 import org.emdev.common.android.AndroidVersion;
@@ -93,9 +92,9 @@ public class BrowserActivityController extends AbstractActivityController<Browse
                 setCurrentDir(new File(absolutePath));
             }
         } else {
-            final Set<String> dirs = LibSettings.current().scanDirs;
-            if (LengthUtils.isNotEmpty(dirs)) {
-                setCurrentDir(new File(dirs.iterator().next()));
+            final String libPath = LibSettings.current().libraryPath;
+            if (LengthUtils.isNotEmpty(libPath)) {
+                setCurrentDir(new File(libPath));
             }
         }
 
@@ -118,9 +117,9 @@ public class BrowserActivityController extends AbstractActivityController<Browse
     }
 
     private File getHomeDirectory() {
-        final Set<String> dirs = LibSettings.current().scanDirs;
-        if (LengthUtils.isNotEmpty(dirs)) {
-            return new File(dirs.iterator().next());
+        final String libPath = LibSettings.current().libraryPath;
+        if (LengthUtils.isNotEmpty(libPath)) {
+            return new File(libPath);
         } else if (BaseDroidApp.EXT_STORAGE.exists()) {
             return BaseDroidApp.EXT_STORAGE;
         } else {
@@ -210,19 +209,6 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         if (!file.isDirectory()) {
             final Bookmark b = action.getParameter("bookmark");
             showDocument(Uri.fromFile(file), b);
-        }
-    }
-
-    @ActionMethod(ids = R.id.librarymenu_addtolibrary)
-    public void setFolderAsLibrary(final ActionEx action) {
-        final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
-        final BrowserActivity activity = getManagedComponent();
-        if (file != null && file.isDirectory()) {
-            final String path = file.getAbsolutePath();
-            LibSettings.changeScanDirs(path, true);
-            android.widget.Toast.makeText(activity,
-                activity.getString(R.string.menu_add_to_library_done, path),
-                android.widget.Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -4,7 +4,7 @@
     <string name="bookmenu_open">"Apri il libro a..."</string>
     <string name="bookmenu_settings">"Mostra impostazioni libro"</string>
     <string name="bookmenu_openbookshelf">"Visualizza libreria"</string>
-    <string name="bookmenu_openbookfolder">"Visualizza cartelle"</string>
+    <string name="bookmenu_openbookfolder">"Mostra directory del libro"</string>
     <string name="bookmenu_recentgroup">"Gestisci recenti..."</string>
     <string name="bookmenu_removefromrecent">"Escludi dai recenti"</string>
     <string name="bookmenu_cleardata">"Cancella cache dati"</string>

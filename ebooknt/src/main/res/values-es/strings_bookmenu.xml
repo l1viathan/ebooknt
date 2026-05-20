@@ -4,7 +4,7 @@
     <string name="bookmenu_open">Abrir libro en...</string>
     <string name="bookmenu_settings">Mostrar configuraciones de libro</string>
     <string name="bookmenu_openbookshelf">Mostrar estantería</string>
-    <string name="bookmenu_openbookfolder">Mostrar carpeta de libro</string>
+    <string name="bookmenu_openbookfolder">Mostrar directorio del libro</string>
     <string name="bookmenu_recentgroup">Limpiar historial reciente…</string>
     <string name="bookmenu_removefromrecent">Excluir de recientes</string>
     <string name="bookmenu_cleardata">Limpiar datos de caché</string>

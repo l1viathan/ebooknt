@@ -1,7 +1,6 @@
 package org.ebookdroid.ui.library.adapters;
 
 import org.ebooknt.viewer.R;
-import org.ebookdroid.common.notifications.INotificationManager;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.library.IBrowserActivity;
 import org.ebookdroid.ui.library.views.BookshelfView;
@@ -21,9 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -311,12 +308,12 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     public void startScan() {
         final LibSettings libSettings = LibSettings.current();
-        final Set<String> folders = new LinkedHashSet<String>(libSettings.scanDirs);
-        if (folders.isEmpty()) {
+        final String path = libSettings.libraryPath;
+        if (path == null || path.isEmpty()) {
             return;
         }
         clearData();
-        scanner.startScan(libSettings.allowedFileTypes, folders);
+        scanner.startScan(libSettings.allowedFileTypes, path);
     }
 
     public void startScan(final String path) {
@@ -494,9 +491,6 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
             search.notifyDataSetChanged();
         }
 
-        if (LibSettings.current().showNotifications) {
-            INotificationManager.instance.notify(R.string.notification_file_add, f.getAbsolutePath(), null);
-        }
     }
 
     @Override
@@ -524,9 +518,6 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
                 }
                 if (search.nodes.remove(node)) {
                     search.notifyDataSetChanged();
-                }
-                if (LibSettings.current().showNotifications) {
-                    INotificationManager.instance.notify(R.string.notification_file_delete, f.getAbsolutePath(), null);
                 }
                 return;
             }

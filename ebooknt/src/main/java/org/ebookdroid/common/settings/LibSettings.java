@@ -7,13 +7,11 @@ import org.ebookdroid.common.settings.types.CacheLocation;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.emdev.common.backup.BackupManager;
 import org.emdev.common.backup.IBackupAgent;
 import org.emdev.common.filesystem.FileExtensionFilter;
 import org.emdev.common.settings.backup.SettingsBackupHelper;
+import org.emdev.utils.CompareUtils;
 import org.json.JSONObject;
 
 public class LibSettings implements LibPreferences, IBackupAgent {
@@ -26,7 +24,7 @@ public class LibSettings implements LibPreferences, IBackupAgent {
 
     public final boolean useBookcase;
 
-    public final Set<String> scanDirs;
+    public final String libraryPath;
 
     public final String searchBookQuery;
 
@@ -34,18 +32,26 @@ public class LibSettings implements LibPreferences, IBackupAgent {
 
     public final CacheLocation cacheLocation;
 
-    public final boolean showNotifications;
-
     private LibSettings() {
         BackupManager.addAgent(this);
         final SharedPreferences prefs = SettingsManager.prefs;
         /* =============== Browser settings =============== */
         useBookcase = USE_BOOK_CASE.getPreferenceValue(prefs);
-        scanDirs = SCAN_DIRS.getPreferenceValue(prefs);
+        libraryPath = migrateLibraryPath(LIBRARY_PATH.getPreferenceValue(prefs), prefs);
         searchBookQuery = SEARCH_BOOK_QUERY.getPreferenceValue(prefs);
         allowedFileTypes = FILE_TYPE_FILTER.getFilter(prefs);
         cacheLocation  = CACHE_LOCATION.getPreferenceValue(prefs);
-        showNotifications = SHOW_NOTIFICATIONS.getPreferenceValue(prefs);
+    }
+
+    private static String migrateLibraryPath(final String raw, final SharedPreferences prefs) {
+        if (raw == null || !raw.contains(":")) {
+            return raw;
+        }
+        final String first = raw.substring(0, raw.indexOf(':'));
+        final Editor edit = prefs.edit();
+        LIBRARY_PATH.setPreferenceValue(edit, first);
+        edit.commit();
+        return first;
     }
 
     /* =============== */
@@ -63,13 +69,12 @@ public class LibSettings implements LibPreferences, IBackupAgent {
         }
     }
 
-    public static void changeScanDirs(final String dir, final boolean add) {
+    public static void setLibraryPath(final String dir) {
         SettingsManager.lock.writeLock().lock();
         try {
-            final Set<String> dirs = new HashSet<String>(current.scanDirs);
-            if (add && dirs.add(dir) || dirs.remove(dir)) {
+            if (!dir.equals(current.libraryPath)) {
                 final Editor edit = SettingsManager.prefs.edit();
-                LibPreferences.SCAN_DIRS.setPreferenceValue(edit, dirs);
+                LibPreferences.LIBRARY_PATH.setPreferenceValue(edit, dir);
                 edit.commit();
                 final LibSettings oldSettings = current;
                 current = new LibSettings();
@@ -141,7 +146,7 @@ public class LibSettings implements LibPreferences, IBackupAgent {
                 if (olds.useBookcase != news.useBookcase) {
                     mask |= D_UseBookcase;
                 }
-                if (!olds.scanDirs.equals(news.scanDirs)) {
+                if (!CompareUtils.equals(olds.libraryPath, news.libraryPath)) {
                     mask |= D_ScanDirs;
                 }
                 if (!olds.allowedFileTypes.equals(news.allowedFileTypes)) {

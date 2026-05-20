@@ -2,6 +2,7 @@ package org.ebookdroid.ui.settings;
 
 import org.ebookdroid.common.cache.CacheManager;
 import org.ebookdroid.common.settings.AppSettings;
+import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.definitions.AppPreferences;
 import org.ebookdroid.common.settings.definitions.BookPreferences;
@@ -10,6 +11,8 @@ import org.ebookdroid.common.settings.types.CacheLocation;
 import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.core.curl.PageAnimationType;
+import org.ebookdroid.ui.library.dialogs.FolderDlg;
+import org.ebooknt.viewer.R;
 
 import android.preference.TwoStatePreference;
 
@@ -20,6 +23,7 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceGroup;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -93,6 +97,29 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
                 return true;
             }
         });
+
+        final Preference libPathPref = findPreference(LIBRARY_PATH.key);
+        if (libPathPref != null) {
+            final String currentPath = LibSettings.current().libraryPath;
+            if (LengthUtils.isNotEmpty(currentPath)) {
+                libPathPref.setSummary(currentPath);
+            }
+            libPathPref.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+                @Override
+                public boolean onPreferenceClick(final Preference preference) {
+                    final FolderDlg dlg = new FolderDlg(getActivity());
+                    dlg.show(R.string.pref_brautoscandir_title, new FolderDlg.OnFolderSelectedListener() {
+                        @Override
+                        public void onFolderSelected(File folder) {
+                            final String path = folder.getAbsolutePath();
+                            LibSettings.setLibraryPath(path);
+                            preference.setSummary(path);
+                        }
+                    });
+                    return true;
+                }
+            });
+        }
     }
 
     public void decoratePerformanceSettings() {

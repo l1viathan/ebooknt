@@ -11,17 +11,10 @@
             android:summary="@string/pref_usebookcase_summary"
             android:title="@string/pref_usebookcase_title" />
 
-        <EditTextPreference
-            android:defaultValue="@string/pref_brautoscandir_defvalue"
+        <Preference
             android:key="@string/pref_brautoscandir_id"
             android:summary="@string/pref_brautoscandir_summary"
             android:title="@string/pref_brautoscandir_title" />
-
-        <org.emdev.ui.preference.SwitchPreferenceEx
-            android:defaultValue="@string/pref_shownotifications_defvalue"
-            android:key="@string/pref_shownotifications_id"
-            android:summary="@string/pref_shownotifications_summary"
-            android:title="@string/pref_shownotifications_title" />
 
         <ListPreference
             android:defaultValue="@string/pref_cachelocation_defvalue"

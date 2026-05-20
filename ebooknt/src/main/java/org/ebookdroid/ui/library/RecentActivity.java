@@ -248,11 +248,11 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             added.add("/");
             added.add(FileUtils.getCanonicalPath(BaseDroidApp.EXT_STORAGE));
 
-            for (final String path : ls.scanDirs) {
-                    final File file = new File(path);
+            if (ls.libraryPath != null && !ls.libraryPath.isEmpty()) {
+                    final File file = new File(ls.libraryPath);
                     final String mp = FileUtils.getCanonicalPath(file);
                     if (mp != null && added.add(mp)) {
-                        addStorageMenuItem(subMenu, R.drawable.recent_menu_storage_scanned, file.getPath(), path);
+                        addStorageMenuItem(subMenu, R.drawable.recent_menu_storage_scanned, file.getPath(), ls.libraryPath);
                     }
                 }
         }

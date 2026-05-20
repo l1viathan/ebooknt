@@ -168,11 +168,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     private String getLibraryDisplayName(final File dir) {
         final String libLabel = getString(R.string.nav_label_library);
-        final java.util.Set<String> dirs = LibSettings.current().scanDirs;
-        if (dirs == null || dirs.isEmpty()) {
+        final String libRoot = LibSettings.current().libraryPath;
+        if (libRoot == null || libRoot.isEmpty()) {
             return libLabel;
         }
-        final String libRoot = dirs.iterator().next();
         final String path = dir.getAbsolutePath();
         if (path.equals(libRoot)) {
             return libLabel;

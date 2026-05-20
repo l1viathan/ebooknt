@@ -4,7 +4,7 @@
     <string name="bookmenu_open">本を開く...</string>
     <string name="bookmenu_settings">本の設定を表示</string>
     <string name="bookmenu_openbookshelf">本棚を表示</string>
-    <string name="bookmenu_openbookfolder">本フォルダーを表示</string>
+    <string name="bookmenu_openbookfolder">本のディレクトリを表示</string>
     <string name="bookmenu_recentgroup">最近使用したデータをクリア...</string>
     <string name="bookmenu_removefromrecent">最近使用したから除外</string>
     <string name="bookmenu_cleardata">キャッシュ済データをクリア</string>

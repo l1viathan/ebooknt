@@ -7,8 +7,8 @@
 <string name="pref_usebookcase_title">책장 보기 사용</string>
 <string name="pref_usebookcase_summary">목록 대신 책장 형식의 보기 사용</string>
 
-<string name="pref_brautoscandir_title">폴더 자동 스캔</string>
-<string name="pref_brautoscandir_summary">파일 폴더 자동 검색</string>
+<string name="pref_brautoscandir_title">라이브러리 위치</string>
+<string name="pref_brautoscandir_summary">전자책 라이브러리 위치</string>
 
 <string name="pref_autoscanremovable_title">이동식 저장소 자동 스캔</string>
 <string name="pref_autoscanremovable_summary">삽입된 이동식 저장소 자동 스캔</string>
@@ -16,8 +16,8 @@
 <string name="pref_showremovable_title">이동식 저장소 표시</string>
 <string name="pref_showremovable_summary">저장소 메뉴에 이동식 저장소 표시</string>
 
-<string name="pref_showscanning_title">스캔 폴더 표시</string>
-<string name="pref_showscanning_summary">저장소 메뉴에 자동 스캔 폴더 표시</string>
+<string name="pref_showscanning_title">스캔 디렉터리 표시</string>
+<string name="pref_showscanning_summary">저장소 메뉴에 자동 스캔 디렉터리 표시</string>
 
 <string name="pref_shownotifications_title">알림 표시</string>
 <string name="pref_shownotifications_summary">추가되거나 삭제된 파일 관련 알림 표시</string>

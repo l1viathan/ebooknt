@@ -4,7 +4,7 @@
     <string name="bookmenu_open">"Ouvrir le livre..."</string>
     <string name="bookmenu_settings">"Afficher les préférences du livre"</string>
 <!--<string name="bookmenu_openbookshelf">"Show book shelf"</string>-->
-    <string name="bookmenu_openbookfolder">"Afficher le dossier du livre"</string>
+    <string name="bookmenu_openbookfolder">"Afficher le répertoire du livre"</string>
     <string name="bookmenu_recentgroup">"Effacer les données récentes..."</string>
     <string name="bookmenu_removefromrecent">"Exclure des récents"</string>
     <string name="bookmenu_cleardata">"Effacer les données en cache"</string>

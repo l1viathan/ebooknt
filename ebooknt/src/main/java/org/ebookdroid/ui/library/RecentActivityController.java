@@ -395,7 +395,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     }
 
     @ActionMethod(ids = R.id.bookmenu_openbookfolder)
-    public void openBookFolder(final ActionEx action) {
+    public void openBookDirectory(final ActionEx action) {
         final BookNode book = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
         final Intent myIntent = new Intent(getManagedComponent(), BrowserActivity.class);
         myIntent.setData(Uri.fromFile(new File(book.path).getParentFile().getAbsoluteFile()));

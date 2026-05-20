@@ -7,6 +7,7 @@ import org.ebookdroid.ui.library.adapters.BrowserAdapter;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +18,6 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.Set;
 
 import org.emdev.common.filesystem.DirectoryFilter;
 import org.emdev.ui.actions.ActionController;
@@ -31,6 +31,10 @@ import org.emdev.utils.LayoutUtils;
 public class FolderDlg implements AdapterView.OnItemClickListener {
 
     public static final String SELECTED_FOLDER = "selected";
+
+    public interface OnFolderSelectedListener {
+        void onFolderSelected(File folder);
+    }
 
     protected final FileFilter filter;
     private BrowserAdapter adapter;
@@ -48,6 +52,12 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
         this.filter = DirectoryFilter.NOT_HIDDEN;
         this.context = controller.getManagedComponent();
         this.controller = new ActionController<FolderDlg>(controller, this);
+    }
+
+    public FolderDlg(final Context context) {
+        this.filter = DirectoryFilter.NOT_HIDDEN;
+        this.context = context;
+        this.controller = new ActionController<FolderDlg>(this);
     }
 
     public void show(final File file, int titleId, final int okActionId) {
@@ -106,11 +116,44 @@ public class FolderDlg implements AdapterView.OnItemClickListener {
         LayoutUtils.maximizeWindow(dlg.getWindow());
     }
 
+    public void show(int titleId, final OnFolderSelectedListener listener) {
+        final View view = LayoutInflater.from(context).inflate(R.layout.folder_dialog, null);
+
+        adapter = new BrowserAdapter(context, filter);
+
+        header = (TextView) view.findViewById(R.id.browsertext);
+        filesView = (ListView) view.findViewById(R.id.browserview);
+        homeButton = (ImageView) view.findViewById(R.id.browserhome);
+
+        homeButton.setOnClickListener(controller.getOrCreateAction(R.id.browserhome));
+
+        filesView.setAdapter(adapter);
+        filesView.setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_LOW);
+        filesView.setOnItemClickListener(this);
+
+        goHome(null);
+
+        android.app.AlertDialog dlg = new android.app.AlertDialog.Builder(context)
+            .setTitle(titleId)
+            .setView(view)
+            .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    if (selected != null && listener != null) {
+                        listener.onFolderSelected(selected);
+                    }
+                }
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+        LayoutUtils.maximizeWindow(dlg.getWindow());
+    }
+
     @ActionMethod(ids = R.id.browserhome)
     public void goHome(final ActionEx action) {
-        final Set<String> dirs = LibSettings.current().scanDirs;
-        if (dirs != null && !dirs.isEmpty()) {
-            setCurrentDir(new File(dirs.iterator().next()));
+        final String libPath = LibSettings.current().libraryPath;
+        if (libPath != null && !libPath.isEmpty()) {
+            setCurrentDir(new File(libPath));
         } else if (EBookDroidApp.EXT_STORAGE != null && EBookDroidApp.EXT_STORAGE.exists()) {
             setCurrentDir(EBookDroidApp.EXT_STORAGE);
         } else {

@@ -4,7 +4,7 @@
     <string name="bookmenu_open">Open book at...</string>
     <string name="bookmenu_settings">Show book settings</string>
     <string name="bookmenu_openbookshelf">Show book shelf</string>
-    <string name="bookmenu_openbookfolder">Show book folder</string>
+    <string name="bookmenu_openbookfolder">Show book directory</string>
     <string name="bookmenu_recentgroup">Clear recent data...</string>
     <string name="bookmenu_removefromrecent">Exclude from recents</string>
     <string name="bookmenu_cleardata">Clear cached data</string>

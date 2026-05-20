@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 
 import org.emdev.ui.adapters.BaseViewHolder;
 import org.emdev.utils.FileUtils;
@@ -77,9 +76,9 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
         holder.textView.setText(file.getName());
 
         if (file.isDirectory()) {
-            Set<String> scanDirs = LibSettings.current().scanDirs;
+            final String libPath = LibSettings.current().libraryPath;
             String mp = FileUtils.invertMountPrefix(ap);
-            final boolean watched = scanDirs.contains(ap) || (mp != null && scanDirs.contains(mp));
+            final boolean watched = ap.equals(libPath) || (mp != null && mp.equals(libPath));
             holder.imageView.setImageResource(watched ? R.drawable.browser_item_folder_watched : R.drawable.browser_item_folder_open);
             holder.info.setText("");
             holder.fileSize.setText("");

@@ -4,7 +4,7 @@
     <string name="bookmenu_open">Otwórz książkę na...</string>
     <string name="bookmenu_settings">Ustawienia książki</string>
     <string name="bookmenu_openbookshelf">Otwórz biblioteczkę</string>
-    <string name="bookmenu_openbookfolder">Otwórz folder</string>
+    <string name="bookmenu_openbookfolder">Otwórz katalog</string>
     <string name="bookmenu_recentgroup">Wyczyść historię...</string>
     <string name="bookmenu_removefromrecent">Usuń z historii</string>
     <string name="bookmenu_cleardata">Usuń dane tymczasowe</string>
