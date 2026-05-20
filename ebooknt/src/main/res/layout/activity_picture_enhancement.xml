@@ -73,8 +73,10 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="60dp"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/pref_contrast_title"
                 android:textSize="13sp" />
 
@@ -88,7 +90,7 @@
             <Button
                 android:id="@+id/btn_contrast_minus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -107,7 +109,7 @@
             <Button
                 android:id="@+id/btn_contrast_plus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -124,9 +126,10 @@
 
             <TextView
                 android:id="@+id/label_contrast"
-                android:layout_width="44dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="end"
+                android:minWidth="44dp"
                 android:text="0.00"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -140,8 +143,10 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="60dp"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/pref_gamma_title"
                 android:textSize="13sp" />
 
@@ -155,7 +160,7 @@
             <Button
                 android:id="@+id/btn_gamma_minus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -174,7 +179,7 @@
             <Button
                 android:id="@+id/btn_gamma_plus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -191,9 +196,10 @@
 
             <TextView
                 android:id="@+id/label_gamma"
-                android:layout_width="44dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="end"
+                android:minWidth="44dp"
                 android:text="1.00"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -207,8 +213,10 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="60dp"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/pref_exposure_title"
                 android:textSize="13sp" />
 
@@ -222,7 +230,7 @@
             <Button
                 android:id="@+id/btn_exposure_minus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -241,7 +249,7 @@
             <Button
                 android:id="@+id/btn_exposure_plus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -258,9 +266,10 @@
 
             <TextView
                 android:id="@+id/label_exposure"
-                android:layout_width="44dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="end"
+                android:minWidth="44dp"
                 android:text="0.00"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -295,8 +304,10 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="60dp"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/pref_threshold_title"
                 android:textSize="13sp" />
 
@@ -310,7 +321,7 @@
             <Button
                 android:id="@+id/btn_threshold_minus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -329,7 +340,7 @@
             <Button
                 android:id="@+id/btn_threshold_plus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -346,9 +357,10 @@
 
             <TextView
                 android:id="@+id/label_threshold"
-                android:layout_width="44dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="end"
+                android:minWidth="44dp"
                 android:text="0.00"
                 android:textSize="13sp" />
         </LinearLayout>
@@ -362,8 +374,10 @@
             android:gravity="center_vertical">
 
             <TextView
-                android:layout_width="60dp"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/pref_smoothness_title"
                 android:textSize="13sp" />
 
@@ -377,7 +391,7 @@
             <Button
                 android:id="@+id/btn_smoothness_minus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -396,7 +410,7 @@
             <Button
                 android:id="@+id/btn_smoothness_plus"
                 style="?android:attr/borderlessButtonStyle"
-                android:layout_width="24dp"
+                android:layout_width="32dp"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
@@ -413,9 +427,10 @@
 
             <TextView
                 android:id="@+id/label_smoothness"
-                android:layout_width="44dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="end"
+                android:minWidth="44dp"
                 android:text="1.00"
                 android:textSize="13sp" />
         </LinearLayout>

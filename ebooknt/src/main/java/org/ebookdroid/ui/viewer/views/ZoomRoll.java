@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.support.annotation.Nullable;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
@@ -33,6 +34,9 @@ public class ZoomRoll extends View implements ZoomListener {
 
     private final GestureDetector gestureDetector;
     private boolean inTouch;
+    private final float textSize;
+    private final float textOffsetX;
+    private final float textOffsetY;
 
     public ZoomRoll(final Context context, final ZoomModel zoomModel) {
         super(context);
@@ -46,6 +50,10 @@ public class ZoomRoll extends View implements ZoomListener {
 
         scroller = new Scroller(context);
         gestureDetector = new GestureDetector(getContext(), new GestureListener());
+
+        textSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 12, context.getResources().getDisplayMetrics());
+        textOffsetX = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 3, context.getResources().getDisplayMetrics());
+        textOffsetY = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 5, context.getResources().getDisplayMetrics());
 
         setDrawingCacheQuality(View.DRAWING_CACHE_QUALITY_LOW);
     }
@@ -71,10 +79,10 @@ public class ZoomRoll extends View implements ZoomListener {
 
         Paint textPaint = new Paint();
         textPaint.setColor(Color.BLACK);
-        textPaint.setTextSize(24);
+        textPaint.setTextSize(textSize);
         textPaint.setAntiAlias(true);
         String zoomText = String.format("%.2f", zoomModel.getZoom());
-        canvas.drawText(zoomText+"x", 6, getHeight() / 2 + 12, textPaint);
+        canvas.drawText(zoomText + "x", textOffsetX, getHeight() / 2 + textOffsetY, textPaint);
     }
 
     @Override
