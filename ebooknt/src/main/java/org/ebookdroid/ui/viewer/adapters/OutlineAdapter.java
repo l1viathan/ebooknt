@@ -10,7 +10,6 @@ import org.ebookdroid.ui.viewer.IActivityController;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -42,11 +41,14 @@ public class OutlineAdapter extends BaseAdapter {
 
     private final Context context;
     private final OutlineLink[] objects;
+    private final String[] lowerTitles;
     private final int[] pageIndexes;
     private final OutlineItemState[] states;
+    private final boolean[] filtered;
     private final SparseIntArray mapping = new SparseIntArray();
     private final int currentId;
     private final int offset;
+    private String filterQuery = "";
 
     public OutlineAdapter(final Context context, final IActivityController base, final List<OutlineLink> objects,
             final OutlineLink current) {
@@ -62,8 +64,10 @@ public class OutlineAdapter extends BaseAdapter {
 
         this.offset = bs != null ? bs.firstPageOffset : 1;
         this.objects = objects.toArray(new OutlineLink[objects.size()]);
+        this.lowerTitles = new String[this.objects.length];
         this.pageIndexes = new int[this.objects.length];
         this.states = new OutlineItemState[this.objects.length];
+        this.filtered = new boolean[this.objects.length];
 
         final Page[] allPages = model.getPages();
         final SparseArray<Page> docIndexMap = new SparseArray<Page>(allPages.length);
@@ -74,6 +78,7 @@ public class OutlineAdapter extends BaseAdapter {
         boolean treeFound = false;
         for (int i = 0; i < this.objects.length; i++) {
             mapping.put(i, i);
+            lowerTitles[i] = this.objects[i].title.toLowerCase();
             final int next = i + 1;
             if (next < this.objects.length && this.objects[i].level < this.objects[next].level) {
                 states[i] = OutlineItemState.COLLAPSED;
@@ -105,6 +110,34 @@ public class OutlineAdapter extends BaseAdapter {
         }
     }
 
+    public void setFilter(String query) {
+        this.filterQuery = query != null ? query.toLowerCase().trim() : "";
+        applyFilter();
+        rebuild();
+        notifyDataSetChanged();
+    }
+
+    private void applyFilter() {
+        if (filterQuery.isEmpty()) {
+            for (int i = 0; i < filtered.length; i++) {
+                filtered[i] = false;
+            }
+            return;
+        }
+        for (int i = 0; i < filtered.length; i++) {
+            filtered[i] = true;
+        }
+        for (int i = 0; i < objects.length; i++) {
+            if (lowerTitles[i].contains(filterQuery)) {
+                filtered[i] = false;
+                for (int p = getParentId(i); p != -1; p = getParentId(p)) {
+                    if (!filtered[p]) break;
+                    filtered[p] = false;
+                }
+            }
+        }
+    }
+
     public int getParentId(final int id) {
         if (0 <= id && id < objects.length) {
             final int level = objects[id].level;
@@ -121,10 +154,12 @@ public class OutlineAdapter extends BaseAdapter {
         mapping.clear();
         int pos = 0;
         int level = Integer.MAX_VALUE;
+        final boolean isFiltering = !filterQuery.isEmpty();
         for (int cid = 0; cid < objects.length; cid++) {
+            if (filtered[cid]) continue;
             if (objects[cid].level <= level) {
                 mapping.put(pos++, cid);
-                if (states[cid] == OutlineItemState.COLLAPSED) {
+                if (!isFiltering && states[cid] == OutlineItemState.COLLAPSED) {
                     level = objects[cid].level;
                 } else {
                     level = Integer.MAX_VALUE;
@@ -239,7 +274,6 @@ public class OutlineAdapter extends BaseAdapter {
 
         @Override
         public void onClick(final View v) {
-            // System.out.println("btn.OnClickListener()");
             {
                 final int position = ((Integer) v.getTag()).intValue();
                 final int id = (int) getItemId(position);

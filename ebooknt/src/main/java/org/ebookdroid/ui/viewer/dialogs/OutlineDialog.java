@@ -8,9 +8,12 @@ import org.ebookdroid.ui.viewer.adapters.OutlineAdapter;
 
 import android.app.Dialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import java.util.List;
@@ -37,11 +40,13 @@ public class OutlineDialog extends Dialog implements OnItemClickListener {
 
         setTitle(R.string.outline_title);
 
-        final ListView listView = (ListView) base.getActivity().getLayoutInflater().inflate(R.layout.outline, null);
+        final View contentView = base.getActivity().getLayoutInflater().inflate(R.layout.outline, null);
+        setContentView(contentView);
 
-        setContentView(listView);
+        LayoutUtils.maximizeWindow(getWindow());
 
-        LayoutUtils.maximizeWindow(getWindow()); // must be after setContentView()
+        final ListView listView = (ListView) contentView.findViewById(R.id.outline_list);
+        final EditText searchEdit = (EditText) contentView.findViewById(R.id.outline_search);
 
         final BookSettings bs = base.getBookSettings();
         OutlineLink current = null;
@@ -70,6 +75,21 @@ public class OutlineDialog extends Dialog implements OnItemClickListener {
                 listView.setSelection(pos);
             }
         }
+
+        searchEdit.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                adapter.setFilter(s.toString());
+            }
+        });
     }
 
     @Override
