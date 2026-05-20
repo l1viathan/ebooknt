@@ -38,7 +38,7 @@ public abstract class AbstractScrollController extends AbstractViewController {
     @Override
     public final void drawView(final EventGLDraw eventDraw) {
         final ViewState viewState = eventDraw.viewState;
-        if (viewState.model == null) {
+        if (viewState.model == null || !isShown) {
             return;
         }
 

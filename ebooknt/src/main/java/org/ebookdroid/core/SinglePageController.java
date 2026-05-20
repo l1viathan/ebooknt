@@ -195,6 +195,9 @@ public class SinglePageController extends AbstractViewController {
      */
     @Override
     public void drawView(final EventGLDraw eventDraw) {
+        if (!isShown) {
+            return;
+        }
         curler.draw(eventDraw);
         getView().continueScroll();
     }

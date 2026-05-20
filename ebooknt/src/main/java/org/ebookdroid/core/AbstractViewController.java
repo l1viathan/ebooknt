@@ -66,9 +66,9 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     public final DocumentViewMode mode;
 
-    protected boolean isInitialized = false;
+    protected volatile boolean isInitialized = false;
 
-    protected boolean isShown = false;
+    protected volatile boolean isShown = false;
 
     protected final AtomicBoolean inZoom = new AtomicBoolean();
 
