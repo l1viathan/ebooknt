@@ -48,4 +48,6 @@
     <string name="menu_folder_properties_size">Rozmiar: %s</string>
     <string name="menu_folder_properties_dirs">Podkatalogi: %d</string>
     <string name="menu_folder_properties_books">Książki: %d</string>
+    <string name="nav_label_recent">Ostatnie</string>
+    <string name="nav_label_library">Biblioteka</string>
 </resources>

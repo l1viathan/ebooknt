@@ -40,4 +40,6 @@
     <string name="menu_folder_properties_size">Размер: %s</string>
     <string name="menu_folder_properties_dirs">Подкаталоги: %d</string>
     <string name="menu_folder_properties_books">Книги: %d</string>
+    <string name="nav_label_recent">Недавние</string>
+    <string name="nav_label_library">Библиотека</string>
 </resources>

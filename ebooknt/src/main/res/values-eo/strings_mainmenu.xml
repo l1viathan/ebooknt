@@ -48,4 +48,6 @@
     <string name="menu_folder_properties_size">Grando: %s</string>
     <string name="menu_folder_properties_dirs">Subdosierujoj: %d</string>
     <string name="menu_folder_properties_books">Libroj: %d</string>
+    <string name="nav_label_recent">Lastaj</string>
+    <string name="nav_label_library">Biblioteko</string>
 </resources>

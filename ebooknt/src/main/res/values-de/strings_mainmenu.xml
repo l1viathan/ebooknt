@@ -43,4 +43,6 @@
     <string name="menu_folder_properties_size">Größe: %s</string>
     <string name="menu_folder_properties_dirs">Unterverzeichnisse: %d</string>
     <string name="menu_folder_properties_books">Bücher: %d</string>
+    <string name="nav_label_recent">Zuletzt</string>
+    <string name="nav_label_library">Bibliothek</string>
 </resources>

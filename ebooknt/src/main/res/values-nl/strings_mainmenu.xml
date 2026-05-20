@@ -40,4 +40,6 @@
     <string name="menu_folder_properties_size">Grootte: %s</string>
     <string name="menu_folder_properties_dirs">Submappen: %d</string>
     <string name="menu_folder_properties_books">Boeken: %d</string>
+    <string name="nav_label_recent">Recent</string>
+    <string name="nav_label_library">Bibliotheek</string>
 </resources>

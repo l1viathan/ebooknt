@@ -47,4 +47,6 @@
     <string name="menu_folder_properties_size">サイズ: %s</string>
     <string name="menu_folder_properties_dirs">サブフォルダ: %d</string>
     <string name="menu_folder_properties_books">書籍: %d</string>
+    <string name="nav_label_recent">最近</string>
+    <string name="nav_label_library">ライブラリ</string>
 </resources>

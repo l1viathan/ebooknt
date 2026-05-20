@@ -40,4 +40,6 @@
     <string name="menu_folder_properties_size">גודל: %s</string>
     <string name="menu_folder_properties_dirs">תתי-תיקיות: %d</string>
     <string name="menu_folder_properties_books">ספרים: %d</string>
+    <string name="nav_label_recent">אחרונים</string>
+    <string name="nav_label_library">ספרייה</string>
 </resources>

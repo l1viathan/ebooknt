@@ -8,8 +8,6 @@ import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.ui.library.views.FileBrowserView;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.ContextMenu;
@@ -37,9 +35,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
-import org.ebookdroid.ui.viewer.OpenBooksManager;
-import org.ebookdroid.ui.viewer.ViewerActivity;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.ListView;
 
@@ -63,7 +60,6 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     private ArrayList<String> locationItems;
     private ArrayAdapter<String> locationAdapter;
     private boolean spinnerInitialized = false;
-    private ArrayList<String> openBookPaths = new ArrayList<String>();
 
     public BrowserActivity() {
         super(false, ON_CREATE, ON_RESUME);
@@ -107,22 +103,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
             @Override
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
                 if (!spinnerInitialized) return;
-                final int size = locationItems.size();
-                if (size < 2) return;
-                if (position == size - 2) {
-                    // "Show Recent" item
+                if (position == 0) {
                     getController().goRecent(null);
-                } else if (position < size - 2) {
-                    // open book item
-                    final String path = openBookPaths.get(position);
-                    if (path != null) {
-                        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new java.io.File(path)));
-                        intent.setClass(BrowserActivity.this, ViewerActivity.class);
-                        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                        startActivity(intent);
-                    }
+                    locationSpinner.setSelection(1);
                 }
-                // last item = current dir, no-op
             }
 
             @Override
@@ -176,36 +160,42 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     void setTitle(final File dir) {
         UIManagerAppCompat.invalidateOptionsMenu(this);
-        if (locationItems != null && locationSpinner != null && !locationItems.isEmpty()) {
-            final String path = dir.getAbsolutePath();
-            locationItems.set(locationItems.size() - 1, path);
-            final View selectedView = locationSpinner.getSelectedView();
-            if (selectedView instanceof TextView) {
-                ((TextView) selectedView).setText(path);
-            }
+        if (locationItems != null && locationSpinner != null && locationItems.size() >= 2) {
+            locationItems.set(1, getLibraryDisplayName(dir));
+            locationAdapter.notifyDataSetChanged();
         }
+    }
+
+    private String getLibraryDisplayName(final File dir) {
+        final String libLabel = getString(R.string.nav_label_library);
+        final java.util.Set<String> dirs = LibSettings.current().scanDirs;
+        if (dirs == null || dirs.isEmpty()) {
+            return libLabel;
+        }
+        final String libRoot = dirs.iterator().next();
+        final String path = dir.getAbsolutePath();
+        if (path.equals(libRoot)) {
+            return libLabel;
+        }
+        if (path.startsWith(libRoot + "/")) {
+            return path.substring(libRoot.length() + 1);
+        }
+        return libLabel;
     }
 
     private void rebuildLocationSpinner() {
         if (locationSpinner == null) return;
         spinnerInitialized = false;
 
-        final String currentDir = getController().adapter != null
-            && getController().adapter.getCurrentDirectory() != null
-            ? getController().adapter.getCurrentDirectory().getAbsolutePath() : "";
-
-        openBookPaths.clear();
-        openBookPaths.addAll(OpenBooksManager.get().getOpenBooks());
+        final File currentDir = getController().adapter != null
+            ? getController().adapter.getCurrentDirectory() : null;
 
         locationItems.clear();
-        for (final String path : openBookPaths) {
-            locationItems.add(OpenBooksManager.getDisplayTitle(path));
-        }
-        locationItems.add(getString(R.string.menu_show_recent));
-        locationItems.add(currentDir);
+        locationItems.add(getString(R.string.nav_label_recent));
+        locationItems.add(currentDir != null ? getLibraryDisplayName(currentDir) : getString(R.string.nav_label_library));
 
         locationAdapter.notifyDataSetChanged();
-        locationSpinner.setSelection(locationItems.size() - 1);
+        locationSpinner.setSelection(1);
         locationSpinner.post(new Runnable() {
             @Override
             public void run() {

@@ -40,4 +40,6 @@
     <string name="menu_folder_properties_size">Dimensione: %s</string>
     <string name="menu_folder_properties_dirs">Sottocartelle: %d</string>
     <string name="menu_folder_properties_books">Libri: %d</string>
+    <string name="nav_label_recent">Recenti</string>
+    <string name="nav_label_library">Libreria</string>
 </resources>

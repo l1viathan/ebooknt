@@ -44,4 +44,6 @@
     <string name="menu_folder_properties_size">大小: %s</string>
     <string name="menu_folder_properties_dirs">子目录: %d</string>
     <string name="menu_folder_properties_books">书籍: %d</string>
+    <string name="nav_label_recent">最近</string>
+    <string name="nav_label_library">书库</string>
 </resources>
