@@ -66,7 +66,7 @@
     <string name="pref_threshold_title">"閾值"</string>
     <string name="pref_threshold_summary">"閾值：%s（0.00 至 0.50，0 為停用）"</string>
     <string name="pref_smoothness_title">"平滑度"</string>
-    <string name="pref_smoothness_summary">"平滑度：%s（1.0 至 8.0，1.0 為無變化）"</string>
+    <string name="pref_smoothness_summary">"平滑度：%s（1.00 至 8.00，1.00 為無變化）"</string>
 
     <string name="pref_tint_title">"色調"</string>
     <string name="pref_tint_summary">"使用下面指定的顏色為頁面著色"</string>

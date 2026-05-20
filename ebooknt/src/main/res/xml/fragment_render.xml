@@ -139,7 +139,7 @@
             android:key="@string/pref_smoothness_id"
             ebookdroid:minValue="@string/pref_smoothness_minvalue"
             ebookdroid:maxValue="@string/pref_smoothness_maxvalue"
-            ebookdroid:displayDivisor="10"
+            ebookdroid:displayDivisor="100"
             android:summary="@string/pref_smoothness_summary"
             android:title="@string/pref_smoothness_title" />
 

@@ -44,6 +44,7 @@ public class PictureEnhancementActivity extends Activity {
     private static final int EXPOSURE_MIN = -128;
     private static final int THRESHOLD_MIN = 0;
     private static final int SMOOTHNESS_MIN = 100;
+    private static final int SMOOTHNESS_RANGE = 700;
 
     private ImageView previewImage;
     private SeekBar seekContrast, seekGamma, seekExposure, seekThreshold, seekSmoothness;
@@ -108,7 +109,7 @@ public class PictureEnhancementActivity extends Activity {
         seekGamma.setProgress(gamma - GAMMA_MIN);
         seekExposure.setProgress(exposure - EXPOSURE_MIN);
         seekThreshold.setProgress(threshold - THRESHOLD_MIN);
-        seekSmoothness.setProgress(smoothness - SMOOTHNESS_MIN);
+        seekSmoothness.setProgress(smoothnessToProgress(smoothness));
         switchAutolevels.setChecked(autoLevels);
 
         updateLabels();
@@ -152,7 +153,9 @@ public class PictureEnhancementActivity extends Activity {
         seekSmoothness.setOnSeekBarChangeListener(new SliderListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                smoothness = progress + SMOOTHNESS_MIN;
+                if (fromUser) {
+                    smoothness = progressToSmoothness(progress);
+                }
                 labelSmoothness.setText(String.format(Locale.US, "%.2f", smoothness / 100.0));
                 schedulePreviewUpdate();
             }
@@ -184,6 +187,34 @@ public class PictureEnhancementActivity extends Activity {
             @Override
             public void onClick(View v) {
                 resetToDefaults();
+            }
+        });
+
+        setupStepButton(R.id.btn_contrast_minus, -1, seekContrast, -255, 255);
+        setupStepButton(R.id.btn_contrast_plus, 1, seekContrast, -255, 255);
+        setupStepButton(R.id.btn_gamma_minus, -1, seekGamma, 0, 200);
+        setupStepButton(R.id.btn_gamma_plus, 1, seekGamma, 0, 200);
+        setupStepButton(R.id.btn_exposure_minus, -1, seekExposure, -128, 128);
+        setupStepButton(R.id.btn_exposure_plus, 1, seekExposure, -128, 128);
+        setupStepButton(R.id.btn_threshold_minus, -1, seekThreshold, 0, 50);
+        setupStepButton(R.id.btn_threshold_plus, 1, seekThreshold, 0, 50);
+
+        findViewById(R.id.btn_smoothness_minus).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (smoothness > SMOOTHNESS_MIN) {
+                    smoothness--;
+                    seekSmoothness.setProgress(smoothnessToProgress(smoothness));
+                }
+            }
+        });
+        findViewById(R.id.btn_smoothness_plus).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (smoothness < SMOOTHNESS_MIN + SMOOTHNESS_RANGE) {
+                    smoothness++;
+                    seekSmoothness.setProgress(smoothnessToProgress(smoothness));
+                }
             }
         });
 
@@ -252,11 +283,32 @@ public class PictureEnhancementActivity extends Activity {
         seekGamma.setProgress(gamma - GAMMA_MIN);
         seekExposure.setProgress(exposure - EXPOSURE_MIN);
         seekThreshold.setProgress(threshold - THRESHOLD_MIN);
-        seekSmoothness.setProgress(smoothness - SMOOTHNESS_MIN);
+        seekSmoothness.setProgress(smoothnessToProgress(smoothness));
         switchAutolevels.setChecked(autoLevels);
 
         updateLabels();
         schedulePreviewUpdate();
+    }
+
+    private void setupStepButton(int btnId, final int delta, final SeekBar seekBar, final int minVal, final int maxVal) {
+        findViewById(btnId).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                int cur = seekBar.getProgress() + minVal;
+                int next = Math.max(minVal, Math.min(maxVal, cur + delta));
+                seekBar.setProgress(next - minVal);
+            }
+        });
+    }
+
+    private int smoothnessToProgress(int value) {
+        double normalized = (value - SMOOTHNESS_MIN) / (double) SMOOTHNESS_RANGE;
+        return (int) Math.round(SMOOTHNESS_RANGE * Math.sqrt(normalized));
+    }
+
+    private int progressToSmoothness(int progress) {
+        double normalized = progress / (double) SMOOTHNESS_RANGE;
+        return SMOOTHNESS_MIN + (int) Math.round(SMOOTHNESS_RANGE * normalized * normalized);
     }
 
     private void resetToDefaults() {
