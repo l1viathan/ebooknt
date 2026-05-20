@@ -22,22 +22,37 @@
         android:layout_toRightOf="@+id/recentItemIcon"
         android:gravity="center_vertical" />
 
-    <TextView
-        android:id="@+id/recentItemInfo"
-        style="@style/browser_item_info"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_below="@+id/recentItemName"
         android:layout_toRightOf="@+id/recentItemIcon"
-        android:gravity="top|left" />
+        android:orientation="horizontal">
 
-    <TextView
-        android:id="@+id/recentItemfileSize"
-        style="@style/browser_item_info"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/recentItemName"
-        android:layout_toRightOf="@+id/recentItemIcon"
-        android:gravity="top|right" />
+        <TextView
+            android:id="@+id/recentItemInfo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:singleLine="true"
+            android:textSize="@dimen/browser_item_info_textsize"
+            android:textColor="@color/actionbar_white"
+            android:gravity="top|left" />
+
+        <TextView
+            android:id="@+id/recentItemfileSize"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:singleLine="true"
+            android:textSize="@dimen/browser_item_info_textsize"
+            android:textColor="@color/actionbar_white"
+            android:gravity="top|right"
+            android:paddingLeft="8dp" />
+
+    </LinearLayout>
 
 </RelativeLayout>

@@ -60,6 +60,7 @@ public class SearchResultsAdapter extends BaseAdapter {
         holder.name.setText(file.getName());
         holder.image.setImageResource(R.drawable.recent_item_book);
         holder.info.setText(relativePath(node.path));
+        holder.info.setSelected(true);
         holder.fileSize.setText(FileUtils.getFileSize(file.length()));
 
         return holder.getView();

@@ -60,6 +60,7 @@ public class RecentAdapter extends BaseAdapter {
         base.loadThumbnail(node.path, holder.imageView, R.drawable.recent_item_book);
 
         holder.info.setText(FileUtils.getFileDate(file.lastModified()));
+        holder.info.setSelected(true);
         holder.fileSize.setText(FileUtils.getFileSize(file.length()));
 
         return holder.getView();

@@ -71,6 +71,7 @@ public class LibraryAdapter extends BaseExpandableListAdapter {
         holder.name.setText(book.name);
         holder.image.setImageResource(wasRead ? R.drawable.recent_item_book_watched : R.drawable.recent_item_book);
         holder.info.setText(FileUtils.getFileDate(file.lastModified()));
+        holder.info.setSelected(true);
         holder.fileSize.setText(FileUtils.getFileSize(file.length()));
 
         return holder.getView();
@@ -88,6 +89,7 @@ public class LibraryAdapter extends BaseExpandableListAdapter {
         holder.name.setText(curr.name);
         holder.image.setImageResource(R.drawable.recent_item_folder_open);
         holder.info.setText(EBookDroidApp.context.getString(R.string.folder_books_count, curr.getCount()));
+        holder.info.setSelected(true);
         holder.fileSize.setText("");
 
         return holder.getView();

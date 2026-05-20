@@ -87,6 +87,7 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
             final boolean wasRead = SettingsManager.getBookSettings(ap) != null;
             holder.imageView.setImageResource(wasRead ? R.drawable.recent_item_book_watched : R.drawable.browser_item_book);
             holder.info.setText(FileUtils.getFileDate(file.lastModified()));
+            holder.info.setSelected(true);
             holder.fileSize.setText(FileUtils.getFileSize(file.length()));
         }
 
