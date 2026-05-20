@@ -12,6 +12,8 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -29,11 +31,9 @@ import java.util.List;
  */
 public class OpenBooksDrawerHelper {
 
-    private static final Object QUIT_SENTINEL = new Object();
-
     public static final class Adapter extends BaseAdapter {
         private final Context ctx;
-        private final List<Object> items = new ArrayList<>();
+        private final List<String> items = new ArrayList<>();
 
         public Adapter(Context ctx) {
             this.ctx = ctx;
@@ -42,10 +42,7 @@ public class OpenBooksDrawerHelper {
 
         public void refresh() {
             items.clear();
-            for (final String path : OpenBooksManager.get().getOpenBooks()) {
-                items.add(path);
-            }
-            items.add(QUIT_SENTINEL);
+            items.addAll(OpenBooksManager.get().getOpenBooks());
             notifyDataSetChanged();
         }
 
@@ -55,32 +52,48 @@ public class OpenBooksDrawerHelper {
         @Override public boolean isEnabled(int pos)  { return true; }
 
         public String getBookPath(int pos) {
-            final Object item = items.get(pos);
-            return (item != QUIT_SENTINEL) ? (String) item : null;
+            return (pos >= 0 && pos < items.size()) ? items.get(pos) : null;
         }
 
         @Override
         public View getView(int pos, View convertView, ViewGroup parent) {
+            ImageView icon;
+            TextView tv;
             if (convertView == null) {
-                final TextView tv = new TextView(ctx);
-                tv.setPadding(48, 32, 48, 32);
-                tv.setTextSize(15);
-                tv.setLayoutParams(new AbsListView.LayoutParams(
+                final float density = ctx.getResources().getDisplayMetrics().density;
+                final int dp16 = (int) (16 * density + 0.5f);
+                final int dp12 = (int) (12 * density + 0.5f);
+                final int dp24 = (int) (24 * density + 0.5f);
+
+                final LinearLayout row = new LinearLayout(ctx);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(dp16, dp12, dp16, dp12);
+                row.setLayoutParams(new AbsListView.LayoutParams(
                     AbsListView.LayoutParams.MATCH_PARENT,
                     AbsListView.LayoutParams.WRAP_CONTENT));
-                convertView = tv;
-            }
-            final TextView tv = (TextView) convertView;
-            final Object item = items.get(pos);
-            if (item == QUIT_SENTINEL) {
-                tv.setText(R.string.drawer_action_close);
-                tv.setTypeface(Typeface.DEFAULT);
-                tv.setTextColor(0xFF212121);
+
+                icon = new ImageView(ctx);
+                final LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dp24, dp24);
+                iconLp.rightMargin = dp16;
+                icon.setLayoutParams(iconLp);
+                icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                row.addView(icon);
+
+                tv = new TextView(ctx);
+                tv.setTextSize(15);
+                row.addView(tv);
+
+                convertView = row;
             } else {
-                tv.setText(OpenBooksManager.getDisplayTitle((String) item));
-                tv.setTypeface(Typeface.DEFAULT);
-                tv.setTextColor(0xFF1976D2);
+                icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
+                tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
             }
+            tv.setText(OpenBooksManager.getDisplayTitle(items.get(pos)));
+            tv.setTypeface(Typeface.DEFAULT);
+            tv.setTextColor(0xFFD0D0D0);
+            icon.setImageResource(R.drawable.viewer_menu_bookmark);
+            icon.setAlpha(0.7f);
             return convertView;
         }
     }

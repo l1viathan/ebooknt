@@ -229,7 +229,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 } else if (item == OpenBooksAdapter.LIBRARY_SENTINEL) {
                     getController().goToLibrary(null);
                 }
-                // QUIT_SENTINEL and other cases: close the drawer.
                 if (drawerLayout != null) {
                     drawerLayout.closeDrawers();
                 }
@@ -295,17 +294,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     }
                     break;
                 case MotionEvent.ACTION_UP:
-                    if (drawerLayout.isDrawerOpen(Gravity.START) && drawerSwipeStartX >= 0) {
-                        final float upX = ev.getX();
-                        final float upY = ev.getY();
-                        final float moveDx = Math.abs(upX - drawerSwipeStartX);
-                        final float moveDy = Math.abs(upY - drawerSwipeStartY);
-                        if (moveDx < 10 * density && moveDy < 10 * density
-                                && isOnQuitSentinel(upX, upY)) {
-                            drawerLayout.closeDrawers();
-                            ev.setAction(MotionEvent.ACTION_CANCEL);
-                        }
-                    }
                     edgeSwipeStartX = -1;
                     drawerSwipeStartX = -1;
                     break;
@@ -726,26 +714,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         Toast.makeText(getApplicationContext(), getResources().getString(resId, args), duration).show();
     }
 
-    private boolean isOnQuitSentinel(final float winX, final float winY) {
-        if (openBooksAdapter == null || drawerList == null) return false;
-        final int count = openBooksAdapter.getCount();
-        if (count == 0) return false;
-        // QUIT_SENTINEL is the last adapter item; ListView position = adapter pos + 1 header
-        final int quitListPos = count; // adapter pos (count-1) + 1 header = count
-        final int firstVis = drawerList.getFirstVisiblePosition();
-        final int childIdx = quitListPos - firstVis;
-        if (childIdx < 0 || childIdx >= drawerList.getChildCount()) return false;
-        final View quitView = drawerList.getChildAt(childIdx);
-        if (quitView == null) return false;
-        final int[] loc = new int[2];
-        drawerList.getLocationInWindow(loc);
-        final float top = loc[1] + quitView.getTop();
-        final float bot = loc[1] + quitView.getBottom();
-        final float left = loc[0] + quitView.getLeft();
-        final float right = loc[0] + quitView.getRight();
-        return winX >= left && winX <= right && winY >= top && winY <= bot;
-    }
-
     private void centerDrawerItems(final View headerSpacer, final View footerSpacer) {
         drawerList.post(new Runnable() {
             @Override
@@ -773,7 +741,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     static final class OpenBooksAdapter extends BaseAdapter {
 
         static final Object LIBRARY_SENTINEL = new Object();
-        static final Object QUIT_SENTINEL = new Object();
 
         static final class BookItem {
             final String path;
@@ -785,9 +752,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 this.isCurrent = isCurrent;
             }
         }
-
-        private static final int TYPE_BOOK = 0;
-        private static final int TYPE_ACTION = 1;
 
         private final Context ctx;
         private final List<Object> items = new ArrayList<>();
@@ -803,7 +767,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 items.add(new BookItem(path, path.equals(currentPath)));
             }
             items.add(LIBRARY_SENTINEL);
-            items.add(QUIT_SENTINEL);
             notifyDataSetChanged();
         }
 
@@ -817,28 +780,42 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         public long getItemId(final int pos) { return pos; }
 
         @Override
-        public int getViewTypeCount() { return 2; }
-
-        @Override
-        public int getItemViewType(final int pos) {
-            return (items.get(pos) instanceof BookItem) ? TYPE_BOOK : TYPE_ACTION;
-        }
-
-        @Override
         public boolean isEnabled(final int pos) { return true; }
 
         @Override
         public View getView(final int pos, View convertView, final ViewGroup parent) {
+            ImageView icon;
+            TextView tv;
             if (convertView == null) {
-                final TextView tv = new TextView(ctx);
-                tv.setPadding(48, 32, 48, 32);
-                tv.setTextSize(15);
-                tv.setLayoutParams(new android.widget.AbsListView.LayoutParams(
+                final float density = ctx.getResources().getDisplayMetrics().density;
+                final int dp16 = (int) (16 * density + 0.5f);
+                final int dp12 = (int) (12 * density + 0.5f);
+                final int dp24 = (int) (24 * density + 0.5f);
+
+                final LinearLayout row = new LinearLayout(ctx);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(dp16, dp12, dp16, dp12);
+                row.setLayoutParams(new android.widget.AbsListView.LayoutParams(
                     android.widget.AbsListView.LayoutParams.MATCH_PARENT,
                     android.widget.AbsListView.LayoutParams.WRAP_CONTENT));
-                convertView = tv;
+
+                icon = new ImageView(ctx);
+                final LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dp24, dp24);
+                iconLp.rightMargin = dp16;
+                icon.setLayoutParams(iconLp);
+                icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                row.addView(icon);
+
+                tv = new TextView(ctx);
+                tv.setTextSize(15);
+                row.addView(tv);
+
+                convertView = row;
+            } else {
+                icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
+                tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
             }
-            final TextView tv = (TextView) convertView;
             final Object item = items.get(pos);
             if (item instanceof BookItem) {
                 final BookItem book = (BookItem) item;
@@ -846,15 +823,15 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 tv.setTypeface(book.isCurrent
                     ? android.graphics.Typeface.DEFAULT_BOLD
                     : android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(book.isCurrent ? 0xFF1976D2 : 0xFF212121);
-            } else if (item == LIBRARY_SENTINEL) {
+                tv.setTextColor(book.isCurrent ? 0xFFFFFFFF : 0xFFD0D0D0);
+                icon.setImageResource(R.drawable.viewer_menu_bookmark);
+                icon.setAlpha(book.isCurrent ? 1.0f : 0.6f);
+            } else {
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(0xFF1976D2);
-            } else {
-                tv.setText(R.string.drawer_action_close);
-                tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(0xFF212121);
+                tv.setTextColor(0xFFB0B0B0);
+                icon.setImageResource(R.drawable.recent_actionbar_library);
+                icon.setAlpha(0.7f);
             }
             return convertView;
         }

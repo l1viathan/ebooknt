@@ -1,5 +1,11 @@
 package org.ebookdroid.ui.viewer;
 
+import android.content.SharedPreferences;
+
+import org.emdev.BaseDroidApp;
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,8 +13,11 @@ import java.util.List;
 public final class OpenBooksManager {
 
     private static final OpenBooksManager INSTANCE = new OpenBooksManager();
+    private static final String PREFS_NAME = "open_books";
+    private static final String KEY_PATHS = "paths";
 
     private final List<String> openBooks = new ArrayList<>();
+    private boolean loaded;
 
     private OpenBooksManager() {}
 
@@ -16,45 +25,64 @@ public final class OpenBooksManager {
         return INSTANCE;
     }
 
-    /** Fresh session start: clear all tracked books. */
-    public static void clear() {
-        synchronized (INSTANCE) {
-            INSTANCE.openBooks.clear();
-        }
-    }
-
-    /** Restore books from a previously saved list (Android process restore). */
-    public static void restore(final List<String> saved) {
-        synchronized (INSTANCE) {
-            INSTANCE.openBooks.clear();
-            for (final String path : saved) {
-                if (path != null && !path.isEmpty() && new File(path).exists()) {
-                    INSTANCE.openBooks.add(path);
-                }
-            }
-        }
-    }
-
     public synchronized void onBookOpened(final String path) {
         if (path == null) return;
+        ensureLoaded();
         openBooks.remove(path);
         openBooks.add(0, path);
+        save();
     }
 
     public synchronized void onBookClosed(final String path) {
-        if (path != null) openBooks.remove(path);
+        if (path == null) return;
+        ensureLoaded();
+        openBooks.remove(path);
+        save();
     }
 
     public synchronized List<String> getOpenBooks() {
+        ensureLoaded();
         return new ArrayList<>(openBooks);
     }
 
     public synchronized boolean isOpen(final String path) {
+        ensureLoaded();
         return path != null && openBooks.contains(path);
     }
 
     public synchronized boolean isEmpty() {
+        ensureLoaded();
         return openBooks.isEmpty();
+    }
+
+    private void ensureLoaded() {
+        if (loaded) return;
+        loaded = true;
+        if (BaseDroidApp.context == null) return;
+        final SharedPreferences prefs =
+                BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0);
+        final String json = prefs.getString(KEY_PATHS, null);
+        if (json == null) return;
+        try {
+            final JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                final String p = arr.getString(i);
+                if (p != null && !p.isEmpty() && new File(p).exists()) {
+                    openBooks.add(p);
+                }
+            }
+        } catch (final JSONException e) {
+        }
+    }
+
+    private void save() {
+        if (BaseDroidApp.context == null) return;
+        final JSONArray arr = new JSONArray();
+        for (final String p : openBooks) {
+            arr.put(p);
+        }
+        BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0)
+                .edit().putString(KEY_PATHS, arr.toString()).apply();
     }
 
     public static String getDisplayTitle(final String path) {
