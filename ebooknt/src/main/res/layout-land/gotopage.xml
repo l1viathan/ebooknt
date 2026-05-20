@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/gotopageView"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="horizontal">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#E0303030">
 
     <!-- Left column: bookmarks -->
     <LinearLayout
         android:layout_width="0dip"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical">
 
         <!-- Bookmarks header -->
         <LinearLayout
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dip"
-            android:layout_marginBottom="4dip"
+            android:layout_marginTop="2dip"
             android:orientation="horizontal">
 
             <View
                 android:id="@+id/bookmark_add"
-                android:layout_width="48dip"
-                android:layout_height="48dip"
+                android:layout_width="40dip"
+                android:layout_height="40dip"
                 android:layout_marginLeft="4dip"
                 android:layout_marginRight="2dip"
                 android:background="@drawable/viewer_goto_dlg_bookmark_add"/>
 
             <TextView
-                android:layout_width="fill_parent"
-                android:layout_height="48dip"
+                android:layout_width="0dip"
+                android:layout_height="40dip"
                 android:layout_gravity="center"
                 android:layout_marginLeft="2dip"
                 android:layout_marginRight="2dip"
@@ -38,13 +38,13 @@
                 android:gravity="center"
                 android:singleLine="true"
                 android:text="@string/bookmarks_title"
-                android:textSize="20dip"
+                android:textSize="18dip"
                 android:textStyle="bold"/>
 
             <View
                 android:id="@+id/bookmark_remove_all"
-                android:layout_width="48dip"
-                android:layout_height="48dip"
+                android:layout_width="40dip"
+                android:layout_height="40dip"
                 android:layout_marginLeft="2dip"
                 android:layout_marginRight="4dip"
                 android:background="@drawable/viewer_goto_dlg_bookmark_remove_all"/>
@@ -54,77 +54,23 @@
         <ListView
             android:id="@+id/bookmarks"
             android:layout_width="match_parent"
-            android:layout_height="0dip"
-            android:layout_weight="1"
+            android:layout_height="60dip"
             android:layout_marginLeft="4dip"
-            android:layout_marginRight="4dip"
-            android:layout_marginTop="2dip"
-            android:layout_marginBottom="4dip"/>
-
-        <!-- 起始页 / 结束页 buttons -->
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginLeft="4dip"
-            android:layout_marginRight="4dip"
-            android:layout_marginTop="4dip"
-            android:layout_marginBottom="4dip">
-
-            <LinearLayout
-                android:id="@+id/gotoFirstButton"
-                android:layout_width="0dip"
-                android:layout_height="48dip"
-                android:layout_weight="1"
-                android:layout_marginRight="2dip"
-                android:background="@drawable/viewer_goto_dlg_goto_background"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/bookmark_start"
-                    android:textSize="18dip"
-                    android:textStyle="bold"
-                    android:gravity="center"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/gotoLastButton"
-                android:layout_width="0dip"
-                android:layout_height="48dip"
-                android:layout_weight="1"
-                android:layout_marginLeft="2dip"
-                android:background="@drawable/viewer_goto_dlg_goto_background"
-                android:gravity="center"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/bookmark_end"
-                    android:textSize="18dip"
-                    android:textStyle="bold"
-                    android:gravity="center"/>
-            </LinearLayout>
-        </LinearLayout>
+            android:layout_marginRight="4dip"/>
     </LinearLayout>
 
-    <!-- Right column: seekbar + page input (bottom) -->
+    <!-- Right column: seekbar + page input -->
     <LinearLayout
         android:layout_width="0dip"
-        android:layout_height="fill_parent"
+        android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:orientation="vertical"
-        android:gravity="bottom">
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical">
 
         <!-- Minus / SeekBar / Plus -->
         <RelativeLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dip"
-            android:layout_marginBottom="8dip">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:id="@+id/seekbar_minus"
@@ -146,7 +92,7 @@
 
             <SeekBar
                 android:id="@+id/seekbar"
-                android:layout_width="fill_parent"
+                android:layout_width="match_parent"
                 android:layout_height="48dip"
                 android:layout_toRightOf="@id/seekbar_minus"
                 android:layout_toLeftOf="@id/seekbar_plus"
@@ -159,41 +105,38 @@
 
         <!-- Page number input + Go button -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="52dip"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="4dip"
-            android:layout_marginBottom="8dip"
-            android:baselineAligned="true"
-            android:gravity="top"
+            android:layout_marginBottom="2dip"
+            android:layout_marginLeft="4dip"
+            android:layout_marginRight="4dip"
+            android:gravity="center"
             android:orientation="horizontal">
 
             <EditText
                 android:id="@+id/pageNumberTextEdit"
-                android:layout_width="wrap_content"
+                android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:layout_marginLeft="4dip"
-                android:layout_marginRight="2dip"
+                android:layout_marginRight="4dip"
                 android:layout_weight="1"
                 android:inputType="number"
                 android:minEms="4"
                 android:numeric="integer"
                 android:textSize="24dip"
-                android:textStyle="bold"/>
+                android:textStyle="bold"
+                android:gravity="center"/>
 
             <LinearLayout
                 android:id="@+id/goToButton"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_marginLeft="2dip"
-                android:layout_marginRight="4dip"
-                android:layout_weight="1"
-                android:background="@drawable/viewer_goto_dlg_goto_background">
+                android:background="@drawable/viewer_goto_dlg_goto_background"
+                android:gravity="center">
 
                 <ImageView
-                    android:layout_width="48dip"
-                    android:layout_height="48dip"
+                    android:layout_width="40dip"
+                    android:layout_height="40dip"
                     android:layout_gravity="center_vertical"
                     android:layout_marginLeft="8dip"
                     android:src="@drawable/viewer_goto_dlg_goto"/>

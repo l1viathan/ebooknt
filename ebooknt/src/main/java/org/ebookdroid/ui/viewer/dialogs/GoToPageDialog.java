@@ -12,7 +12,6 @@ import org.ebookdroid.ui.viewer.adapters.BookmarkAdapter;
 
 import android.app.Dialog;
 import android.content.Context;
-import android.content.res.Configuration;
 import android.text.Editable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -31,10 +30,8 @@ import org.emdev.ui.actions.DialogController;
 import org.emdev.ui.actions.IActionController;
 import org.emdev.ui.actions.params.Constant;
 import org.emdev.ui.actions.params.EditableValue;
-import org.emdev.ui.uimanager.IUIManager;
 import org.emdev.ui.widget.IViewContainer;
 import org.emdev.ui.widget.SeekBarIncrementHandler;
-import org.emdev.utils.LayoutUtils;
 
 public class GoToPageDialog extends Dialog {
 
@@ -44,9 +41,11 @@ public class GoToPageDialog extends Dialog {
     Bookmark current;
     DialogController<GoToPageDialog> actions;
     int offset;
+    int originalPage;
 
     public GoToPageDialog(final IActivityController base) {
         super(base.getContext());
+        requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
         this.base = base;
         this.actions = new DialogController<GoToPageDialog>(this);
         this.handler = new SeekBarIncrementHandler();
@@ -54,8 +53,11 @@ public class GoToPageDialog extends Dialog {
         final BookSettings bs = base.getBookSettings();
         this.offset = bs != null ? bs.firstPageOffset : 1;
 
-        setTitle(R.string.dialog_title_goto_page);
         setContentView(R.layout.gotopage);
+
+        final android.view.Window win = getWindow();
+        win.setBackgroundDrawableResource(android.R.color.transparent);
+        win.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
         final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
         final EditText editText = (EditText) findViewById(R.id.pageNumberTextEdit);
@@ -90,19 +92,16 @@ public class GoToPageDialog extends Dialog {
         super.onStart();
 
         final android.view.Window win = getWindow();
-        if (getContext().getResources().getConfiguration().orientation
-                == Configuration.ORIENTATION_LANDSCAPE) {
-            LayoutUtils.maximizeWindow(win);
-        } else {
-            win.setGravity(Gravity.BOTTOM);
-            win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
-                          WindowManager.LayoutParams.WRAP_CONTENT);
-        }
+        win.setGravity(Gravity.CENTER);
+        win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
+                      WindowManager.LayoutParams.WRAP_CONTENT);
 
         final DocumentModel dm = base.getDocumentModel();
         final Page lastPage = dm != null ? dm.getLastPageObject() : null;
         final int current = dm != null ? dm.getCurrentViewPageIndex() : 0;
         final int max = lastPage != null ? lastPage.index.viewIndex : 0;
+
+        originalPage = current;
 
         adapter = new BookmarkAdapter(this.getContext(), actions, lastPage, base.getBookSettings());
 
@@ -111,24 +110,6 @@ public class GoToPageDialog extends Dialog {
 
         final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
         seekbar.setMax(max);
-
-        final View firstBtn = findViewById(R.id.gotoFirstButton);
-        if (firstBtn != null) {
-            firstBtn.setOnClickListener(v -> {
-                base.jumpToPage(0, 0, 0, AppSettings.current().storeGotoHistory);
-                dismiss();
-            });
-        }
-
-        final View lastBtn = findViewById(R.id.gotoLastButton);
-        if (lastBtn != null) {
-            lastBtn.setOnClickListener(v -> {
-                if (lastPage != null) {
-                    base.jumpToPage(lastPage.index.viewIndex, 0, 1, AppSettings.current().storeGotoHistory);
-                }
-                dismiss();
-            });
-        }
 
         updateControls(current, true);
     }
@@ -141,11 +122,33 @@ public class GoToPageDialog extends Dialog {
         UIManagerAppCompat.invalidateOptionsMenu(base.getManagedComponent());
     }
 
-    @ActionMethod(ids = R.id.goToButton)
+    @ActionMethod(ids = { R.id.goToButton, R.id.actions_gotoPage })
     public void goToPageAndDismiss(final ActionEx action) {
-        if (navigateToPage()) {
-            dismiss();
+        if (current != null) {
+            final Page actualPage = current.page.getActualPage(base.getDocumentModel(), adapter.bookSettings);
+            if (actualPage != null) {
+                base.jumpToPage(actualPage.index.viewIndex, current.offsetX, current.offsetY,
+                        AppSettings.current().storeGotoHistory);
+                dismiss();
+            }
+            return;
         }
+        final EditText text = (EditText) findViewById(R.id.pageNumberTextEdit);
+        final int pageNumber = getEnteredPageIndex(text);
+        final int pageCount = base.getDocumentModel().getPageCount();
+        if (pageNumber < 0 || pageNumber >= pageCount) {
+            final String msg = base.getContext().getString(R.string.bookmark_invalid_page, offset, pageCount - 1 + offset);
+            Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
+            return;
+        }
+        base.jumpToPage(pageNumber, 0, 0, AppSettings.current().storeGotoHistory);
+        dismiss();
+    }
+
+    @Override
+    public void onBackPressed() {
+        base.jumpToPage(originalPage, 0, 0, false);
+        super.onBackPressed();
     }
 
     @ActionMethod(ids = R.id.actions_setBookmarkedPage)
@@ -260,28 +263,8 @@ public class GoToPageDialog extends Dialog {
         }
 
         current = null;
-    }
 
-    private boolean navigateToPage() {
-        if (current != null) {
-            final Page actualPage = current.page.getActualPage(base.getDocumentModel(), adapter.bookSettings);
-            if (actualPage != null) {
-                base.jumpToPage(actualPage.index.viewIndex, current.offsetX, current.offsetY,
-                        AppSettings.current().storeGotoHistory);
-                return true;
-            }
-            return false;
-        }
-        final EditText text = (EditText) findViewById(R.id.pageNumberTextEdit);
-        final int pageNumber = getEnteredPageIndex(text);
-        final int pageCount = base.getDocumentModel().getPageCount();
-        if (pageNumber < 0 || pageNumber >= pageCount) {
-            final String msg = base.getContext().getString(R.string.bookmark_invalid_page, offset, pageCount - 1 + offset);
-            Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
-            return false;
-        }
-        base.jumpToPage(pageNumber, 0, 0, AppSettings.current().storeGotoHistory);
-        return true;
+        base.jumpToPage(viewIndex, 0, 0, false);
     }
 
     private int getEnteredPageIndex(final EditText text) {
