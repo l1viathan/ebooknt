@@ -88,6 +88,14 @@ public class ViewStub implements IView {
     }
 
     @Override
+    public void onPause() {
+    }
+
+    @Override
+    public void onResume() {
+    }
+
+    @Override
     public float getScrollScaleRatio() {
         return 1.0f;
     }

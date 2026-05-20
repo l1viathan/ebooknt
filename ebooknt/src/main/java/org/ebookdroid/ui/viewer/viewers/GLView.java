@@ -331,6 +331,18 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
         }
     }
 
+    @Override
+    public void onPause() {
+        scrollThread.setPaused(true);
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        scrollThread.setPaused(false);
+    }
+
     /**
      * {@inheritDoc}
      *

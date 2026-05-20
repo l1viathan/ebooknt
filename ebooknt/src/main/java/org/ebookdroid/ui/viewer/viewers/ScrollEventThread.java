@@ -42,6 +42,7 @@ final class ScrollEventThread extends Thread {
     private final IView view;
 
     private final Flag stop = new Flag();
+    private volatile boolean paused = false;
 
     private final BlockingQueue<OnScrollEvent> queue = new LinkedBlockingQueue<OnScrollEvent>();
 
@@ -53,10 +54,21 @@ final class ScrollEventThread extends Thread {
         this.view = view;
     }
 
+    void setPaused(final boolean p) {
+        paused = p;
+        if (!p) {
+            interrupt();
+        }
+    }
+
     @Override
     public void run() {
         while (!stop.get()) {
             try {
+                if (paused) {
+                    Thread.sleep(5000);
+                    continue;
+                }
                 final OnScrollEvent event = queue.poll(1, TimeUnit.SECONDS);
                 if (event == null) {
                     continue;

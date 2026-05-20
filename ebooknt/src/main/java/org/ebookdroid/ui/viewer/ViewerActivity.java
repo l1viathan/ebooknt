@@ -244,6 +244,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     protected void onResumeImpl() {
         IUIManager.instance.onResume(this);
+        view.onResume();
         if (openBooksAdapter != null) {
             openBooksAdapter.refresh(getController().getCurrentBookPath());
         }
@@ -319,6 +320,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     protected void onPauseImpl(final boolean finishing) {
         IUIManager.instance.onPause(this);
+        view.onPause();
     }
 
     /**

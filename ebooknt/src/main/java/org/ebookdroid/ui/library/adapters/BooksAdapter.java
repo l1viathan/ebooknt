@@ -336,7 +336,6 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
     public synchronized void removeAll(final Collection<String> paths) {
         boolean found = false;
         for (final String path : paths) {
-            scanner.stopObservers(path);
             found |= removeAllImpl(path);
         }
         if (found) {
@@ -345,7 +344,6 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
     }
 
     public synchronized void removeAll(final String path) {
-        scanner.stopObservers(path);
         if (removeAllImpl(path)) {
             notifyDataSetChanged();
         }
