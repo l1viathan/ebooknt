@@ -40,4 +40,11 @@
     
     <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
     <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">ライブラリに設定</string>
+    <string name="menu_add_to_library_done">ライブラリを設定しました: %s</string>
+    <string name="menu_folder_properties">プロパティ</string>
+    <string name="menu_folder_properties_path">パス: %s</string>
+    <string name="menu_folder_properties_size">サイズ: %s</string>
+    <string name="menu_folder_properties_dirs">サブフォルダ: %d</string>
+    <string name="menu_folder_properties_books">書籍: %d</string>
 </resources>

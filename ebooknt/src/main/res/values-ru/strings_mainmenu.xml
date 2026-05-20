@@ -33,4 +33,11 @@
     <string name="menu_force_landscape">"Форсировать альбом"</string>
     <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
     <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">Установить как библиотеку</string>
+    <string name="menu_add_to_library_done">Библиотека установлена: %s</string>
+    <string name="menu_folder_properties">Свойства</string>
+    <string name="menu_folder_properties_path">Путь: %s</string>
+    <string name="menu_folder_properties_size">Размер: %s</string>
+    <string name="menu_folder_properties_dirs">Подкаталоги: %d</string>
+    <string name="menu_folder_properties_books">Книги: %d</string>
 </resources>

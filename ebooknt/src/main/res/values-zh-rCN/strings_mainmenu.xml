@@ -37,4 +37,11 @@
     <string name="menu_share">"分享…"</string>
     <string name="menu_openwith">"用其他应用打开…"</string>
     <string name="menu_reverse_orientation">"反转方向"</string>
+    <string name="menu_add_to_library">设置为默认书库</string>
+    <string name="menu_add_to_library_done">已设置为书库: %s</string>
+    <string name="menu_folder_properties">属性</string>
+    <string name="menu_folder_properties_path">路径: %s</string>
+    <string name="menu_folder_properties_size">大小: %s</string>
+    <string name="menu_folder_properties_dirs">子目录: %d</string>
+    <string name="menu_folder_properties_books">书籍: %d</string>
 </resources>

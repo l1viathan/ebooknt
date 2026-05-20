@@ -36,4 +36,11 @@
     <string name="menu_share">Teilen...</string>
     <string name="menu_openwith">Öffnen mit...</string>
     <string name="menu_reverse_orientation">Bildschirmausrichtung invertieren</string>
+    <string name="menu_add_to_library">Als Bibliothek festlegen</string>
+    <string name="menu_add_to_library_done">Bibliothek gesetzt: %s</string>
+    <string name="menu_folder_properties">Eigenschaften</string>
+    <string name="menu_folder_properties_path">Pfad: %s</string>
+    <string name="menu_folder_properties_size">Größe: %s</string>
+    <string name="menu_folder_properties_dirs">Unterverzeichnisse: %d</string>
+    <string name="menu_folder_properties_books">Bücher: %d</string>
 </resources>

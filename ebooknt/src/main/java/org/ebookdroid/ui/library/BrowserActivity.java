@@ -291,6 +291,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
         menu.findItem(R.id.bookmenu_recentgroup).setVisible(bs != null);
         menu.findItem(R.id.bookmenu_openbookshelf).setVisible(false);
         menu.findItem(R.id.bookmenu_openbookfolder).setVisible(false);
+        menu.findItem(R.id.bookmenu_settings).setVisible(false);
 
         final MenuItem om = menu.findItem(R.id.bookmenu_open);
         final SubMenu osm = om != null ? om.getSubMenu() : null;

@@ -37,5 +37,12 @@
     <string name="menu_share">"分享…"</string>
     <string name="menu_openwith">"用其他應用開啟…"</string>
     <string name="menu_reverse_orientation">"反轉方向"</string>
+    <string name="menu_add_to_library">設定為預設書庫</string>
+    <string name="menu_add_to_library_done">已設定為書庫: %s</string>
+    <string name="menu_folder_properties">屬性</string>
+    <string name="menu_folder_properties_path">路徑: %s</string>
+    <string name="menu_folder_properties_size">大小: %s</string>
+    <string name="menu_folder_properties_dirs">子目錄: %d</string>
+    <string name="menu_folder_properties_books">書籍: %d</string>
 
 </resources>

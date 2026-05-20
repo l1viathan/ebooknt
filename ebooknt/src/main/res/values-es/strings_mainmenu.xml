@@ -41,4 +41,11 @@
     <string name="menu_force_portrait">Forzar retrato</string>
     <string name="menu_force_landscape">Forzar apaisado</string>
     <string name="menu_reverse_orientation">Invertir la orientación</string>
+    <string name="menu_add_to_library">Establecer como biblioteca</string>
+    <string name="menu_add_to_library_done">Biblioteca establecida: %s</string>
+    <string name="menu_folder_properties">Propiedades</string>
+    <string name="menu_folder_properties_path">Ruta: %s</string>
+    <string name="menu_folder_properties_size">Tamaño: %s</string>
+    <string name="menu_folder_properties_dirs">Subdirectorios: %d</string>
+    <string name="menu_folder_properties_books">Libros: %d</string>
 </resources>

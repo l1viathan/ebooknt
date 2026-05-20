@@ -41,4 +41,11 @@
     <string name="menu_force_portrait">Devigi vertikalan</string>
     <string name="menu_force_landscape">Devigi horizontalan</string>
     <string name="menu_reverse_orientation">Inversigi orientiĝon</string>
+    <string name="menu_add_to_library">Agordi kiel biblioteko</string>
+    <string name="menu_add_to_library_done">Biblioteko agordita: %s</string>
+    <string name="menu_folder_properties">Ecoj</string>
+    <string name="menu_folder_properties_path">Vojo: %s</string>
+    <string name="menu_folder_properties_size">Grando: %s</string>
+    <string name="menu_folder_properties_dirs">Subdosierujoj: %d</string>
+    <string name="menu_folder_properties_books">Libroj: %d</string>
 </resources>

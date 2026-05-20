@@ -33,4 +33,11 @@
     <string name="menu_force_landscape">"Forza modalità album"</string>
     <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
     <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">Imposta come libreria</string>
+    <string name="menu_add_to_library_done">Libreria impostata: %s</string>
+    <string name="menu_folder_properties">Proprietà</string>
+    <string name="menu_folder_properties_path">Percorso: %s</string>
+    <string name="menu_folder_properties_size">Dimensione: %s</string>
+    <string name="menu_folder_properties_dirs">Sottocartelle: %d</string>
+    <string name="menu_folder_properties_books">Libri: %d</string>
 </resources>

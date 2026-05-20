@@ -37,4 +37,11 @@
 
 <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
 <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">라이브러리로 설정</string>
+    <string name="menu_add_to_library_done">라이브러리 설정됨: %s</string>
+    <string name="menu_folder_properties">속성</string>
+    <string name="menu_folder_properties_path">경로: %s</string>
+    <string name="menu_folder_properties_size">크기: %s</string>
+    <string name="menu_folder_properties_dirs">하위 폴더: %d</string>
+    <string name="menu_folder_properties_books">도서: %d</string>
 </resources>

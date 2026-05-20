@@ -33,4 +33,11 @@
     <string name="menu_force_landscape">"Landelijk lijst rotatie"</string>
 <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
 <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">Instellen als bibliotheek</string>
+    <string name="menu_add_to_library_done">Bibliotheek ingesteld: %s</string>
+    <string name="menu_folder_properties">Eigenschappen</string>
+    <string name="menu_folder_properties_path">Pad: %s</string>
+    <string name="menu_folder_properties_size">Grootte: %s</string>
+    <string name="menu_folder_properties_dirs">Submappen: %d</string>
+    <string name="menu_folder_properties_books">Boeken: %d</string>
 </resources>

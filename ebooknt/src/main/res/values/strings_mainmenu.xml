@@ -45,8 +45,13 @@
     <string name="menu_force_portrait">Force portrait</string>
     <string name="menu_force_landscape">Force landscape</string>
     <string name="menu_reverse_orientation">Reverse orientation</string>
-    <string name="menu_add_to_library">Add to library</string>
-    <string name="menu_add_to_library_done">Added to library: %s</string>
+    <string name="menu_add_to_library">Set as library</string>
+    <string name="menu_add_to_library_done">Library set to: %s</string>
+    <string name="menu_folder_properties">Properties</string>
+    <string name="menu_folder_properties_path">Path: %s</string>
+    <string name="menu_folder_properties_size">Size: %s</string>
+    <string name="menu_folder_properties_dirs">Subdirectories: %d</string>
+    <string name="menu_folder_properties_books">Books: %d</string>
     <string name="menu_fit_by_height">Fit by height</string>
     <string name="menu_fit_by_width">Fit by width</string>
 </resources>

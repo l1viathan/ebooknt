@@ -33,4 +33,11 @@
     <string name="menu_force_landscape">"Orientation album"</string>
     <string name="menu_show_files">"Show files"</string> <!-- needs_translation -->
     <string name="menu_search">"Search"</string> <!-- needs_translation -->
+    <string name="menu_add_to_library">Définir comme bibliothèque</string>
+    <string name="menu_add_to_library_done">Bibliothèque définie : %s</string>
+    <string name="menu_folder_properties">Propriétés</string>
+    <string name="menu_folder_properties_path">Chemin : %s</string>
+    <string name="menu_folder_properties_size">Taille : %s</string>
+    <string name="menu_folder_properties_dirs">Sous-répertoires : %d</string>
+    <string name="menu_folder_properties_books">Livres : %d</string>
 </resources>

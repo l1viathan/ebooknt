@@ -214,24 +214,65 @@ public class BrowserActivityController extends AbstractActivityController<Browse
     }
 
     @ActionMethod(ids = R.id.librarymenu_addtolibrary)
-    public void addFolderToLibrary(final ActionEx action) {
-        final Object src = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
-        android.util.Log.d("AddToLib", "source=" + src + " isDir=" + (src instanceof java.io.File && ((java.io.File)src).isDirectory()));
-        final File file = src instanceof File ? (File) src : null;
+    public void setFolderAsLibrary(final ActionEx action) {
+        final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
         final BrowserActivity activity = getManagedComponent();
         if (file != null && file.isDirectory()) {
             final String path = file.getAbsolutePath();
-            final java.util.Set<String> before = LibSettings.current().scanDirs;
-            android.util.Log.d("AddToLib", "before=" + before + " adding=" + path);
             LibSettings.changeScanDirs(path, true);
-            final java.util.Set<String> after = LibSettings.current().scanDirs;
-            android.util.Log.d("AddToLib", "after=" + after);
             android.widget.Toast.makeText(activity,
                 activity.getString(R.string.menu_add_to_library_done, path),
                 android.widget.Toast.LENGTH_SHORT).show();
-        } else {
-            android.util.Log.d("AddToLib", "skipped: file=" + file);
-            android.widget.Toast.makeText(activity, "AddToLib: skipped (file=" + src + ")", android.widget.Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @ActionMethod(ids = R.id.librarymenu_properties)
+    public void showFolderProperties(final ActionEx action) {
+        final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
+        if (file == null || !file.isDirectory()) {
+            return;
+        }
+        final BrowserActivity activity = getManagedComponent();
+        final long[] stats = new long[3];
+        countFolderStats(file, stats);
+        final long totalSize = stats[0];
+        final int dirCount = (int) stats[1];
+        final int bookCount = (int) stats[2];
+
+        final StringBuilder sb = new StringBuilder();
+        sb.append(activity.getString(R.string.menu_folder_properties_path, file.getAbsolutePath()));
+        sb.append('\n');
+        sb.append(activity.getString(R.string.menu_folder_properties_size, FileUtils.getFileSize(totalSize)));
+        sb.append('\n');
+        sb.append(activity.getString(R.string.menu_folder_properties_dirs, dirCount));
+        sb.append('\n');
+        sb.append(activity.getString(R.string.menu_folder_properties_books, bookCount));
+
+        new android.support.v7.app.AlertDialog.Builder(activity)
+            .setTitle(R.string.menu_folder_properties)
+            .setMessage(sb.toString())
+            .setPositiveButton(android.R.string.ok, null)
+            .show();
+    }
+
+    private void countFolderStats(final File dir, final long[] stats) {
+        final FileFilter bookFilter = LibSettings.current().allowedFileTypes;
+        final File[] children = dir.listFiles();
+        if (children == null) {
+            return;
+        }
+        for (final File child : children) {
+            if (child.isDirectory()) {
+                if (!child.isHidden()) {
+                    stats[1]++;
+                    countFolderStats(child, stats);
+                }
+            } else {
+                stats[0] += child.length();
+                if (bookFilter != null && bookFilter.accept(child)) {
+                    stats[2]++;
+                }
+            }
         }
     }
 

@@ -41,4 +41,11 @@
     <string name="menu_force_portrait">Wymuś pionową</string>
     <string name="menu_force_landscape">Wymuś poziomą</string>
     <string name="menu_reverse_orientation">Odwrócona orientacja</string>
+    <string name="menu_add_to_library">Ustaw jako bibliotekę</string>
+    <string name="menu_add_to_library_done">Ustawiono bibliotekę: %s</string>
+    <string name="menu_folder_properties">Właściwości</string>
+    <string name="menu_folder_properties_path">Ścieżka: %s</string>
+    <string name="menu_folder_properties_size">Rozmiar: %s</string>
+    <string name="menu_folder_properties_dirs">Podkatalogi: %d</string>
+    <string name="menu_folder_properties_books">Książki: %d</string>
 </resources>
