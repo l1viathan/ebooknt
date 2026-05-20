@@ -38,6 +38,7 @@ public class OutlineDialog extends Dialog implements OnItemClickListener {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        setCanceledOnTouchOutside(true);
         setTitle(R.string.outline_title);
 
         final View contentView = base.getActivity().getLayoutInflater().inflate(R.layout.outline, null);

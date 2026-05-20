@@ -12,6 +12,7 @@ import org.ebookdroid.ui.viewer.adapters.BookmarkAdapter;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.text.Editable;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -46,6 +47,13 @@ public class GoToPageDialog extends Dialog {
     public GoToPageDialog(final IActivityController base) {
         super(base.getContext());
         requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
+        setCanceledOnTouchOutside(true);
+        setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                base.jumpToPage(originalPage, 0, 0, false);
+            }
+        });
         this.base = base;
         this.actions = new DialogController<GoToPageDialog>(this);
         this.handler = new SeekBarIncrementHandler();
@@ -143,12 +151,6 @@ public class GoToPageDialog extends Dialog {
         }
         base.jumpToPage(pageNumber, 0, 0, AppSettings.current().storeGotoHistory);
         dismiss();
-    }
-
-    @Override
-    public void onBackPressed() {
-        base.jumpToPage(originalPage, 0, 0, false);
-        super.onBackPressed();
     }
 
     @ActionMethod(ids = R.id.actions_setBookmarkedPage)
