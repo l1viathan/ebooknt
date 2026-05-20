@@ -1,0 +1,119 @@
+EbookNT — Summary of Modifications
+====================================
+
+EbookNT is a fork of Document Viewer
+(https://github.com/SufficientlySecure/document-viewer), which itself
+derives from the last GPL-licensed version of EBookDroid.
+
+All modifications listed below were made by the EbookNT maintainer(s)
+starting from Document Viewer commit c9bcd308 ("fix Spanish translation
+xml errors").  The original project could no longer build on modern
+toolchains or run on modern Android; EbookNT is effectively a rewrite of
+the build system and substantial portions of the UI and runtime code.
+
+The full, per-file change history is available via `git log`.
+
+
+Build & Toolchain
+-----------------
+- Migrated Gradle wrapper and build scripts to support Java 17/21/25.
+- Updated target/compile SDK for modern Android (API 33+).
+- Absorbed git submodules (MuPDF, DjVuLibre, etc.) into a single
+  monolithic repository to simplify builds.
+- Upgraded MuPDF from 1.11 to 1.14, including all third-party
+  dependencies (freetype, harfbuzz, libjpeg, openjpeg, mujs, etc.).
+
+
+Application Identity
+--------------------
+- Renamed from "Document Viewer" to "EbookNT".
+- Changed application ID (package name) to org.ebooknt.viewer.
+
+
+Network & Permissions
+---------------------
+- Removed OPDS catalog support and the INTERNET permission entirely.
+  The application is 100% offline.
+
+
+User Interface
+--------------
+- Redesigned the Recent/Library/Browser navigation flow with a
+  toolbar spinner for switching between Recent and File Browser views.
+- Added a navigation drawer listing all currently open books.
+- Added support for multiple simultaneously open books, switchable
+  from the drawer.
+- Reworked the search UI to avoid layout overlap between pathname and
+  file size; integrated instant-search into the PDF outline.
+- Redesigned the "Go to page" dialog with a compact layout.
+- Reworked the fullscreen reading experience: double-tap behavior,
+  fast-pagination indicator, and status-bar/navigation-bar handling.
+- Added desktop shortcut creation for individual books.
+- Replaced the "bookcase" web-image placeholders with a static
+  fallback for empty shelves.
+- Extensive Chinese (Simplified and Traditional) translation
+  corrections, plus additions/corrections for all 16 supported locales.
+- Renamed user-visible "folder" terminology to "directory" across all
+  locales (Android is not Windows).
+
+
+Library & File Browser
+----------------------
+- Simplified the library path from a colon-separated multi-path set
+  to a single directory path; "Set as library" overwrites rather than
+  appends.
+- Added a graphical folder-picker dialog for selecting the library
+  path in Settings, replacing the raw text-input field.
+- Removed the real-time FileObserver-based filesystem watcher
+  (persistent inotify watches caused unnecessary battery drain).
+- Removed the associated "show notifications" preference (dead code
+  after FileObserver removal).
+- Removed the "Set as library" context-menu action from the file
+  browser (redundant with the Settings folder picker).
+- Non-existent library paths are no longer silently accepted.
+- Fixed file-browser root listing on modern Android where
+  File("/").listFiles() returns null: enumerate storage volumes via
+  the StorageManager API instead.
+
+
+PDF Outline & Rendering
+-----------------------
+- Rewrote PDF outline (table-of-contents) loading to minimize JNI
+  round-trips, significantly improving performance on large documents.
+- Fixed rendering parameters: contrast, gamma, exposure, threshold,
+  auto-levels, and smoothness now match EBookDroid behavior.
+- Fixed the gray-pages-on-tap bug caused by IMMERSIVE_STICKY flag
+  handling triggering spurious window-resize events.
+- Fixed a multi-threaded decoding crash.
+
+
+Power & Battery
+---------------
+- GLSurfaceView is now properly paused/resumed with the Activity
+  lifecycle, preventing the GL thread from holding the EGL context
+  and running in the background.
+- ScrollEventThread switches to a 5-second sleep interval when
+  paused, instead of polling every second.
+- Removed the persistent FileObserver (inotify) watcher that woke
+  the process on any filesystem event in scanned directories.
+- Screen-on (wake lock) capability is preserved for active reading.
+
+
+Settings & Preferences
+----------------------
+- Book-template support: apply a set of default settings to newly
+  opened books.
+- Removed several obsolete preferences (auto-scan removable media,
+  show scan dirs, show notifications) that no longer had backing code.
+- Fixed a crash when switching view modes in book settings.
+
+
+Bug Fixes
+---------
+- Fixed PendingIntent missing FLAG_IMMUTABLE (crash on Android 12+).
+- Fixed missing Notification Channel (crash on Android 8+).
+- Added null-safety for EXT_STORAGE on devices without external
+  storage.
+- Fixed redundant file-copy behavior.
+- Fixed fast-page-scroll floating info not updating promptly.
+- Various other stability and correctness fixes throughout.
