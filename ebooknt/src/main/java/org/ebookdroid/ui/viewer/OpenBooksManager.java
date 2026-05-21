@@ -28,7 +28,7 @@ public final class OpenBooksManager {
         return INSTANCE;
     }
 
-    private static final int MAX_STALE = 6;
+    private static final int MAX_FILES = 6;
 
     public synchronized void onBookOpened(final String path) {
         if (path == null) return;
@@ -36,16 +36,13 @@ public final class OpenBooksManager {
         activeBooks.add(path);
         openBooks.remove(path);
         openBooks.add(0, path);
-        trimStale();
+        trimToMax();
         save();
     }
 
     public synchronized void onBookClosed(final String path) {
         if (path == null) return;
-        ensureLoaded();
         activeBooks.remove(path);
-        openBooks.remove(path);
-        save();
     }
 
     public synchronized List<String> getOpenBooks() {
@@ -74,15 +71,10 @@ public final class OpenBooksManager {
         return openBooks.isEmpty();
     }
 
-    private void trimStale() {
-        int staleCount = 0;
-        for (int i = openBooks.size() - 1; i >= 0; i--) {
-            if (!activeBooks.contains(openBooks.get(i))) {
-                staleCount++;
-                if (staleCount > MAX_STALE) {
-                    openBooks.remove(i);
-                }
-            }
+    private void trimToMax() {
+        while (openBooks.size() > MAX_FILES) {
+            final String removed = openBooks.remove(openBooks.size() - 1);
+            activeBooks.remove(removed);
         }
     }
 
