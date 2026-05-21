@@ -23,6 +23,43 @@ public final class ShortcutHelper {
 
     private ShortcutHelper() {}
 
+    public static void createDirectoryShortcut(final Activity activity, final String path) {
+        if (path == null || path.isEmpty()) return;
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            Toast.makeText(activity, R.string.bookmenu_shortcut_unsupported,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final ShortcutManager sm = activity.getSystemService(ShortcutManager.class);
+        if (sm == null || !sm.isRequestPinShortcutSupported()) {
+            Toast.makeText(activity, R.string.bookmenu_shortcut_unsupported,
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final File dir = new File(path);
+        final String title = dir.getName();
+
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setClass(activity, BrowserActivity.class);
+        intent.setData(Uri.fromFile(dir));
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+
+        final Icon icon = Icon.createWithResource(activity, R.drawable.browser_actionbar_nav_home);
+
+        final ShortcutInfo info = new ShortcutInfo.Builder(activity,
+                    "dir_" + path.hashCode())
+                .setShortLabel(title)
+                .setLongLabel(title)
+                .setIcon(icon)
+                .setIntent(intent)
+                .build();
+
+        sm.requestPinShortcut(info, null);
+    }
+
     public static void createShortcut(final Activity activity, final String path) {
         if (path == null || path.isEmpty()) return;
 

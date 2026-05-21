@@ -2,6 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
 
     <item
+        android:id="@+id/librarymenu_createshortcut"
+        android:title="@string/bookmenu_createshortcut"/>
+    <item
         android:id="@+id/librarymenu_properties"
         android:title="@string/menu_folder_properties"/>
 

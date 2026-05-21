@@ -8,6 +8,7 @@ import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.ui.library.views.FileBrowserView;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.ContextMenu;
@@ -104,10 +105,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
                 if (!spinnerInitialized) return;
                 if (position == 0) {
-                    finish();
+                    navigateToRecent();
                 } else if (position == 2 && RecentActivity.sHasSearchResults) {
                     RecentActivity.sPendingView = RecentActivity.VIEW_SEARCH;
-                    finish();
+                    navigateToRecent();
                 }
             }
 
@@ -120,6 +121,17 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
         viewflipper = (ViewFlipper) findViewById(R.id.browserflip);
         viewflipper.addView(LayoutUtils.fillInParent(viewflipper, new FileBrowserView(c, c.adapter)));
+    }
+
+    private void navigateToRecent() {
+        if (!isTaskRoot()) {
+            finish();
+        } else {
+            final Intent intent = new Intent(this, RecentActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+            finish();
+        }
     }
 
     @Override

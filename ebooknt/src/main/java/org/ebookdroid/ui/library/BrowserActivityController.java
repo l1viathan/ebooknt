@@ -217,6 +217,14 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         }
     }
 
+    @ActionMethod(ids = R.id.librarymenu_createshortcut)
+    public void createDirectoryShortcut(final ActionEx action) {
+        final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
+        if (file != null && file.isDirectory()) {
+            ShortcutHelper.createDirectoryShortcut(getManagedComponent(), file.getAbsolutePath());
+        }
+    }
+
     @ActionMethod(ids = R.id.librarymenu_properties)
     public void showFolderProperties(final ActionEx action) {
         final File file = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
