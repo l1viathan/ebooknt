@@ -81,6 +81,9 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     private DrawerLayout drawerLayout;
     private OpenBooksDrawerHelper.Adapter openBooksAdapter;
 
+    static boolean sHasSearchResults = false;
+    static int sPendingView = -1;
+
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
     private ArrayAdapter<String> locationAdapter;
@@ -133,10 +136,15 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             @Override
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
                 if (!spinnerInitialized) return;
-                if (position == 1) {
+                if (position == 0) {
+                    changeLibraryView(VIEW_RECENT);
+                    UIManagerAppCompat.invalidateOptionsMenu(RecentActivity.this);
+                } else if (position == 1) {
                     getController().goFileBrowserFromSpinner();
+                } else if (position == 2 && sHasSearchResults) {
+                    changeLibraryView(VIEW_SEARCH);
+                    UIManagerAppCompat.invalidateOptionsMenu(RecentActivity.this);
                 }
-                // position 0 = "Recent" = current, no-op
             }
 
             @Override
@@ -153,6 +161,11 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     @Override
     protected void onResumeImpl() {
         if (openBooksAdapter != null) openBooksAdapter.refresh();
+        if (sPendingView >= 0) {
+            final int view = sPendingView;
+            sPendingView = -1;
+            changeLibraryView(view);
+        }
         rebuildLocationSpinner();
         UIManagerAppCompat.invalidateOptionsMenu(this);
 
@@ -210,7 +223,11 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
                     @Override
                     public boolean onMenuItemActionCollapse(MenuItem item) {
-                        getController().changeLibraryView(RecentActivity.VIEW_RECENT);
+                        if (sHasSearchResults) {
+                            changeLibraryView(VIEW_SEARCH);
+                        } else {
+                            changeLibraryView(VIEW_RECENT);
+                        }
                         return true;
                     }
                 });
@@ -227,20 +244,25 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
      */
     @Override
     protected void updateMenuItems(final Menu menu) {
-        final LibSettings ls = LibSettings.current();
-        if (!ls.useBookcase) {
-            final int viewMode = getViewMode();
-            ActionMenuHelper.setMenuItemVisible(menu, viewMode == VIEW_LIBRARY, R.id.recent_showrecent);
-        } else {
-            ActionMenuHelper.setMenuItemVisible(menu, false, R.id.recent_showrecent);
-        }
+        final int viewMode = getViewMode();
+        final boolean isSearch = viewMode == VIEW_SEARCH;
+        final boolean isRecent = viewMode == VIEW_RECENT;
 
+        ActionMenuHelper.setMenuItemVisible(menu, !isSearch, R.id.recent_showbrowser);
+        ActionMenuHelper.setMenuItemVisible(menu, !isSearch, R.id.recentmenu_searchBook);
+        ActionMenuHelper.setMenuItemVisible(menu, isSearch, R.id.recentmenu_closeSearch);
+        ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.mainmenu_settings);
+        ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.mainmenu_about);
+        ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.recentmenu_cleanrecent);
+
+        final LibSettings ls = LibSettings.current();
         ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_all, "path", "/");
         final String extPath = BaseDroidApp.EXT_STORAGE != null ? BaseDroidApp.EXT_STORAGE.getAbsolutePath() : "/";
         ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_external, "path", extPath);
 
         final MenuItem storageMenu = menu.findItem(R.id.recent_storage_menu);
         if (storageMenu != null) {
+            storageMenu.setVisible(isRecent);
             final SubMenu subMenu = storageMenu.getSubMenu();
             subMenu.removeGroup(R.id.actions_storageGroup);
 
@@ -355,12 +377,38 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
     void changeLibraryView(final int view) {
         final ViewFlipper vf = getViewflipper();
-        if (view == VIEW_LIBRARY) {
-            vf.setDisplayedChild(VIEW_LIBRARY);
-        } else if (view == VIEW_SEARCH) {
+        if (view == VIEW_SEARCH) {
             vf.setDisplayedChild(VIEW_SEARCH);
+            syncSpinnerToView(2);
         } else {
             vf.setDisplayedChild(VIEW_RECENT);
+            syncSpinnerToView(0);
+        }
+        UIManagerAppCompat.invalidateOptionsMenu(this);
+    }
+
+    void showSearchResults() {
+        sHasSearchResults = true;
+        rebuildLocationSpinner();
+        changeLibraryView(VIEW_SEARCH);
+    }
+
+    void closeSearchResults() {
+        sHasSearchResults = false;
+        rebuildLocationSpinner();
+        changeLibraryView(VIEW_RECENT);
+    }
+
+    private void syncSpinnerToView(final int position) {
+        if (locationSpinner != null && position < locationItems.size()) {
+            spinnerInitialized = false;
+            locationSpinner.setSelection(position);
+            locationSpinner.post(new Runnable() {
+                @Override
+                public void run() {
+                    spinnerInitialized = true;
+                }
+            });
         }
     }
 
@@ -431,12 +479,22 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         if (locationSpinner == null) return;
         spinnerInitialized = false;
 
+        final int viewMode = getViewMode();
+
         locationItems.clear();
         locationItems.add(getString(R.string.nav_label_recent));
-        locationItems.add(getString(R.string.menu_show_files));
+        locationItems.add(getString(R.string.nav_label_files));
+        if (sHasSearchResults) {
+            locationItems.add(getString(R.string.nav_label_search_results));
+        }
 
         locationAdapter.notifyDataSetChanged();
-        locationSpinner.setSelection(0);
+
+        int selection = 0;
+        if (viewMode == VIEW_SEARCH && sHasSearchResults) {
+            selection = 2;
+        }
+        locationSpinner.setSelection(selection);
         locationSpinner.post(new Runnable() {
             @Override
             public void run() {

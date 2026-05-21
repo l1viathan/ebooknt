@@ -13,4 +13,6 @@
     <item name="mainmenu_align_by_height" type="id"/>
     <item name="mainmenu_align_by_width" type="id"/>
     <item name="recentmenu_backupsettings" type="id"/>
+    <item name="recent_showrecent" type="id"/>
+    <item name="browserhome" type="id"/>
 </resources>

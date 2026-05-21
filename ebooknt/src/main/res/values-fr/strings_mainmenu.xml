@@ -41,5 +41,9 @@
     <string name="menu_folder_properties_dirs">Sous-répertoires : %d</string>
     <string name="menu_folder_properties_books">Livres : %d</string>
     <string name="nav_label_recent">Récents</string>
+    <string name="nav_label_files">Fichiers</string>
     <string name="nav_label_library">Bibliothèque</string>
+    <string name="nav_label_search_results">Résultats</string>
+    <string name="action_close_browser">Fermer l\'explorateur</string>
+    <string name="action_close_search">Fermer la recherche</string>
 </resources>

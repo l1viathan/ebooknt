@@ -132,6 +132,11 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         setCurrentDir(getHomeDirectory());
     }
 
+    @ActionMethod(ids = R.id.browsermenu_close)
+    public void closeBrowser(final ActionEx action) {
+        getManagedComponent().finish();
+    }
+
     public void goRecent(final ActionEx action) {
         final BrowserActivity activity = getManagedComponent();
         final Intent myIntent = new Intent(activity, RecentActivity.class);

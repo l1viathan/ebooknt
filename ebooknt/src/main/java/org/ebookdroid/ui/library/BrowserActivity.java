@@ -104,8 +104,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
             public void onItemSelected(final AdapterView<?> parent, final View view, final int position, final long id) {
                 if (!spinnerInitialized) return;
                 if (position == 0) {
-                    getController().goRecent(null);
-                    locationSpinner.setSelection(1);
+                    finish();
+                } else if (position == 2 && RecentActivity.sHasSearchResults) {
+                    RecentActivity.sPendingView = RecentActivity.VIEW_SEARCH;
+                    finish();
                 }
             }
 
@@ -167,7 +169,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     }
 
     private String getLibraryDisplayName(final File dir) {
-        final String libLabel = getString(R.string.nav_label_library);
+        final String libLabel = getString(R.string.nav_label_files);
         final String libRoot = LibSettings.current().libraryPath;
         if (libRoot == null || libRoot.isEmpty()) {
             return libLabel;
@@ -191,7 +193,10 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
         locationItems.clear();
         locationItems.add(getString(R.string.nav_label_recent));
-        locationItems.add(currentDir != null ? getLibraryDisplayName(currentDir) : getString(R.string.nav_label_library));
+        locationItems.add(currentDir != null ? getLibraryDisplayName(currentDir) : getString(R.string.nav_label_files));
+        if (RecentActivity.sHasSearchResults) {
+            locationItems.add(getString(R.string.nav_label_search_results));
+        }
 
         locationAdapter.notifyDataSetChanged();
         locationSpinner.setSelection(1);

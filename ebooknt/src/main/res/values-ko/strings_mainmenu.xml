@@ -45,5 +45,9 @@
     <string name="menu_folder_properties_dirs">하위 폴더: %d</string>
     <string name="menu_folder_properties_books">도서: %d</string>
     <string name="nav_label_recent">최근</string>
+    <string name="nav_label_files">파일</string>
     <string name="nav_label_library">라이브러리</string>
+    <string name="nav_label_search_results">검색 결과</string>
+    <string name="action_close_browser">탐색기 닫기</string>
+    <string name="action_close_search">검색 닫기</string>
 </resources>

@@ -41,7 +41,11 @@
     <string name="menu_storages_external">SD Card</string>
     <string name="menu_show_files">Show files</string>
     <string name="nav_label_recent">Recent</string>
+    <string name="nav_label_files">Files</string>
     <string name="nav_label_library">Library</string>
+    <string name="nav_label_search_results">Search results</string>
+    <string name="action_close_browser">Close browser</string>
+    <string name="action_close_search">Close search</string>
 
     <string name="menu_force_portrait">Force portrait</string>
     <string name="menu_force_landscape">Force landscape</string>

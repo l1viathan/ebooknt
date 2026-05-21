@@ -49,5 +49,9 @@
     <string name="menu_folder_properties_dirs">Subdosierujoj: %d</string>
     <string name="menu_folder_properties_books">Libroj: %d</string>
     <string name="nav_label_recent">Lastaj</string>
+    <string name="nav_label_files">Dosieroj</string>
     <string name="nav_label_library">Biblioteko</string>
+    <string name="nav_label_search_results">Serĉrezultoj</string>
+    <string name="action_close_browser">Fermi retumilon</string>
+    <string name="action_close_search">Fermi serĉon</string>
 </resources>

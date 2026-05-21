@@ -3,12 +3,24 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/recent_showbrowser"
+        android:alphabeticShortcut="l"
+        android:icon="@drawable/browser_actionbar_nav_home"
+        app:showAsAction="always"
+        android:title="@string/nav_label_files"/>
+    <item
         android:id="@+id/recentmenu_searchBook"
         android:alphabeticShortcut="s"
         android:icon="@drawable/recent_actionbar_searchbook"
         app:showAsAction="ifRoom|collapseActionView"
         app:actionViewClass="android.support.v7.widget.SearchView"
         android:title="@string/menu_searchbook"/>
+    <item
+        android:id="@+id/recentmenu_closeSearch"
+        android:icon="@drawable/common_actionbar_close"
+        app:showAsAction="always"
+        android:title="@string/action_close_search"
+        android:visible="false"/>
     <item
         android:id="@+id/mainmenu_settings"
         android:alphabeticShortcut="t"
@@ -20,14 +32,9 @@
         android:icon="@drawable/recent_menu_clear"
         android:title="@string/menu_cleanrecent"/>
 
-<item
+    <item
         android:id="@+id/mainmenu_about"
         android:icon="@drawable/common_menu_about"
         android:title="@string/menu_about"/>
-    <item
-        android:id="@+id/mainmenu_close"
-        android:alphabeticShortcut="c"
-        android:icon="@drawable/common_menu_close"
-        android:title="@string/menu_close"/>
 
 </menu>

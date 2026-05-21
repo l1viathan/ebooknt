@@ -48,5 +48,9 @@
     <string name="menu_folder_properties_dirs">サブフォルダ: %d</string>
     <string name="menu_folder_properties_books">書籍: %d</string>
     <string name="nav_label_recent">最近</string>
+    <string name="nav_label_files">ファイル</string>
     <string name="nav_label_library">ライブラリ</string>
+    <string name="nav_label_search_results">検索結果</string>
+    <string name="action_close_browser">ブラウザを閉じる</string>
+    <string name="action_close_search">検索を閉じる</string>
 </resources>

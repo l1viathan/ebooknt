@@ -7,7 +7,7 @@
         android:alphabeticShortcut="l"
         android:icon="@drawable/browser_actionbar_nav_home"
         app:showAsAction="always"
-        android:title="@string/menu_show_files"/>
+        android:title="@string/nav_label_files"/>
     <item
         android:id="@+id/recentmenu_searchBook"
         android:alphabeticShortcut="s"
@@ -15,12 +15,12 @@
         app:showAsAction="ifRoom|collapseActionView"
         app:actionViewClass="android.support.v7.widget.SearchView"
         android:title="@string/menu_searchbook"/>
-<item
-        android:id="@+id/recent_showrecent"
-        android:alphabeticShortcut="l"
-        android:icon="@drawable/recent_actionbar_recent"
+    <item
+        android:id="@+id/recentmenu_closeSearch"
+        android:icon="@drawable/common_actionbar_close"
         app:showAsAction="always"
-        android:title="@string/menu_show_recent"/>
+        android:title="@string/action_close_search"
+        android:visible="false"/>
     <item
         android:id="@+id/mainmenu_settings"
         android:alphabeticShortcut="t"
@@ -39,11 +39,5 @@
         android:icon="@drawable/common_actionbar_about"
         app:showAsAction="never"
         android:title="@string/menu_about"/>
-    <item
-        android:id="@+id/mainmenu_close"
-        android:alphabeticShortcut="c"
-        android:icon="@drawable/common_actionbar_close"
-        app:showAsAction="never"
-        android:title="@string/menu_close"/>
 
 </menu>
