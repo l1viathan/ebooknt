@@ -16,7 +16,7 @@ The full, per-file change history is available via `git log`.
 
 Build & Toolchain
 -----------------
-- Migrated Gradle wrapper and build scripts to support Java 17/21/25.
+- Migrated Gradle wrapper and build scripts to support Java 17/21.
 - Updated target/compile SDK for modern Android (API 33+).
 - Absorbed git submodules (MuPDF, DjVuLibre, etc.) into a single
   monolithic repository to simplify builds.

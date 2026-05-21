@@ -17,13 +17,13 @@ EbookNT was created primarily as a personal project for my own daily use. You ar
 
 ## Development & History
 
-EbookNT is a fork of [Document Viewer](https://github.com/SufficientlySecure/document-viewer), which in turn is based on the last GPL version of [EBookDroid](http://code.google.com/p/ebookdroid/).
+EbookNT is a fork of [Document Viewer](https://github.com/SufficientlySecure/document-viewer), which in turn is based on the last GPL version of [EBookDroid](https://code.google.com/archive/p/ebookdroid/).
 
 I'm not an Android expert - the development was done primarily with the assistance of Claude Code.
 
 Major changes:
 * **Adapted for modern Android:** Updated target SDKs and modernized the architecture.
-* **Removed submodules:** applied necessary patches and merged them into a monlithic repo
+* **Removed submodules:** applied necessary patches and merged them into a monolithic repo
 * **100% Offline:** Removed OPDS support and the `INTERNET` permission entirely.
 * **Redesigned UI:** Tailored specifically for an uninterrupted offline reading experience.
 * **Various bug fixes and stability improvements.**
@@ -35,7 +35,7 @@ Major changes:
 
 * Android SDK with build-tools and platform installed
 * `ANDROID_HOME` environment variable pointing to your SDK root
-* JDK 11 or newer
+* JDK 17 or 21
 * NDK installed (for the `ndk-build` step)
 
 `gradle.properties` is tracked via `git add -f` despite being in `.gitignore`.
@@ -88,10 +88,10 @@ along with EbookNT. If not, see <http://www.gnu.org/licenses/>.
 ## C Libraries
 
 * **MuPDF 1.14** — lightweight PDF, EPUB, CBZ and XPS renderer
-  http://www.mupdf.com/ — AGPLv3+
+  https://mupdf.com/ — AGPLv3+
 
 * **DjVuLibre** — DjVu renderer
-  http://djvu.sourceforge.net/ — GPLv2
+  https://djvu.sourceforge.net/ — GPLv2
 
 ## Images
 

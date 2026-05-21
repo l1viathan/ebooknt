@@ -204,8 +204,6 @@ public class ViewState {
         final PointF pos = new PointF();
         final IView view = ctrl.getView();
         if (view != null) {
-            System.out.println("ViewState.getPositionOnPage(" + x + "," + y + "," + view.getScrollX() + ","
-                    + view.getScrollY() + ")");
             final int left = x + view.getScrollX();
             final int top = y + view.getScrollY();
             final RectF cpBounds = getBounds(page);
