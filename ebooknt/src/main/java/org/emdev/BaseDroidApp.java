@@ -17,10 +17,13 @@ import java.io.FileInputStream;
 import java.util.Locale;
 import java.util.Properties;
 
+import org.ebookdroid.CrashLogger;
 import org.emdev.common.android.AndroidVersion;
 import org.emdev.common.log.LogManager;
 import org.emdev.utils.FileUtils;
 import org.emdev.utils.LengthUtils;
+
+import org.ebooknt.viewer.BuildConfig;
 
 public class BaseDroidApp extends Application {
 
@@ -58,6 +61,10 @@ public class BaseDroidApp extends Application {
         this.init();
 
         LogManager.init(this);
+
+        if (BuildConfig.DEBUG) {
+            CrashLogger.init(this);
+        }
     }
 
     protected void init() {
