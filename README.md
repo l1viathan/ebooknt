@@ -95,6 +95,5 @@ along with EbookNT. If not, see <http://www.gnu.org/licenses/>.
 
 ## Images
 
-* `application_icon.svg`
-  http://rrze-icon-set.berlios.de/
-  Creative Commons Attribution Share-Alike 3.0
+* Application icon (`logo_ebooknt.svg`)
+  Designed by Daiqi Zhang — [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
