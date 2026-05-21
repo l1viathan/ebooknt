@@ -8,7 +8,7 @@
     <string name="menu_nightmode">"日間/夜間"</string>
     <string name="menu_settings">"首選項"</string>
     <string name="menu_booksettings">"本書設定"</string>
-    <string name="menu_cleanrecent">"清空資料"</string>
+    <string name="menu_cleanrecent">"清除資料"</string>
     <string name="menu_add_bookmark">"新增書籤"</string>
     <string name="menu_edit_bookmark">"編輯書籤"</string>
     <string name="menu_thumbnail">"設定縮圖"</string>
@@ -50,5 +50,6 @@
     <string name="nav_label_search_results">搜尋結果</string>
     <string name="action_close_browser">關閉瀏覽</string>
     <string name="action_close_search">關閉搜尋</string>
+    <string name="menu_exit">退出應用</string>
 
 </resources>

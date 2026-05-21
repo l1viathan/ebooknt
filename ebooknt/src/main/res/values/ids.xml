@@ -15,4 +15,5 @@
     <item name="recentmenu_backupsettings" type="id"/>
     <item name="recent_showrecent" type="id"/>
     <item name="browserhome" type="id"/>
+    <item name="mainmenu_exit" type="id"/>
 </resources>

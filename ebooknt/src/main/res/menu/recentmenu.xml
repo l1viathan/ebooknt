@@ -31,6 +31,9 @@
         android:alphabeticShortcut="c"
         android:icon="@drawable/recent_menu_clear"
         android:title="@string/menu_cleanrecent"/>
+    <item
+        android:id="@+id/mainmenu_exit"
+        android:title="@string/menu_exit"/>
 
     <item
         android:id="@+id/mainmenu_about"

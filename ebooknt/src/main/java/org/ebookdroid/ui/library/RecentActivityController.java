@@ -272,6 +272,11 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         SettingsUI.showAppSettings(getManagedComponent(), null);
     }
 
+    @ActionMethod(ids = R.id.mainmenu_exit)
+    public void exitApp(final ActionEx action) {
+        getManagedComponent().finishAffinity();
+    }
+
     @ActionMethod(ids = { R.id.bookmenu_copy, R.id.bookmenu_move })
     public void copyBook(final ActionEx action) {
         final BookNode book = action.getParameter("source");
