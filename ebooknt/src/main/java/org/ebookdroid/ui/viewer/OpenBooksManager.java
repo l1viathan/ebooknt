@@ -8,7 +8,9 @@ import org.json.JSONException;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public final class OpenBooksManager {
 
@@ -17,6 +19,7 @@ public final class OpenBooksManager {
     private static final String KEY_PATHS = "paths";
 
     private final List<String> openBooks = new ArrayList<>();
+    private final Set<String> activeBooks = new HashSet<>();
     private boolean loaded;
 
     private OpenBooksManager() {}
@@ -25,17 +28,22 @@ public final class OpenBooksManager {
         return INSTANCE;
     }
 
+    private static final int MAX_STALE = 6;
+
     public synchronized void onBookOpened(final String path) {
         if (path == null) return;
         ensureLoaded();
+        activeBooks.add(path);
         openBooks.remove(path);
         openBooks.add(0, path);
+        trimStale();
         save();
     }
 
     public synchronized void onBookClosed(final String path) {
         if (path == null) return;
         ensureLoaded();
+        activeBooks.remove(path);
         openBooks.remove(path);
         save();
     }
@@ -50,9 +58,32 @@ public final class OpenBooksManager {
         return path != null && openBooks.contains(path);
     }
 
+    public synchronized boolean isActive(final String path) {
+        return path != null && activeBooks.contains(path);
+    }
+
+    public synchronized void removeBook(final String path) {
+        if (path == null) return;
+        ensureLoaded();
+        openBooks.remove(path);
+        save();
+    }
+
     public synchronized boolean isEmpty() {
         ensureLoaded();
         return openBooks.isEmpty();
+    }
+
+    private void trimStale() {
+        int staleCount = 0;
+        for (int i = openBooks.size() - 1; i >= 0; i--) {
+            if (!activeBooks.contains(openBooks.get(i))) {
+                staleCount++;
+                if (staleCount > MAX_STALE) {
+                    openBooks.remove(i);
+                }
+            }
+        }
     }
 
     private void ensureLoaded() {

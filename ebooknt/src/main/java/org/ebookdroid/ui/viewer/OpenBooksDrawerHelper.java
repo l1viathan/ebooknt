@@ -34,6 +34,7 @@ public class OpenBooksDrawerHelper {
     public static final class Adapter extends BaseAdapter {
         private final Context ctx;
         private final List<String> items = new ArrayList<>();
+        private String currentBookPath;
 
         public Adapter(Context ctx) {
             this.ctx = ctx;
@@ -41,6 +42,11 @@ public class OpenBooksDrawerHelper {
         }
 
         public void refresh() {
+            refresh(null);
+        }
+
+        public void refresh(final String currentBook) {
+            this.currentBookPath = currentBook;
             items.clear();
             items.addAll(OpenBooksManager.get().getOpenBooks());
             notifyDataSetChanged();
@@ -89,11 +95,27 @@ public class OpenBooksDrawerHelper {
                 icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
                 tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
             }
-            tv.setText(OpenBooksManager.getDisplayTitle(items.get(pos)));
-            tv.setTypeface(Typeface.DEFAULT);
-            tv.setTextColor(0xFFD0D0D0);
+            final String path = items.get(pos);
+            final boolean isCurrent = path.equals(currentBookPath);
+            final boolean isActive = isCurrent || OpenBooksManager.get().isActive(path);
+
+            if (isCurrent) {
+                tv.setText("▸ " + OpenBooksManager.getDisplayTitle(path));
+                tv.setTypeface(Typeface.DEFAULT_BOLD);
+                tv.setTextColor(0xFFFFCC80);
+                icon.setAlpha(1.0f);
+            } else if (isActive) {
+                tv.setText(OpenBooksManager.getDisplayTitle(path));
+                tv.setTypeface(Typeface.DEFAULT_BOLD);
+                tv.setTextColor(0xFFFFFFFF);
+                icon.setAlpha(0.9f);
+            } else {
+                tv.setText(OpenBooksManager.getDisplayTitle(path));
+                tv.setTypeface(Typeface.DEFAULT);
+                tv.setTextColor(0xFFD0D0D0);
+                icon.setAlpha(0.5f);
+            }
             icon.setImageResource(R.drawable.viewer_menu_bookmark);
-            icon.setAlpha(0.7f);
             return convertView;
         }
     }

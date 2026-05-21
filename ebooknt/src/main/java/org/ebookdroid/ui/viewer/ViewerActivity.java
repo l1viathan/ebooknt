@@ -832,13 +832,24 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             final Object item = items.get(pos);
             if (item instanceof BookItem) {
                 final BookItem book = (BookItem) item;
-                tv.setText(book.title);
-                tv.setTypeface(book.isCurrent
-                    ? android.graphics.Typeface.DEFAULT_BOLD
-                    : android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(book.isCurrent ? 0xFFFFFFFF : 0xFFD0D0D0);
+                final boolean isActive = book.isCurrent || OpenBooksManager.get().isActive(book.path);
+                if (book.isCurrent) {
+                    tv.setText("▸ " + book.title);
+                    tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    tv.setTextColor(0xFFFFCC80);
+                    icon.setAlpha(1.0f);
+                } else if (isActive) {
+                    tv.setText(book.title);
+                    tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    tv.setTextColor(0xFFFFFFFF);
+                    icon.setAlpha(0.9f);
+                } else {
+                    tv.setText(book.title);
+                    tv.setTypeface(android.graphics.Typeface.DEFAULT);
+                    tv.setTextColor(0xFFD0D0D0);
+                    icon.setAlpha(0.5f);
+                }
                 icon.setImageResource(R.drawable.viewer_menu_bookmark);
-                icon.setAlpha(book.isCurrent ? 1.0f : 0.6f);
             } else {
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);

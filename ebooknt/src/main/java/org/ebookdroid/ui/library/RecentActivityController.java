@@ -220,6 +220,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         final BookNode book = action.getParameter(ActionMenuHelper.MENU_ITEM_SOURCE);
         if (book != null) {
             SettingsManager.removeBookFromRecents(book.path);
+            OpenBooksManager.get().removeBook(book.path);
             recentAdapter.removeBook(book);
             libraryAdapter.notifyDataSetInvalidated();
         }
@@ -358,6 +359,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
         final File f = new File(book.path);
         if (f.delete()) {
             CacheManager.clear(book.path);
+            OpenBooksManager.get().removeBook(book.path);
             final LibSettings libSettings = LibSettings.current();
             recentAdapter.setBooks(SettingsManager.getRecentBooks().values(), libSettings.allowedFileTypes);
         }
