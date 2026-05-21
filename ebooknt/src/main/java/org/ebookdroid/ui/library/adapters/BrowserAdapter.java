@@ -1,10 +1,13 @@
 package org.ebookdroid.ui.library.adapters;
 
 import org.ebooknt.viewer.R;
+import org.ebookdroid.common.cache.CacheManager;
+import org.ebookdroid.common.cache.ThumbnailFile;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.common.settings.SettingsManager;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Environment;
 import android.os.storage.StorageManager;
@@ -68,6 +71,7 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
         if (file == parentEntry) {
             holder.textView.setText("..");
             holder.imageView.setImageResource(R.drawable.browser_item_folder_open);
+            holder.imageView.setTag(null);
             holder.info.setText("");
             holder.fileSize.setText("");
             return holder.getView();
@@ -80,17 +84,41 @@ public class BrowserAdapter extends BaseAdapter implements Comparator<File> {
             String mp = FileUtils.invertMountPrefix(ap);
             final boolean watched = ap.equals(libPath) || (mp != null && mp.equals(libPath));
             holder.imageView.setImageResource(watched ? R.drawable.browser_item_folder_watched : R.drawable.browser_item_folder_open);
+            holder.imageView.setTag(null);
             holder.info.setText("");
             holder.fileSize.setText("");
         } else {
             final boolean wasRead = SettingsManager.getBookSettings(ap) != null;
             holder.imageView.setImageResource(wasRead ? R.drawable.recent_item_book_watched : R.drawable.browser_item_book);
+            loadThumbnail(wasRead, ap, holder.imageView);
             holder.info.setText(FileUtils.getFileDate(file.lastModified()));
             holder.info.setSelected(true);
             holder.fileSize.setText(FileUtils.getFileSize(file.length()));
         }
 
         return holder.getView();
+    }
+
+    private void loadThumbnail(final boolean wasRead, final String path,
+                               final ImageView imageView) {
+        if (!wasRead) {
+            imageView.setTag(null);
+            return;
+        }
+        final ThumbnailFile tf = CacheManager.getThumbnailFile(path);
+        if (!tf.exists()) {
+            imageView.setTag(null);
+            return;
+        }
+        imageView.setTag(tf);
+        tf.loadImageAsync(null, new ThumbnailFile.ImageLoadingListener() {
+            @Override
+            public void onImageLoaded(final Bitmap image) {
+                if (image != null && imageView.getTag() == tf) {
+                    imageView.setImageBitmap(image);
+                }
+            }
+        });
     }
 
     public void setCurrentDirectory(final File currentDirectory) {
