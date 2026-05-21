@@ -5,10 +5,10 @@
     <string name="pref_performance_category_summary">"設定效能引數"</string>
     <string name="pref_pagesinmemory_title">"記憶體頁面"</string>
     <string name="pref_pagesinmemory_summary">"儲存在記憶體中的頁數"</string>
-    <string name="pref_lowlevel_category">"低階別的應用程式首選項（需重新載入檔案）"</string>
-    <string name="pref_lowlevel_category_summary">"低階別的應用程式首選項（需重新載入檔案）"</string>
-    <string name="pref_decoding_threads_title">"解碼執行緒數量"</string>
-    <string name="pref_decoding_threads_summary">"執行解碼執行緒的數量"</string>
+    <string name="pref_lowlevel_category">"底層應用程式首選項（需重新載入檔案）"</string>
+    <string name="pref_lowlevel_category_summary">"底層應用程式首選項（需重新載入檔案）"</string>
+    <string name="pref_decoding_threads_title">"解碼執行緒數量（實驗性）"</string>
+    <string name="pref_decoding_threads_summary">"目前: %s"</string>
     <string name="pref_decodethread_priority_title">"解碼執行緒優先順序"</string>
     <string name="pref_decodethread_priority_summary">"設定解碼執行緒優先順序"</string>
     <string name="pref_drawthread_priority_title">"表面繪圖執行緒優先順序"</string>

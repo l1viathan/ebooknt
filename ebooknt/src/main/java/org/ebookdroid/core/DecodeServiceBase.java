@@ -165,6 +165,7 @@ public class DecodeServiceBase implements DecodeService {
         try {
             holder = getPageHolder(task.id, task.pageNumber);
             vuPage = holder.getPage(task.id);
+
             if (executor.isTaskDead(task)) {
                 if (LCTX.isDebugEnabled()) {
                     LCTX.d(Thread.currentThread().getName() + ": Task " + task.id + ": Abort dead decode task for "
