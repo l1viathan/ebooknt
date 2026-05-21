@@ -7,6 +7,7 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.support.v4.widget.DrawerLayout;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -182,5 +183,72 @@ public class OpenBooksDrawerHelper {
                 list.invalidate();
             }
         });
+    }
+
+    public static class EdgeSwipeHelper {
+        private final DrawerLayout drawerLayout;
+        private Runnable onBeforeOpen;
+        private float edgeSwipeStartX = -1;
+        private float edgeSwipeStartY = -1;
+        private float closeSwipeStartX = -1;
+        private float closeSwipeStartY = -1;
+
+        public EdgeSwipeHelper(DrawerLayout drawerLayout) {
+            this.drawerLayout = drawerLayout;
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        }
+
+        public void setOnBeforeOpen(Runnable r) { onBeforeOpen = r; }
+
+        public void handleTouch(MotionEvent ev, Activity activity) {
+            final float density = activity.getResources().getDisplayMetrics().density;
+            final float edgeSize = 40 * density;
+            final float minSwipe = 60 * density;
+            final int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
+            final float excludeZone = screenHeight * 0.35f;
+            switch (ev.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                        closeSwipeStartX = ev.getX();
+                        closeSwipeStartY = ev.getY();
+                        edgeSwipeStartX = -1;
+                    } else if (ev.getX() < edgeSize
+                            && ev.getY() > excludeZone
+                            && ev.getY() < screenHeight - excludeZone) {
+                        edgeSwipeStartX = ev.getX();
+                        edgeSwipeStartY = ev.getY();
+                        closeSwipeStartX = -1;
+                    } else {
+                        edgeSwipeStartX = -1;
+                        closeSwipeStartX = -1;
+                    }
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    if (edgeSwipeStartX >= 0) {
+                        final float dx = ev.getX() - edgeSwipeStartX;
+                        final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
+                        if (dx > minSwipe && dy < dx) {
+                            if (onBeforeOpen != null) onBeforeOpen.run();
+                            drawerLayout.openDrawer(Gravity.START);
+                            edgeSwipeStartX = -1;
+                            ev.setAction(MotionEvent.ACTION_CANCEL);
+                        }
+                    } else if (closeSwipeStartX >= 0) {
+                        final float dx = ev.getX() - closeSwipeStartX;
+                        final float dy = Math.abs(ev.getY() - closeSwipeStartY);
+                        if (dx < -minSwipe && dy < -dx) {
+                            drawerLayout.closeDrawers();
+                            closeSwipeStartX = -1;
+                            ev.setAction(MotionEvent.ACTION_CANCEL);
+                        }
+                    }
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    edgeSwipeStartX = -1;
+                    closeSwipeStartX = -1;
+                    break;
+            }
+        }
     }
 }

@@ -96,10 +96,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     private OpenBooksAdapter openBooksAdapter;
 
-    private float edgeSwipeStartX = -1;
-    private float edgeSwipeStartY = -1;
-    private float drawerSwipeStartX = -1;
-    private float drawerSwipeStartY = -1;
+    private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
     /**
      * Instantiates a new base viewer activity.
@@ -208,7 +205,26 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
         drawerList.setAdapter(openBooksAdapter);
 
+        edgeSwipeHelper = new OpenBooksDrawerHelper.EdgeSwipeHelper(drawerLayout);
+        edgeSwipeHelper.setOnBeforeOpen(new Runnable() {
+            @Override public void run() {
+                if (openBooksAdapter != null) {
+                    openBooksAdapter.refresh(getController() != null
+                        ? getController().getCurrentBookPath() : null);
+                }
+            }
+        });
+
         drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+            @Override
+            public void onDrawerSlide(final View drawerView, final float slideOffset) {
+                if (view != null && view.getView() != null) {
+                    final View glView = view.getView();
+                    if (slideOffset > 0 && glView.getVisibility() == View.VISIBLE) {
+                        glView.setVisibility(View.INVISIBLE);
+                    }
+                }
+            }
             @Override
             public void onDrawerOpened(final View drawerView) {
                 centerDrawerItems(headerSpacer, footerSpacer);
@@ -216,6 +232,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             @Override
             public void onDrawerClosed(final View drawerView) {
                 if (view != null && view.getView() != null) {
+                    view.getView().setVisibility(View.VISIBLE);
                     view.getView().requestLayout();
                 }
             }
@@ -256,57 +273,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     @Override
     public boolean dispatchTouchEvent(final MotionEvent ev) {
-        if (drawerLayout != null) {
-            final float density = getResources().getDisplayMetrics().density;
-            final float edgeSize = 40 * density;
-            final float minSwipe = 60 * density;
-            switch (ev.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    if (drawerLayout.isDrawerOpen(Gravity.START)) {
-                        drawerSwipeStartX = ev.getX();
-                        drawerSwipeStartY = ev.getY();
-                        edgeSwipeStartX = -1;
-                    } else if (ev.getX() < edgeSize) {
-                        edgeSwipeStartX = ev.getX();
-                        edgeSwipeStartY = ev.getY();
-                        drawerSwipeStartX = -1;
-                    } else {
-                        edgeSwipeStartX = -1;
-                        drawerSwipeStartX = -1;
-                    }
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    if (edgeSwipeStartX >= 0) {
-                        final float dx = ev.getX() - edgeSwipeStartX;
-                        final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
-                        if (dx > minSwipe && dy < dx) {
-                            if (openBooksAdapter != null) {
-                                openBooksAdapter.refresh(getController() != null
-                                    ? getController().getCurrentBookPath() : null);
-                            }
-                            drawerLayout.openDrawer(Gravity.START);
-                            edgeSwipeStartX = -1;
-                            ev.setAction(MotionEvent.ACTION_CANCEL);
-                        }
-                    } else if (drawerSwipeStartX >= 0) {
-                        final float dx = ev.getX() - drawerSwipeStartX;
-                        final float dy = Math.abs(ev.getY() - drawerSwipeStartY);
-                        if (dx < -minSwipe && dy < -dx) {
-                            drawerLayout.closeDrawers();
-                            drawerSwipeStartX = -1;
-                            ev.setAction(MotionEvent.ACTION_CANCEL);
-                        }
-                    }
-                    break;
-                case MotionEvent.ACTION_UP:
-                    edgeSwipeStartX = -1;
-                    drawerSwipeStartX = -1;
-                    break;
-                case MotionEvent.ACTION_CANCEL:
-                    edgeSwipeStartX = -1;
-                    drawerSwipeStartX = -1;
-                    break;
-            }
+        if (edgeSwipeHelper != null) {
+            edgeSwipeHelper.handleTouch(ev, this);
         }
         return super.dispatchTouchEvent(ev);
     }

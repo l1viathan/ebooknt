@@ -39,6 +39,7 @@ import java.util.List;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
 import android.support.v4.widget.DrawerLayout;
+import android.view.MotionEvent;
 import android.widget.ListView;
 
 import org.emdev.common.android.AndroidVersion;
@@ -56,6 +57,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
 
     private DrawerLayout drawerLayout;
     private OpenBooksDrawerHelper.Adapter openBooksAdapter;
+    private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
@@ -88,6 +90,12 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
         drawerLayout = (DrawerLayout) findViewById(R.id.browser_drawer_layout);
         openBooksAdapter = OpenBooksDrawerHelper.setup(
             this, drawerLayout, (ListView) findViewById(R.id.browser_drawer_list));
+        edgeSwipeHelper = new OpenBooksDrawerHelper.EdgeSwipeHelper(drawerLayout);
+        edgeSwipeHelper.setOnBeforeOpen(new Runnable() {
+            @Override public void run() {
+                if (openBooksAdapter != null) openBooksAdapter.refresh();
+            }
+        });
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -149,6 +157,14 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     protected void onSaveInstanceState(final Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(CURRENT_DIRECTORY, getController().adapter.getCurrentDirectory().getAbsolutePath());
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(final MotionEvent ev) {
+        if (edgeSwipeHelper != null) {
+            edgeSwipeHelper.handleTouch(ev, this);
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     /**

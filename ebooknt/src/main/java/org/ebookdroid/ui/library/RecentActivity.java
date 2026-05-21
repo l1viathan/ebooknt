@@ -60,6 +60,7 @@ import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
 import org.ebookdroid.ui.viewer.OpenBooksManager;
 import org.ebookdroid.ui.viewer.ViewerActivity;
 import android.support.v4.widget.DrawerLayout;
+import android.view.MotionEvent;
 import android.widget.ListView;
 
 import org.emdev.BaseDroidApp;
@@ -80,6 +81,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
     private DrawerLayout drawerLayout;
     private OpenBooksDrawerHelper.Adapter openBooksAdapter;
+    private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
     static boolean sHasSearchResults = false;
     static int sPendingView = -1;
@@ -120,6 +122,12 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         drawerLayout = (DrawerLayout) findViewById(R.id.recent_drawer_layout);
         openBooksAdapter = OpenBooksDrawerHelper.setup(
             this, drawerLayout, (ListView) findViewById(R.id.recent_drawer_list));
+        edgeSwipeHelper = new OpenBooksDrawerHelper.EdgeSwipeHelper(drawerLayout);
+        edgeSwipeHelper.setOnBeforeOpen(new Runnable() {
+            @Override public void run() {
+                if (openBooksAdapter != null) openBooksAdapter.refresh();
+            }
+        });
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -181,6 +189,14 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
                 }
             }
         });
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(final MotionEvent ev) {
+        if (edgeSwipeHelper != null) {
+            edgeSwipeHelper.handleTouch(ev, this);
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     /**
