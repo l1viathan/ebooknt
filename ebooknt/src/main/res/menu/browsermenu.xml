@@ -3,6 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/browserhome"
+        android:icon="@drawable/browser_actionbar_nav_home"
+        app:showAsAction="always"
+        android:title="@string/nav_label_library"/>
+
+    <item
         android:id="@+id/browsermenu_close"
         android:icon="@drawable/common_actionbar_close"
         app:showAsAction="always"
