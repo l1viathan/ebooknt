@@ -125,4 +125,8 @@
     <string name="error_write_external_storage_permission">"EbookNT需要存储访问权限"</string>
     <string name="permission_manage_storage_rationale">"EbookNT需要访问所有文件以浏览和打开您的电子书库。\n\n请在下一个界面授予\"所有文件访问权限\"。"</string>
 
+    <string name="text_lookup_title">查词</string>
+    <string name="text_lookup_search">查询</string>
+    <string name="text_lookup_copy">复制</string>
+
 </resources>

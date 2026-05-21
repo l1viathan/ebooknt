@@ -6,6 +6,7 @@ import org.ebookdroid.core.codec.CodecFeatures;
 import org.ebookdroid.core.codec.CodecPage;
 import org.ebookdroid.core.codec.CodecPageInfo;
 import org.ebookdroid.core.codec.OutlineLink;
+import org.ebookdroid.core.codec.PageTextBox;
 
 import android.graphics.RectF;
 
@@ -14,6 +15,8 @@ import java.util.List;
 public interface DecodeService extends CodecFeatures {
 
     void open(String fileName, String password);
+
+    List<PageTextBox> getPageText(int pageIndex);
 
     void openFd(int fd, String password);
 

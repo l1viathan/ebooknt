@@ -150,6 +150,22 @@ public class MuPdfPage extends AbstractCodecPage {
 
     private native static List<PageTextBox> search(long docHandle, long pageHandle, String pattern);
 
+    private native static List<PageTextBox> getPageText(long docHandle, long pageHandle);
+
+    @Override
+    public List<PageTextBox> getPageText() {
+        final List<PageTextBox> rects = getPageText(docHandle, pageHandle);
+        if (LengthUtils.isNotEmpty(rects)) {
+            for (final PageTextBox b : rects) {
+                b.left = (b.left - pageBounds.left) / pageBounds.width();
+                b.top = (b.top - pageBounds.top) / pageBounds.height();
+                b.right = (b.right - pageBounds.left) / pageBounds.width();
+                b.bottom = (b.bottom - pageBounds.top) / pageBounds.height();
+            }
+        }
+        return rects;
+    }
+
     @Override
     public List<? extends RectF> searchText(final String pattern) {
         final List<PageTextBox> rects = search(docHandle, pageHandle, pattern);

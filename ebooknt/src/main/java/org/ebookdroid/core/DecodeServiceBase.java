@@ -13,6 +13,7 @@ import org.ebookdroid.core.codec.CodecPage;
 import org.ebookdroid.core.codec.CodecPageHolder;
 import org.ebookdroid.core.codec.CodecPageInfo;
 import org.ebookdroid.core.codec.OutlineLink;
+import org.ebookdroid.core.codec.PageTextBox;
 import org.ebookdroid.core.crop.PageCropper;
 import org.ebookdroid.ui.viewer.IViewController.InvalidateSizeReason;
 
@@ -327,6 +328,14 @@ public class DecodeServiceBase implements DecodeService {
 
     CodecPage getPage(final int pageIndex) {
         return getPageHolder(-2, pageIndex).getPage(-2);
+    }
+
+    @Override
+    public List<PageTextBox> getPageText(final int pageIndex) {
+        if (isRecycled.get()) {
+            return null;
+        }
+        return getPage(pageIndex).getPageText();
     }
 
     private synchronized CodecPageHolder getPageHolder(final long taskId, final int pageIndex) {

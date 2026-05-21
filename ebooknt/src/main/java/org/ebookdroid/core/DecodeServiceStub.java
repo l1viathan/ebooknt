@@ -4,6 +4,7 @@ import org.ebookdroid.common.bitmaps.ByteBufferBitmap;
 import org.ebookdroid.common.bitmaps.IBitmapRef;
 import org.ebookdroid.core.codec.CodecPageInfo;
 import org.ebookdroid.core.codec.OutlineLink;
+import org.ebookdroid.core.codec.PageTextBox;
 
 import android.graphics.RectF;
 
@@ -115,6 +116,11 @@ public class DecodeServiceStub implements DecodeService {
      */
     @Override
     public IBitmapRef createThumbnail(boolean useEmbeddedIfAvailable, final int width, final int height, final int pageNo, final RectF region) {
+        return null;
+    }
+
+    @Override
+    public List<PageTextBox> getPageText(final int pageIndex) {
         return null;
     }
 

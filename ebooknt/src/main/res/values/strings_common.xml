@@ -158,4 +158,8 @@
 
     <string name="error_write_external_storage_permission">EbookNT requires storage access permission</string>
     <string name="permission_manage_storage_rationale">EbookNT needs access to all files to browse and open your ebook library.\n\nPlease grant \"All files access\" on the next screen.</string>
+
+    <string name="text_lookup_title">Text lookup</string>
+    <string name="text_lookup_search">Look up</string>
+    <string name="text_lookup_copy">Copy</string>
 </resources>

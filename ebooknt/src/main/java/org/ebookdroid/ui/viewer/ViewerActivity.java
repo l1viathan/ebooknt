@@ -16,6 +16,7 @@ import org.ebookdroid.ui.viewer.viewers.GLView;
 import org.ebookdroid.ui.viewer.views.ManualCropView;
 import org.ebookdroid.ui.viewer.views.PageViewZoomControls;
 import org.ebookdroid.ui.viewer.views.SearchControls;
+import org.ebookdroid.ui.viewer.views.ViewEffects;
 
 import android.content.Context;
 import android.content.Intent;

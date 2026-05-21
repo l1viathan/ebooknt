@@ -1062,6 +1062,168 @@ JNI_FN(MuPdfPage_search)(JNIEnv * env, jobject thiz, jlong dochandle, jlong page
     return arrayList;
 }
 
+JNIEXPORT jobject JNICALL
+JNI_FN(MuPdfPage_getPageText)(JNIEnv * env, jobject thiz, jlong dochandle, jlong pagehandle)
+{
+    renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
+    renderpage_t *page = (renderpage_t*) (long) pagehandle;
+
+    if (!doc || !page)
+    {
+        return NULL;
+    }
+
+    ArrayListHelper alh;
+    PageTextBoxHelper ptbh;
+
+    if (!ArrayListHelper_init(&alh, env) || !PageTextBoxHelper_init(&ptbh, env))
+    {
+        return NULL;
+    }
+    jobject arrayList = ArrayListHelper_create(&alh);
+    if (!arrayList)
+    {
+        return NULL;
+    }
+
+    fz_stext_page *pagetext = NULL;
+    fz_device *dev = NULL;
+
+    fz_try(doc->ctx)
+    {
+        fz_rect rect = fz_bound_page(doc->ctx, page->page);
+        pagetext = fz_new_stext_page(doc->ctx, rect);
+        dev = fz_new_stext_device(doc->ctx, pagetext, NULL);
+        fz_run_page(doc->ctx, page->page, dev, fz_identity, NULL);
+
+        fz_close_device(doc->ctx, dev);
+        fz_drop_device(doc->ctx, dev);
+        dev = NULL;
+
+        fz_stext_block *block;
+        fz_stext_line *line;
+        fz_stext_char *ch;
+
+        for (block = pagetext->first_block; block; block = block->next)
+        {
+            if (block->type != FZ_STEXT_BLOCK_TEXT)
+                continue;
+            for (line = block->u.t.first_line; line; line = line->next)
+            {
+                float total_w = 0;
+                int char_count = 0;
+                for (ch = line->first_char; ch; ch = ch->next)
+                {
+                    fz_rect cr = fz_rect_from_quad(ch->quad);
+                    total_w += cr.x1 - cr.x0;
+                    char_count++;
+                }
+                float avg_w = char_count > 0 ? total_w / char_count : 1;
+                float gap_threshold = avg_w * 0.3f;
+
+                char word_buf[512];
+                int word_len = 0;
+                fz_rect word_bbox = fz_empty_rect;
+                float prev_x1 = -1;
+                int words_emitted = 0;
+
+                for (ch = line->first_char; ; ch = ch ? ch->next : NULL)
+                {
+                    int is_space = 0;
+                    int is_gap = 0;
+                    if (ch)
+                    {
+                        if (ch->c == ' ' || ch->c == '\t' || ch->c == 0xA0
+                            || (ch->c >= 0x2000 && ch->c <= 0x200A)
+                            || ch->c == 0x202F || ch->c == 0x205F || ch->c == 0x3000)
+                        {
+                            is_space = 1;
+                        }
+                        else if (prev_x1 >= 0)
+                        {
+                            fz_rect cr = fz_rect_from_quad(ch->quad);
+                            if (cr.x0 - prev_x1 > gap_threshold)
+                            {
+                                is_gap = 1;
+                            }
+                        }
+                    }
+                    int is_sep = is_space || is_gap;
+                    int is_end = (ch == NULL);
+
+                    if ((is_sep || is_end) && word_len > 0)
+                    {
+                        word_buf[word_len] = 0;
+                        if (!fz_is_empty_rect(word_bbox))
+                        {
+                            int coords[4];
+                            coords[0] = (int) word_bbox.x0;
+                            coords[1] = (int) word_bbox.y0;
+                            coords[2] = (int) word_bbox.x1;
+                            coords[3] = (int) word_bbox.y1;
+
+                            jobject ptb = PageTextBoxHelper_create(&ptbh);
+                            if (ptb)
+                            {
+                                PageTextBoxHelper_setRect(&ptbh, ptb, coords);
+                                jstring jtext = (*env)->NewStringUTF(env, word_buf);
+                                PageTextBoxHelper_setText(&ptbh, ptb, jtext);
+                                (*env)->DeleteLocalRef(env, jtext);
+                                ArrayListHelper_add(&alh, arrayList, ptb);
+                            }
+                        }
+                        word_len = 0;
+                        word_bbox = fz_empty_rect;
+                        words_emitted++;
+                    }
+
+                    if (is_end)
+                        break;
+
+                    if (is_space)
+                    {
+                        fz_rect cr = fz_rect_from_quad(ch->quad);
+                        prev_x1 = cr.x1;
+                    }
+                    else
+                    {
+                        if (is_gap)
+                        {
+                            word_len = 0;
+                            word_bbox = fz_empty_rect;
+                        }
+                        int n = fz_runetochar(word_buf + word_len, ch->c);
+                        word_len += n;
+                        if (word_len >= (int)sizeof(word_buf) - 8)
+                        {
+                            word_buf[word_len] = 0;
+                            word_len = 0;
+                        }
+                        fz_rect char_rect = fz_rect_from_quad(ch->quad);
+                        word_bbox = fz_union_rect(word_bbox, char_rect);
+                        prev_x1 = char_rect.x1;
+                    }
+                }
+            }
+        }
+    } fz_always(doc->ctx)
+    {
+        if (pagetext)
+        {
+            fz_drop_stext_page(doc->ctx, pagetext);
+        }
+        if (dev)
+        {
+            fz_drop_device(doc->ctx, dev);
+        }
+    } fz_catch(doc->ctx)
+    {
+        return NULL;
+    }
+
+    return arrayList;
+}
+
 
 //Outline
 

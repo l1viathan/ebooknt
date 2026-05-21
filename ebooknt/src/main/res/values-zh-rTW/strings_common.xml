@@ -125,4 +125,8 @@
     <string name="error_write_external_storage_permission">"EbookNT需要儲存訪問許可權"</string>
     <string name="permission_manage_storage_rationale">"EbookNT需要訪問所有檔案以瀏覽和開啟您的電子書庫。\n\n請在下一個介面授予\"所有檔案訪問許可權\"。"</string>
 
+    <string name="text_lookup_title">查詞</string>
+    <string name="text_lookup_search">查詢</string>
+    <string name="text_lookup_copy">複製</string>
+
 </resources>

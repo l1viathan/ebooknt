@@ -122,4 +122,8 @@
     <string name="cache_moving_progress">"正在移动缓存文件 %1$d/%2$d"</string>
     <string name="error_invalid_view_mode">"该操作只在视图模式下可用 %1$s"</string>
 
+    <string name="text_lookup_title">查词</string>
+    <string name="text_lookup_search">查询</string>
+    <string name="text_lookup_copy">复制</string>
+
 </resources>
