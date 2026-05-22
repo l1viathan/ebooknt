@@ -327,7 +327,6 @@ JNI_FN(MuPdfDocument_open)(JNIEnv *env, jclass clazz, jint storememory, jint for
     (*env)->ReleaseStringUTFChars(env, fname, filename);
     (*env)->ReleaseStringUTFChars(env, pwd, password);
 
-    // DEBUG("MuPdfDocument.nativeOpen(): return handle = %p", doc);
     return (jlong) (long) doc;
 }
 

@@ -355,9 +355,10 @@ public class DocumentModel extends ListenerProxy {
                 final PageCacheFile pagesFile = CacheManager.getPageFile(bs.fileName);
                 docInfo = pagesFile.exists() ? pagesFile.load() : null;
             }
-            if (docInfo != null) {
+            if (docInfo != null && docInfo.docPageCount > 0) {
                 return docInfo;
             }
+            docInfo = null;
         }
 
         LCTX.d("Retrieving pages from document...");
@@ -375,7 +376,7 @@ public class DocumentModel extends ListenerProxy {
             pi.info = unified != null ? unified : decodeService.getPageInfo(i);
         }
 
-        if (cacheable) {
+        if (cacheable && docInfo.docPageCount > 0) {
             cacheFile.save(docInfo);
         }
         return docInfo;
