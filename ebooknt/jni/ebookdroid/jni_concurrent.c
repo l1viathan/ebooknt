@@ -10,6 +10,7 @@
  * lets us process multiple documents concurrently as well.
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 
+#include <stdlib.h>
 #include "mupdf/fitz/context.h"
 #include <pthread.h>
 

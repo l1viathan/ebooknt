@@ -23,7 +23,12 @@ def getVerCode() {
 }
 
 // map for the version code
-ext.versionCodes = ['arm64-v8a':5]
+ext.versionCodes = ['armeabi-v7a':3, 'arm64-v8a':5, 'x86':7, 'x86_64':9]
+
+def allAbis = ['armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64']
+def appAbiEnv = System.getenv('APP_ABI')
+def abiList = appAbiEnv ? appAbiEnv.split('[,\\s]+').collect { it.trim() }.findAll { !it.isEmpty() }
+                        : allAbis
 
 import com.android.build.OutputFile
 
@@ -46,17 +51,25 @@ android {
         minSdkVersion 21
         targetSdkVersion 33
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            ndkBuild {
+                abiFilters.addAll(abiList)
+                arguments '-j4'
+            }
+        }
     }
 
-    sourceSets.main {
-        jniLibs.srcDir 'libs'
+    externalNativeBuild {
+        ndkBuild {
+            path 'jni/Android.mk'
+        }
     }
 
     splits {
         abi {
             enable true
             reset()
-            include 'arm64-v8a'
+            abiList.each { include it }
             universalApk true
         }
     }
@@ -65,7 +78,10 @@ android {
       variant.outputs.each { output ->
         def abi = output.getFilter(OutputFile.ABI)
         def abiLabel = abi != null ? [
+            'armeabi-v7a': 'armv7',
             'arm64-v8a': 'armv8',
+            'x86': 'x86',
+            'x86_64': 'x86_64',
         ].getOrDefault(abi, abi) : 'universal'
         def versionName = variant.mergedFlavor.versionName ?: android.defaultConfig.versionName ?: "1.0.0"
         output.outputFileName = "ebooknt-${abiLabel}-v${versionName}.apk"
@@ -88,7 +104,7 @@ android {
             project.hasProperty('signingKeyAlias') &&
             project.hasProperty('signingKeyPassword')) {
         println "Found sign properties in gradle.properties! Signing build…"
-        
+
         signingConfigs {
             release {
                 storeFile file(signingStoreLocation)
@@ -102,10 +118,9 @@ android {
     } else {
         buildTypes.release.signingConfig = null
     }
-    
+
     // Do not abort build if lint finds errors
     lint {
         abortOnError false
     }
 }
-

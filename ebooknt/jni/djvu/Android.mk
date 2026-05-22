@@ -10,6 +10,7 @@ LOCAL_C_INCLUDES := \
 
 LOCAL_MODULE    := djvu
 LOCAL_CFLAGS    := -fexceptions -DHAVE_CONFIG_H -DTHREADMODEL=POSIXTHREADS -DDIR_DATADIR=\"/usr/local/share\"
+LOCAL_CPPFLAGS  := -Wno-register
 
 ifeq ($(TARGET_ARCH_ABI),armeabi)
     LOCAL_ARM_MODE := arm

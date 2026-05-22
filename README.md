@@ -36,30 +36,49 @@ Major changes:
 * Android SDK with build-tools and platform installed
 * `ANDROID_HOME` environment variable pointing to your SDK root
 * JDK 17 or 21
-* NDK installed (for the `ndk-build` step)
+* NDK installed (Gradle will pick it up from the SDK automatically)
 
 `gradle.properties` is tracked via `git add -f` despite being in `.gitignore`.
 It sets `android.nonFinalResIds=false`, which is required because the code uses
 `switch`/`case` on `R.id.*` values — these must be compile-time constants.
 
-### Build
+### One-time setup
 
-Native libraries must be compiled before the Gradle build. From the repo root:
+Generate MuPDF font sources (only needed once, or when URW `.cff` fonts change):
 
 ```
 ebooknt/jni/mupdf/generate-fonts.sh
-ndk-build NDK_PROJECT_PATH=. APP_BUILD_SCRIPT=./ebooknt/jni/Android.mk NDK_APPLICATION_MK=./ebooknt/jni/Application.mk
-./gradlew assembleDebug   # or assembleRelease
 ```
 
-`generate-fonts.sh` converts MuPDF's URW base14 font files (`.cff`) into C
-source arrays under `ebooknt/jni/mupdf/mupdf/generated/`. This directory is
-git-ignored. Only needs to be re-run once, or when the URW `.cff` fonts change.
+This converts URW base14 font files into C source arrays under
+`ebooknt/jni/mupdf/mupdf/generated/`. The directory is git-ignored.
 Other generated resources (CMap headers, ICC profiles, JS headers)
 ship with the MuPDF 1.14 source tree and do not need regeneration.
 
-`ndk-build` reads `ebooknt/jni/` and writes `.so` files to `libs/<abi>/`;
-re-run it whenever C/C++ sources under `ebooknt/jni/` change.
+### Debug build
+
+Gradle handles the native build automatically via `externalNativeBuild`.
+No manual `ndk-build` step is required:
+
+```
+./gradlew assembleDebug
+```
+
+To speed up development by building only arm64-v8a (skip the universal APK):
+
+```
+APP_ABI=arm64-v8a ./gradlew assembleDebug
+```
+
+### Release build
+
+```
+./gradlew assembleRelease
+```
+
+This produces two APKs under `ebooknt/build/outputs/apk/release/`:
+* `ebooknt-armv8-v<version>.apk` — arm64-v8a only (smaller)
+* `ebooknt-universal-v<version>.apk` — all ABIs
 
 ### Development with Android Studio
 
