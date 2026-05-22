@@ -54,8 +54,6 @@ public final class OpenBooksManager {
     }
 
     public synchronized void onBookPaused(final String path) {
-        if (path == null) return;
-        activeBooks.remove(path);
     }
 
     public synchronized List<String> getOpenBooks() {
