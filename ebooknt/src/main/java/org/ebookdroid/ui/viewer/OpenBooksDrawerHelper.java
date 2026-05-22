@@ -204,8 +204,8 @@ public class OpenBooksDrawerHelper {
             final float density = activity.getResources().getDisplayMetrics().density;
             final float edgeSize = 40 * density;
             final float minSwipe = 60 * density;
-            final int screenHeight = activity.getResources().getDisplayMetrics().heightPixels;
-            final float excludeZone = screenHeight * 0.35f;
+            final int viewHeight = activity.getWindow().getDecorView().getHeight();
+            final float excludeZone = viewHeight * 0.40f;
             switch (ev.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
                     if (drawerLayout.isDrawerOpen(Gravity.START)) {
@@ -214,7 +214,7 @@ public class OpenBooksDrawerHelper {
                         edgeSwipeStartX = -1;
                     } else if (ev.getX() < edgeSize
                             && ev.getY() > excludeZone
-                            && ev.getY() < screenHeight - excludeZone) {
+                            && ev.getY() < viewHeight - excludeZone) {
                         edgeSwipeStartX = ev.getX();
                         edgeSwipeStartY = ev.getY();
                         closeSwipeStartX = -1;
