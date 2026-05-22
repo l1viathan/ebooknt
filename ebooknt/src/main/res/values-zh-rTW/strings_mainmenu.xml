@@ -20,8 +20,8 @@
     <string name="menu_show_options_menu">"顯示選單"</string>
     <string name="menu_backupsettings">"備份與恢復"</string>
     <string name="menu_crop">"手動分隔"</string>
-    <string name="menu_navigation_menu">"導航-其他"</string>
-    <string name="menu_other_menu">"其他…"</string>
+    <string name="menu_navigation_menu">"導航-其它"</string>
+    <string name="menu_other_menu">"其它…"</string>
     <string name="menu_book_info">"關於本書"</string>
     <string name="menu_fastsettings_menu">"檢視"</string>
     <string name="menu_allsettings_menu">"設定"</string>
@@ -35,7 +35,7 @@
     <string name="menu_search">"搜尋"</string>
     <string name="menu_singlepage">"單頁"</string>
     <string name="menu_share">"分享…"</string>
-    <string name="menu_openwith">"用其他應用開啟…"</string>
+    <string name="menu_openwith">"用其它應用開啟…"</string>
     <string name="menu_reverse_orientation">"反轉方向"</string>
     <string name="menu_add_to_library">設定為預設書庫</string>
     <string name="menu_add_to_library_done">已設定為書庫: %s</string>
