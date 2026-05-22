@@ -47,7 +47,7 @@ It sets `android.nonFinalResIds=false`, which is required because the code uses
 Generate MuPDF font sources (only needed once, or when URW `.cff` fonts change):
 
 ```
-ebooknt/jni/mupdf/generate-fonts.sh
+./ebooknt/jni/mupdf/generate-fonts.sh
 ```
 
 This converts URW base14 font files into C source arrays under
