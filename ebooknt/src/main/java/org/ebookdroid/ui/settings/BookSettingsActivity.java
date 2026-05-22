@@ -30,8 +30,11 @@ public class BookSettingsActivity extends BaseSettingsActivity {
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        final Uri uri = getIntent().getData();
-        final String fileName = PathFromUri.retrieve(getContentResolver(), uri);
+        final String fileName = getIntent().getStringExtra("bookFileName");
+        if (fileName == null) {
+            finish();
+            return;
+        }
         current = SettingsManager.getBookSettings(fileName);
         if (current == null) {
             finish();

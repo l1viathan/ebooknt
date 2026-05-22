@@ -28,9 +28,8 @@ public class SettingsActivity extends BaseSettingsActivity {
 
         EBookDroidApp.initFonts();
 
-        final Uri uri = getIntent().getData();
-        if (uri != null) {
-            final String fileName = PathFromUri.retrieve(getContentResolver(), uri);
+        final String fileName = getIntent().getStringExtra("bookFileName");
+        if (fileName != null) {
             BookSettings current = SettingsManager.getBookSettings(fileName);
             if (current != null) {
                 setRequestedOrientation(current.getOrientation(AppSettings.current()));

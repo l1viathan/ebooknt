@@ -12,7 +12,7 @@ public class SettingsUI {
 
     public static void showBookSettings(final Context context, final String fileName) {
         final Intent intent = new Intent(context, BookSettingsActivity.class);
-        intent.setData(Uri.fromFile(new File(fileName)));
+        intent.putExtra("bookFileName", fileName);
         context.startActivity(intent);
     }
 
@@ -21,7 +21,7 @@ public class SettingsUI {
                 : FragmentedSettingsActivity.class;
         final Intent intent = new Intent(context, activityClass);
         if (fileName != null) {
-            intent.setData(Uri.fromFile(new File(fileName)));
+            intent.putExtra("bookFileName", fileName);
         }
         context.startActivity(intent);
     }

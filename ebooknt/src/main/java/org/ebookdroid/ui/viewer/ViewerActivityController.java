@@ -253,8 +253,19 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         final Uri uri = data;
         if (scheme.temporary) {
-            m_fileName = scheme.key;
-            CacheManager.clear(scheme.key);
+            String resolved = null;
+            try {
+                resolved = PathFromUri.retrieve(activity.getContentResolver(), uri);
+            } catch (final Exception e) {
+                // ignore
+            }
+            if (resolved != null && new File(resolved).exists()) {
+                m_fileName = resolved;
+                scheme = ContentScheme.FILE;
+            } else {
+                m_fileName = scheme.key;
+                CacheManager.clear(scheme.key);
+            }
         } else {
             m_fileName = PathFromUri.retrieve(activity.getContentResolver(), uri);
         }
