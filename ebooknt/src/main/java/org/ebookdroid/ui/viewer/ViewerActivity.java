@@ -11,6 +11,7 @@ import org.ebookdroid.common.settings.types.ToastPosition;
 import org.ebookdroid.common.touch.TouchManagerView;
 import org.ebookdroid.core.DecodeService;
 import org.ebookdroid.core.codec.CodecFeatures;
+import org.ebookdroid.ui.viewer.OpenBooksManager;
 import org.ebookdroid.ui.viewer.stubs.ViewStub;
 import org.ebookdroid.ui.viewer.viewers.GLView;
 import org.ebookdroid.ui.viewer.views.ManualCropView;
@@ -266,6 +267,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     protected void onResumeImpl() {
         IUIManager.instance.onResume(this);
         view.onResume();
+        OpenBooksManager.get().onBookResumed(getController().getCurrentBookPath());
         if (openBooksAdapter != null) {
             openBooksAdapter.refresh(getController().getCurrentBookPath());
         }
@@ -293,6 +295,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     protected void onPauseImpl(final boolean finishing) {
         IUIManager.instance.onPause(this);
         view.onPause();
+        OpenBooksManager.get().onBookPaused(getController().getCurrentBookPath());
     }
 
     /**

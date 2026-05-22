@@ -33,7 +33,6 @@ public final class OpenBooksManager {
     public synchronized void onBookOpened(final String path) {
         if (path == null) return;
         ensureLoaded();
-        activeBooks.add(path);
         openBooks.remove(path);
         openBooks.add(0, path);
         trimToMax();
@@ -41,6 +40,16 @@ public final class OpenBooksManager {
     }
 
     public synchronized void onBookClosed(final String path) {
+        if (path == null) return;
+        activeBooks.remove(path);
+    }
+
+    public synchronized void onBookResumed(final String path) {
+        if (path == null) return;
+        activeBooks.add(path);
+    }
+
+    public synchronized void onBookPaused(final String path) {
         if (path == null) return;
         activeBooks.remove(path);
     }
