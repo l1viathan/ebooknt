@@ -23,8 +23,14 @@ public class MultiTouchGestureDetector implements IGestureDetector {
     private boolean twoFingerPress = false;
     private boolean twoFingerMove = false;
 
+    private boolean multiTouchSeen = false;
+
     public MultiTouchGestureDetector(final IMultiTouchListener listener) {
         this.listener = listener;
+    }
+
+    public boolean isMultiTouchActive() {
+        return multiTouchSeen;
     }
 
     @Override
@@ -34,7 +40,13 @@ public class MultiTouchGestureDetector implements IGestureDetector {
 
     @Override
     public boolean onTouchEvent(final MotionEvent ev) {
+        if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
+            multiTouchSeen = false;
+            return false;
+        }
+
         if ((ev.getAction() & MotionEvent.ACTION_POINTER_DOWN) == MotionEvent.ACTION_POINTER_DOWN) {
+            multiTouchSeen = true;
 
             if (LCTX.isDebugEnabled()) {
                 LCTX.d("onTouchEvent(pointer down, " + ev.getPointerCount() + "): " + twoFingerPress + ", "

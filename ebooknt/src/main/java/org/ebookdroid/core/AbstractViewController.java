@@ -92,6 +92,8 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     private List<IGestureDetector> detectors;
 
+    private MultiTouchGestureDetector multiTouchDetector;
+
     public AbstractViewController(final IActivityController base, final DocumentViewMode mode) {
         super(base, base.getView());
 
@@ -121,7 +123,8 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     protected List<IGestureDetector> initGestureDetectors(final List<IGestureDetector> list) {
         final GestureListener listener = new GestureListener();
-        list.add(new MultiTouchGestureDetector(listener));
+        multiTouchDetector = new MultiTouchGestureDetector(listener);
+        list.add(multiTouchDetector);
         list.add(new DefaultGestureDetector(base.getContext(), listener));
         return list;
     }
@@ -940,6 +943,9 @@ public abstract class AbstractViewController extends AbstractComponentController
         public void onLongPress(final MotionEvent e) {
             if (LCTX.isDebugEnabled()) {
                 LCTX.d("onLongPress(" + e + ")");
+            }
+            if (multiTouchDetector != null && multiTouchDetector.isMultiTouchActive()) {
+                return;
             }
             processTextLookup(e.getX(), e.getY());
         }
