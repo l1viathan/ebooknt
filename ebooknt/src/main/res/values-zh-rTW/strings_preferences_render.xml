@@ -3,12 +3,12 @@
 
     <string name="pref_rotation_title">"旋轉模式"</string>
     <string name="pref_rotation_summary">"如何改變旋轉"</string>
-    <string name="list_rotation_unspecified" translatable="true">"不指定"</string>
+    <string name="list_rotation_unspecified" translatable="true">"不指定（跟隨系統）"</string>
     <string name="list_rotation_land" translatable="true">"強制橫屏"</string>
     <string name="list_rotation_port" translatable="true">"強制豎屏"</string>
     <string name="list_rotation_user" translatable="true">"使用者"</string>
     <string name="list_rotation_behind" translatable="true">"背景"</string>
-    <string name="list_rotation_auto" translatable="true">"自動"</string>
+    <string name="list_rotation_auto" translatable="true">"自動（跟隨傳感器）"</string>
     <string name="list_rotation_nosensor" translatable="true">"無感測器"</string>
     <string name="list_rotation_sensor_landscape" translatable="true">"感測器橫屏"</string>
     <string name="list_rotation_sensor_portrait" translatable="true">"感測器豎屏"</string>

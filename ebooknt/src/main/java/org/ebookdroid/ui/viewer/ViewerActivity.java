@@ -253,6 +253,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     protected void onResumeImpl() {
         IUIManager.instance.onResume(this);
         view.onResume();
+        final BookSettings bs = getController().getBookSettings();
+        if (bs != null) {
+            setRequestedOrientation(bs.getOrientation(AppSettings.current()));
+        }
         OpenBooksManager.get().onBookResumed(getController().getCurrentBookPath());
         if (openBooksAdapter != null) {
             openBooksAdapter.refresh(getController().getCurrentBookPath());
@@ -486,20 +490,11 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         }
 
         ActionMenuHelper.setMenuItemChecked(menu,
-                (bs.rotation == RotationType.PORTRAIT || bs.rotation == RotationType.REVERSE_PORTRAIT),
+                bs.rotation == RotationType.PORTRAIT,
                 R.id.mainmenu_force_portrait);
         ActionMenuHelper.setMenuItemChecked(menu,
-                (bs.rotation == RotationType.LANDSCAPE || bs.rotation == RotationType.REVERSE_LANDSCAPE),
+                bs.rotation == RotationType.LANDSCAPE,
                 R.id.mainmenu_force_landscape);
-        ActionMenuHelper.setMenuItemChecked(menu,
-                (bs.rotation == RotationType.REVERSE_LANDSCAPE || bs.rotation == RotationType.REVERSE_PORTRAIT),
-                R.id.mainmenu_reverse_orientation);
-        ActionMenuHelper.setMenuItemEnabled(menu,
-                (bs.rotation == RotationType.PORTRAIT
-                || bs.rotation == RotationType.REVERSE_PORTRAIT
-                || bs.rotation == RotationType.LANDSCAPE
-                || bs.rotation == RotationType.REVERSE_LANDSCAPE),
-                R.id.mainmenu_reverse_orientation);
         ActionMenuHelper.setMenuItemChecked(menu, bs.nightMode, R.id.mainmenu_nightmode);
         ActionMenuHelper.setMenuItemChecked(menu, bs.cropPages, R.id.mainmenu_croppages);
         ActionMenuHelper.setMenuItemChecked(menu, bs.splitPages, R.id.mainmenu_splitpages,

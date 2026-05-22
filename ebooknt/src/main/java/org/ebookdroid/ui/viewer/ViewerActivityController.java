@@ -583,8 +583,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         final int IDX_FORCE_PORTRAIT = 3;
         final int IDX_FORCE_LANDSCAPE = 4;
-        final int IDX_ALIGN_HEIGHT = 9;
-        final int IDX_ALIGN_WIDTH = 10;
+        final int IDX_ALIGN_HEIGHT = 8;
+        final int IDX_ALIGN_WIDTH = 9;
 
         final int[] ids = {
             R.id.mainmenu_fullscreen,
@@ -592,7 +592,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             R.id.mainmenu_nightmode,
             R.id.mainmenu_force_portrait,
             R.id.mainmenu_force_landscape,
-            R.id.mainmenu_reverse_orientation,
             R.id.mainmenu_singlepage,
             R.id.mainmenu_splitpages,
             R.id.mainmenu_croppages,
@@ -605,7 +604,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             R.string.menu_nightmode,
             R.string.menu_force_portrait,
             R.string.menu_force_landscape,
-            R.string.menu_reverse_orientation,
             R.string.menu_singlepage,
             R.string.pref_splitpages_title,
             R.string.pref_croppages_title,
@@ -616,9 +614,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             as.fullScreen,
             as.showTitle,
             bs != null && bs.nightMode,
-            bs != null && (bs.rotation == RotationType.PORTRAIT || bs.rotation == RotationType.REVERSE_PORTRAIT),
-            bs != null && (bs.rotation == RotationType.LANDSCAPE || bs.rotation == RotationType.REVERSE_LANDSCAPE),
-            bs != null && (bs.rotation == RotationType.REVERSE_PORTRAIT || bs.rotation == RotationType.REVERSE_LANDSCAPE),
+            bs != null && bs.rotation == RotationType.PORTRAIT,
+            bs != null && bs.rotation == RotationType.LANDSCAPE,
             bs != null && bs.viewMode == DocumentViewMode.SINGLE_PAGE,
             bs != null && bs.splitPages,
             bs != null && bs.cropPages,
@@ -646,7 +643,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                         if (isChecked) setDialogItem(alertDlg, IDX_FORCE_PORTRAIT, false, checked);
                         forceLandscape(null);
                         break;
-                    case R.id.mainmenu_reverse_orientation: reverseOrientation(null); break;
                     case R.id.mainmenu_singlepage: {
                         if (bs != null) {
                             final boolean goingSingle = (bs.viewMode != DocumentViewMode.SINGLE_PAGE);
@@ -718,8 +714,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.mainmenu_force_portrait)
     public void forcePortrait(final ActionEx action) {
-        if (bookSettings.rotation == RotationType.PORTRAIT
-                || bookSettings.rotation == RotationType.REVERSE_PORTRAIT) {
+        if (bookSettings.rotation == RotationType.PORTRAIT) {
             SettingsManager.setBookRotation(bookSettings, RotationType.UNSPECIFIED);
         } else {
             SettingsManager.setBookRotation(bookSettings, RotationType.PORTRAIT);
@@ -728,8 +723,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = { R.id.mainmenu_force_landscape })
     public void forceLandscape(final ActionEx action) {
-        if (bookSettings.rotation == RotationType.LANDSCAPE
-                || bookSettings.rotation == RotationType.REVERSE_LANDSCAPE) {
+        if (bookSettings.rotation == RotationType.LANDSCAPE) {
             SettingsManager.setBookRotation(bookSettings, RotationType.UNSPECIFIED);
         } else {
             SettingsManager.setBookRotation(bookSettings, RotationType.LANDSCAPE);
@@ -739,27 +733,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     @ActionMethod(ids = R.id.mainmenu_showtitle)
     public void toggleTitleVisibility(final ActionEx action) {
         AppSettings.toggleTitleVisibility();
-    }
-
-    private static RotationType reversedOrientation(RotationType rotation) {
-        if (rotation == RotationType.PORTRAIT) {
-            return RotationType.REVERSE_PORTRAIT;
-        } else if (rotation == RotationType.REVERSE_PORTRAIT) {
-            return RotationType.PORTRAIT;
-        } else if (rotation == RotationType.LANDSCAPE) {
-            return RotationType.REVERSE_LANDSCAPE;
-        } else if (rotation == RotationType.REVERSE_LANDSCAPE) {
-            return RotationType.LANDSCAPE;
-        }
-        return null;
-    }
-
-    @ActionMethod(ids = R.id.mainmenu_reverse_orientation)
-    public void reverseOrientation(final ActionEx action) {
-        RotationType newRotation = reversedOrientation(bookSettings.rotation);
-        if (newRotation != null) {
-            SettingsManager.setBookRotation(bookSettings, newRotation);
-        }
     }
 
     @ActionMethod(ids = R.id.mainmenu_nightmode)

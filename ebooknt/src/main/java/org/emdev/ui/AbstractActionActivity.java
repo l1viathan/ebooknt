@@ -1,6 +1,7 @@
 package org.emdev.ui;
 
 import org.ebooknt.viewer.R;
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.ui.about.AboutActivity;
 import org.emdev.BaseDroidApp;
 
@@ -196,6 +197,8 @@ public abstract class AbstractActionActivity<A extends Activity, C extends Abstr
         }
 
         super.onResume();
+
+        setRequestedOrientation(AppSettings.current().rotation.getOrientation());
 
         if (Helper.enabled(this.eventMask, ON_RESUME)) {
             onResumeImpl();
