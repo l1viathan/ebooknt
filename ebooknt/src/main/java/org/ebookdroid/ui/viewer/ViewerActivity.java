@@ -218,24 +218,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
         drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
             @Override
-            public void onDrawerSlide(final View drawerView, final float slideOffset) {
-                if (view != null && view.getView() != null) {
-                    final View glView = view.getView();
-                    if (slideOffset > 0 && glView.getVisibility() == View.VISIBLE) {
-                        glView.setVisibility(View.INVISIBLE);
-                    }
-                }
-            }
-            @Override
             public void onDrawerOpened(final View drawerView) {
                 centerDrawerItems(headerSpacer, footerSpacer);
-            }
-            @Override
-            public void onDrawerClosed(final View drawerView) {
-                if (view != null && view.getView() != null) {
-                    view.getView().setVisibility(View.VISIBLE);
-                    view.getView().requestLayout();
-                }
             }
         });
 
