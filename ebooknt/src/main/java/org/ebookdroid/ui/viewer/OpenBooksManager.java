@@ -5,11 +5,14 @@ import android.content.SharedPreferences;
 import org.emdev.BaseDroidApp;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class OpenBooksManager {
@@ -20,6 +23,7 @@ public final class OpenBooksManager {
 
     private final List<String> openBooks = new ArrayList<>();
     private final Set<String> activeBooks = new HashSet<>();
+    private final Map<String, Integer> pageCounts = new HashMap<>();
     private boolean loaded;
 
     private OpenBooksManager() {}
@@ -80,6 +84,19 @@ public final class OpenBooksManager {
         return openBooks.isEmpty();
     }
 
+    public synchronized void setPageCount(final String path, final int count) {
+        if (path != null && count > 0) {
+            pageCounts.put(path, count);
+            save();
+        }
+    }
+
+    public synchronized int getPageCount(final String path) {
+        ensureLoaded();
+        final Integer c = pageCounts.get(path);
+        return c != null ? c : 0;
+    }
+
     private void trimToMax() {
         while (openBooks.size() > MAX_FILES) {
             final String removed = openBooks.remove(openBooks.size() - 1);
@@ -98,7 +115,16 @@ public final class OpenBooksManager {
         try {
             final JSONArray arr = new JSONArray(json);
             for (int i = 0; i < arr.length(); i++) {
-                final String p = arr.getString(i);
+                final Object item = arr.get(i);
+                String p;
+                if (item instanceof JSONObject) {
+                    final JSONObject obj = (JSONObject) item;
+                    p = obj.optString("path", null);
+                    final int pc = obj.optInt("pageCount", 0);
+                    if (p != null && pc > 0) pageCounts.put(p, pc);
+                } else {
+                    p = item.toString();
+                }
                 if (p != null && !p.isEmpty() && new File(p).exists()) {
                     openBooks.add(p);
                 }
@@ -111,7 +137,14 @@ public final class OpenBooksManager {
         if (BaseDroidApp.context == null) return;
         final JSONArray arr = new JSONArray();
         for (final String p : openBooks) {
-            arr.put(p);
+            final JSONObject obj = new JSONObject();
+            try {
+                obj.put("path", p);
+                final Integer pc = pageCounts.get(p);
+                if (pc != null) obj.put("pageCount", pc.intValue());
+            } catch (final JSONException e) {
+            }
+            arr.put(obj);
         }
         BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0)
                 .edit().putString(KEY_PATHS, arr.toString()).apply();

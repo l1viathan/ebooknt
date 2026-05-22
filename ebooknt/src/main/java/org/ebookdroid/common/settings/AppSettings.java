@@ -366,7 +366,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.viewMode = BOOK_VIEW_MODE.getPreferenceValue(prefs, current.viewMode);
         bs.pageAlign = BOOK_PAGE_ALIGN.getPreferenceValue(prefs, current.pageAlign);
         bs.animationType = BOOK_ANIMATION_TYPE.getPreferenceValue(prefs, current.animationType);
-        bs.firstPageOffset = BOOK_FIRST_PAGE_OFFSET.getPreferenceValue(prefs);
+        bs.firstPageOffset = 2 - BOOK_FIRST_PAGE_OFFSET.getPreferenceValue(prefs);
         bs.rtl = BOOK_RTL.getPreferenceValue(prefs, current.rtl);
     }
 
@@ -417,7 +417,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         BOOK_VIEW_MODE.setPreferenceValue(edit, bs.viewMode);
         BOOK_PAGE_ALIGN.setPreferenceValue(edit, bs.pageAlign);
         BOOK_ANIMATION_TYPE.setPreferenceValue(edit, bs.animationType);
-        BOOK_FIRST_PAGE_OFFSET.setPreferenceValue(edit, bs.firstPageOffset);
+        BOOK_FIRST_PAGE_OFFSET.setPreferenceValue(edit, 2 - bs.firstPageOffset);
         BOOK_RTL.setPreferenceValue(edit, bs.rtl);
         edit.commit();
     }

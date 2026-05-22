@@ -1393,6 +1393,50 @@ JNI_FN(MuPdfOutline_getOutlineFlat)(JNIEnv *env, jclass clazz, jlong dochandle)
     return result;
 }
 
+JNIEXPORT jint JNICALL
+JNI_FN(MuPdfDocument_getPageLabelStart)(JNIEnv *env, jclass clazz, jlong dochandle)
+{
+    renderdocument_t *doc = (renderdocument_t*) (long) dochandle;
+    fz_context *ctx = doc->ctx;
+    int result = -1;
+
+    jni_lock(ctx);
+    fz_try(ctx) {
+        pdf_document *pdoc = pdf_specifics(ctx, doc->document);
+        if (pdoc) {
+            pdf_obj *root = pdf_dict_get(ctx, pdf_trailer(ctx, pdoc), PDF_NAME(Root));
+            pdf_obj *labels = pdf_dict_gets(ctx, root, "PageLabels");
+            if (labels) {
+                pdf_obj *nums = pdf_dict_gets(ctx, labels, "Nums");
+                if (nums && pdf_is_array(ctx, nums)) {
+                    int len = pdf_array_len(ctx, nums);
+                    for (int i = 0; i + 1 < len; i += 2) {
+                        int page_idx = pdf_to_int(ctx, pdf_array_get(ctx, nums, i));
+                        pdf_obj *dict = pdf_array_get(ctx, nums, i + 1);
+                        if (!pdf_is_dict(ctx, dict))
+                            continue;
+                        const char *style = pdf_to_name(ctx,
+                            pdf_dict_gets(ctx, dict, "S"));
+                        int st = 1;
+                        pdf_obj *st_obj = pdf_dict_gets(ctx, dict, "St");
+                        if (st_obj)
+                            st = pdf_to_int(ctx, st_obj);
+                        if (style && strcmp(style, "D") == 0 && st == 1) {
+                            result = page_idx + 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    } fz_catch(ctx) {
+        result = -1;
+    }
+    jni_unlock(ctx);
+
+    return result;
+}
+
 JNIEXPORT jlong JNICALL
 JNI_FN(MuPdfOutline_open)(JNIEnv *env, jclass clazz, jlong dochandle)
 {

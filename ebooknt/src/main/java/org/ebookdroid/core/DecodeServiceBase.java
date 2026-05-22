@@ -388,6 +388,14 @@ public class DecodeServiceBase implements DecodeService {
     }
 
     @Override
+    public int getPageLabelStart() {
+        if (document instanceof org.ebookdroid.droids.mupdf.codec.MuPdfDocument) {
+            return ((org.ebookdroid.droids.mupdf.codec.MuPdfDocument) document).getPageLabelStart();
+        }
+        return -1;
+    }
+
+    @Override
     public void recycle() {
         if (isRecycled.compareAndSet(false, true)) {
             cachedOutline = null;

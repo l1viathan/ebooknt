@@ -71,11 +71,11 @@ public class DecodeServiceStub implements DecodeService {
         return null;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @see org.ebookdroid.core.DecodeService#getUnifiedPageInfo()
-     */
+    @Override
+    public int getPageLabelStart() {
+        return -1;
+    }
+
     @Override
     public CodecPageInfo getUnifiedPageInfo() {
         return DEFAULT;

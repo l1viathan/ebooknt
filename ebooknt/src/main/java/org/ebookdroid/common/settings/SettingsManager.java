@@ -273,6 +273,20 @@ public class SettingsManager {
 
     // TODO: Factor out common code from these
 
+    public static void setBookFirstPageOffset(final BookSettings current, final int offset) {
+        if (current == null) {
+            return;
+        }
+        lock.writeLock().lock();
+        try {
+            current.firstPageOffset = offset;
+            current.lastChanged = System.currentTimeMillis();
+            db.storeBookSettings(current);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public static void setBookRotation(final BookSettings current, final RotationType mode) {
         if (current == null) {
             return;

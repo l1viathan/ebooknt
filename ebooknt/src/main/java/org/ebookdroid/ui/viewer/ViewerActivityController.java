@@ -390,16 +390,16 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     public String getPageNumberString() {
         final int pageCount = documentModel.getPageCount();
         PageIndex currentIndex = documentModel.getCurrentIndex();
-        String pageText = "";
-        if (pageCount > 0) {
-            final int offset = bookSettings != null ? bookSettings.firstPageOffset : 1;
-            if (offset == 1) {
-                pageText = (currentIndex.viewIndex + 1) + "/" + pageCount;
-            } else {
-                pageText = offset + "/" + (currentIndex.viewIndex + offset) + "/" + (pageCount - 1 + offset);
-            }
+        if (pageCount <= 0) {
+            return "";
         }
-        return pageText;
+        final int offset = bookSettings != null ? bookSettings.firstPageOffset : 1;
+        final int logicalPage = currentIndex.viewIndex + offset;
+        final int totalLogical = pageCount - 1 + offset;
+        if (logicalPage >= 1) {
+            return logicalPage + "/" + totalLogical;
+        }
+        return "[" + logicalPage + "]/" + totalLogical;
     }
 
     public String getWindowTitle() {
@@ -1348,6 +1348,15 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
                         final DocumentModel dm = getDocumentModel();
                         currentPageChanged(PageIndex.NULL, dm.getCurrentIndex());
+
+                        OpenBooksManager.get().setPageCount(m_fileName, dm.getPageCount());
+
+                        if (bookSettings != null && bookSettings.firstPageOffset == 1) {
+                            final int labelStart = dm.decodeService.getPageLabelStart();
+                            if (labelStart > 1) {
+                                SettingsManager.setBookFirstPageOffset(bookSettings, 2 - labelStart);
+                            }
+                        }
 
                     } catch (final Throwable th) {
                         result = th;

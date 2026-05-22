@@ -19,8 +19,8 @@
     <string name="pref_render_category_summary">"渲染設定"</string>
     <string name="pref_book_category">"當前設定"</string>
     <string name="pref_book_category_summary">"當前閱讀的檔案設定"</string>
-    <string name="pref_firstpageoffset_title">"第一頁位移量"</string>
-    <string name="pref_firstpageoffset_summary">"顯示給使用者的第一頁索引"</string>
+    <string name="pref_firstpageoffset_title">"第1頁位置"</string>
+    <string name="pref_firstpageoffset_summary">"印刷第1頁 = 檔案第___頁"</string>
     <string name="pref_splitpages_title">"拆分頁面"</string>
     <string name="pref_splitpages_summary">"將縱向頁面拆分為兩個橫向頁面"</string>
     <string name="pref_splitpages_rtl_title">"從右往左拆分頁面"</string>

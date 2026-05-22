@@ -78,6 +78,10 @@ public class MuPdfDocument extends AbstractCodecDocument {
         }
     }
 
+    public int getPageLabelStart() {
+        return getPageLabelStart(documentHandle);
+    }
+
     native static int getPageInfo(long docHandle, int pageNumber, CodecPageInfo cpi);
 
     private static native long open(int storememory, int format, String fname, String pwd);
@@ -87,4 +91,6 @@ public class MuPdfDocument extends AbstractCodecDocument {
     private static native void free(long handle);
 
     private static native int getPageCount(long handle);
+
+    private static native int getPageLabelStart(long docHandle);
 }

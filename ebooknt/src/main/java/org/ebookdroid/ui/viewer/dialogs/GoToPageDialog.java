@@ -18,6 +18,8 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SeekBar;
@@ -42,6 +44,7 @@ public class GoToPageDialog extends Dialog {
     Bookmark current;
     DialogController<GoToPageDialog> actions;
     int offset;
+    boolean useFilePage;
     int originalPage;
 
     public GoToPageDialog(final IActivityController base) {
@@ -93,6 +96,19 @@ public class GoToPageDialog extends Dialog {
         });
 
         handler.init(new IViewContainer.DialogBridge(this), seekbar, R.id.seekbar_minus, R.id.seekbar_plus);
+
+        final CheckBox filePageCb = (CheckBox) findViewById(R.id.useFilePageCheckBox);
+        if (offset == 1) {
+            filePageCb.setVisibility(View.GONE);
+        } else {
+            filePageCb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(final CompoundButton button, final boolean checked) {
+                    useFilePage = checked;
+                    updateControls(seekbar.getProgress(), false);
+                }
+            });
+        }
     }
 
     @Override
@@ -145,7 +161,9 @@ public class GoToPageDialog extends Dialog {
         final int pageNumber = getEnteredPageIndex(text);
         final int pageCount = base.getDocumentModel().getPageCount();
         if (pageNumber < 0 || pageNumber >= pageCount) {
-            final String msg = base.getContext().getString(R.string.bookmark_invalid_page, offset, pageCount - 1 + offset);
+            final int lo = useFilePage ? 1 : offset;
+            final int hi = useFilePage ? pageCount : (pageCount - 1 + offset);
+            final String msg = base.getContext().getString(R.string.bookmark_invalid_page, lo, hi);
             Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
             return;
         }
@@ -257,7 +275,8 @@ public class GoToPageDialog extends Dialog {
         final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
         final EditText editText = (EditText) findViewById(R.id.pageNumberTextEdit);
 
-        editText.setText("" + (viewIndex + offset));
+        final int displayedPage = useFilePage ? (viewIndex + 1) : (viewIndex + offset);
+        editText.setText("" + displayedPage);
         editText.selectAll();
 
         if (updateBar) {
@@ -271,7 +290,8 @@ public class GoToPageDialog extends Dialog {
 
     private int getEnteredPageIndex(final EditText text) {
         try {
-            return Integer.parseInt(text.getText().toString()) - offset;
+            final int entered = Integer.parseInt(text.getText().toString());
+            return useFilePage ? (entered - 1) : (entered - offset);
         } catch (final Exception e) {
         }
         return -1;

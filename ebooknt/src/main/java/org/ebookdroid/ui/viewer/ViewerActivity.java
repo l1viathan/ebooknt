@@ -5,6 +5,7 @@ import org.ebookdroid.common.settings.types.RotationType;
 import org.emdev.ui.uimanager.UIManagerAppCompat;
 import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.AppSettings;
+import org.ebookdroid.common.settings.SettingsManager;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.common.settings.types.ToastPosition;
@@ -33,6 +34,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.ContextMenu;
@@ -714,10 +716,19 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             final String path;
             final String title;
             final boolean isCurrent;
+            final int progress;
             BookItem(final String path, final boolean isCurrent) {
                 this.path = path;
                 this.title = OpenBooksManager.getDisplayTitle(path);
                 this.isCurrent = isCurrent;
+                final int pc = OpenBooksManager.get().getPageCount(path);
+                if (pc > 0) {
+                    final BookSettings bs = SettingsManager.getBookSettings(path);
+                    final int cur = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
+                    this.progress = Math.min(100, cur * 100 / pc);
+                } else {
+                    this.progress = -1;
+                }
             }
         }
 
@@ -754,11 +765,13 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         public View getView(final int pos, View convertView, final ViewGroup parent) {
             ImageView icon;
             TextView tv;
+            TextView progressTv;
             if (convertView == null) {
                 final float density = ctx.getResources().getDisplayMetrics().density;
                 final int dp16 = (int) (16 * density + 0.5f);
                 final int dp12 = (int) (12 * density + 0.5f);
                 final int dp24 = (int) (24 * density + 0.5f);
+                final int dp8 = (int) (8 * density + 0.5f);
 
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
@@ -777,12 +790,27 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
                 tv = new TextView(ctx);
                 tv.setTextSize(15);
+                tv.setSingleLine(true);
+                tv.setEllipsize(TextUtils.TruncateAt.END);
+                final LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+                tv.setLayoutParams(tvLp);
                 row.addView(tv);
+
+                progressTv = new TextView(ctx);
+                progressTv.setTextSize(13);
+                progressTv.setSingleLine(true);
+                final LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                pLp.leftMargin = dp8;
+                progressTv.setLayoutParams(pLp);
+                row.addView(progressTv);
 
                 convertView = row;
             } else {
                 icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
                 tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
+                progressTv = (TextView) ((ViewGroup) convertView).getChildAt(2);
             }
             final Object item = items.get(pos);
             if (item instanceof BookItem) {
@@ -805,12 +833,20 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     icon.setAlpha(0.5f);
                 }
                 icon.setImageResource(R.drawable.viewer_menu_bookmark);
+                if (book.progress >= 0) {
+                    progressTv.setText("[" + book.progress + "%]");
+                    progressTv.setTextColor(0xFFAAAAAA);
+                    progressTv.setVisibility(View.VISIBLE);
+                } else {
+                    progressTv.setVisibility(View.GONE);
+                }
             } else {
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);
                 tv.setTextColor(0xFFB0B0B0);
                 icon.setImageResource(R.drawable.recent_actionbar_library);
                 icon.setAlpha(0.7f);
+                progressTv.setVisibility(View.GONE);
             }
             return convertView;
         }

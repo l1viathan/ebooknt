@@ -44,6 +44,8 @@ public interface DecodeService extends CodecFeatures {
 
     ByteBufferBitmap createPageThumbnail(int width, int height, int pageNo, RectF region);
 
+    int getPageLabelStart();
+
     interface DecodeCallback {
 
         void decodeComplete(CodecPage codecPage, ByteBufferBitmap bitmap, RectF croppedPageBounds);

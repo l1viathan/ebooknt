@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.support.v4.widget.DrawerLayout;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -18,6 +19,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.ebookdroid.common.settings.SettingsManager;
+import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebooknt.viewer.R;
 
 import java.io.File;
@@ -66,11 +69,13 @@ public class OpenBooksDrawerHelper {
         public View getView(int pos, View convertView, ViewGroup parent) {
             ImageView icon;
             TextView tv;
+            TextView progressTv;
             if (convertView == null) {
                 final float density = ctx.getResources().getDisplayMetrics().density;
                 final int dp16 = (int) (16 * density + 0.5f);
                 final int dp12 = (int) (12 * density + 0.5f);
                 final int dp24 = (int) (24 * density + 0.5f);
+                final int dp8 = (int) (8 * density + 0.5f);
 
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
@@ -89,12 +94,27 @@ public class OpenBooksDrawerHelper {
 
                 tv = new TextView(ctx);
                 tv.setTextSize(15);
+                tv.setSingleLine(true);
+                tv.setEllipsize(TextUtils.TruncateAt.END);
+                final LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
+                tv.setLayoutParams(tvLp);
                 row.addView(tv);
+
+                progressTv = new TextView(ctx);
+                progressTv.setTextSize(13);
+                progressTv.setSingleLine(true);
+                final LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                pLp.leftMargin = dp8;
+                progressTv.setLayoutParams(pLp);
+                row.addView(progressTv);
 
                 convertView = row;
             } else {
                 icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
                 tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
+                progressTv = (TextView) ((ViewGroup) convertView).getChildAt(2);
             }
             final String path = items.get(pos);
             final boolean isCurrent = path.equals(currentBookPath);
@@ -117,6 +137,18 @@ public class OpenBooksDrawerHelper {
                 icon.setAlpha(0.5f);
             }
             icon.setImageResource(R.drawable.viewer_menu_bookmark);
+
+            final int pc = OpenBooksManager.get().getPageCount(path);
+            if (pc > 0) {
+                final BookSettings bs = SettingsManager.getBookSettings(path);
+                final int cur = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
+                final int pct = Math.min(100, cur * 100 / pc);
+                progressTv.setText("[" + pct + "%]");
+                progressTv.setTextColor(0xFFAAAAAA);
+                progressTv.setVisibility(View.VISIBLE);
+            } else {
+                progressTv.setVisibility(View.GONE);
+            }
             return convertView;
         }
     }

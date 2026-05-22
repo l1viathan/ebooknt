@@ -20,6 +20,7 @@
     <string name="dialog_title_goto_page">"转至页面"</string>
     <string name="button_goto_page">"转至页面"</string>
     <string name="text_page">"页面"</string>
+    <string name="goto_use_file_page">"文件页码"</string>
     <string name="error_close">"关闭"</string>
     <string name="dialog_backup_name_hint">"进入备份名称…"</string>
     <string name="dialog_backup_backup">"备份…"</string>

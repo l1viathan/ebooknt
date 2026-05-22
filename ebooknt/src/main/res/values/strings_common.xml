@@ -27,6 +27,7 @@
     <string name="dialog_title_goto_page">Go to...</string>
     <string name="button_goto_page">Go</string>
     <string name="text_page">Page</string>
+    <string name="goto_use_file_page">File page</string>
     <string name="error_close">Close</string>
 
     <string name="dialog_backup_name_hint">Enter new backup name&#8230;</string>

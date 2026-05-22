@@ -104,12 +104,22 @@
             android:layout_gravity="center_vertical"
             android:layout_marginRight="4dip"
             android:layout_weight="1"
-            android:inputType="number"
+            android:inputType="numberSigned"
             android:minEms="4"
-            android:numeric="integer"
             android:textSize="24dip"
             android:textStyle="bold"
             android:gravity="center"/>
+
+        <CheckBox
+            android:id="@+id/useFilePageCheckBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginRight="4dip"
+            android:text="@string/goto_use_file_page"
+            android:textSize="12dip"
+            android:textColor="#CCCCCC"
+            android:buttonTint="#AAAAAA" />
 
         <LinearLayout
             android:id="@+id/goToButton"
