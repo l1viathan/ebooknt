@@ -16,8 +16,8 @@ import org.ebookdroid.ui.library.tasks.CopyBookTask;
 import org.ebookdroid.ui.library.tasks.MoveBookTask;
 import org.ebookdroid.ui.library.tasks.RenameBookTask;
 import org.ebookdroid.ui.settings.SettingsUI;
+import org.ebookdroid.ui.viewer.NavigationHelper;
 import org.ebookdroid.ui.viewer.OpenBooksManager;
-import org.ebookdroid.ui.viewer.ViewerActivity;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -137,18 +137,13 @@ public class BrowserActivityController extends AbstractActivityController<Browse
     @ActionMethod(ids = R.id.browsermenu_close)
     public void closeBrowser(final ActionEx action) {
         OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_RECENT);
-        if (!org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
-            final Intent intent = new Intent(getManagedComponent(), RecentActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            getManagedComponent().startActivity(intent);
+        if (!OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
+            NavigationHelper.bringToFront(getManagedComponent(), RecentActivity.class);
         }
     }
 
     public void goRecent(final ActionEx action) {
-        final BrowserActivity activity = getManagedComponent();
-        final Intent myIntent = new Intent(activity, RecentActivity.class);
-        myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(myIntent);
+        NavigationHelper.bringToFront(getManagedComponent(), RecentActivity.class);
     }
 
     @ActionMethod(ids = R.id.mainmenu_settings)
@@ -164,19 +159,8 @@ public class BrowserActivityController extends AbstractActivityController<Browse
      */
     @Override
     public void showDocument(final Uri uri, final Bookmark b) {
-        OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_BROWSER);
-        final BrowserActivity activity = getManagedComponent();
-        final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setClass(activity, ViewerActivity.class);
-        if (b != null) {
-            intent.putExtra("pageIndex", "" + b.page.viewIndex);
-            intent.putExtra("offsetX", "" + b.offsetX);
-            intent.putExtra("offsetY", "" + b.offsetY);
-        }
-        if (OpenBooksManager.get().isOpen(uri.getPath())) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        }
-        activity.startActivity(intent);
+        NavigationHelper.openDocument(getManagedComponent(),
+                OpenBooksManager.LIBRARY_VIEW_BROWSER, uri, b);
     }
 
     /**
@@ -443,11 +427,9 @@ public class BrowserActivityController extends AbstractActivityController<Browse
 
         if (results.isEmpty()) return;
 
-        RecentActivity.sSearchParentView = OpenBooksManager.LIBRARY_VIEW_BROWSER;
-        RecentActivity.sPendingSearchNodes = results;
-        final Intent intent = new Intent(getManagedComponent(), RecentActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        getManagedComponent().startActivity(intent);
+        OpenBooksManager.get().searchParentView = OpenBooksManager.LIBRARY_VIEW_BROWSER;
+        OpenBooksManager.get().pendingSearchNodes = results;
+        NavigationHelper.bringToFront(getManagedComponent(), RecentActivity.class);
     }
 
     private void collectMatchingFiles(final File dir, final String query,

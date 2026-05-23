@@ -27,7 +27,7 @@ import org.ebookdroid.ui.library.tasks.CopyBookTask;
 import org.ebookdroid.ui.library.tasks.MoveBookTask;
 import org.ebookdroid.ui.library.tasks.RenameBookTask;
 import org.ebookdroid.ui.settings.SettingsUI;
-import org.ebookdroid.ui.viewer.ViewerActivity;
+import org.ebookdroid.ui.viewer.NavigationHelper;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -253,7 +253,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     public void searchBook(final ActionEx action) {
         final Editable value = action.getParameter("input");
         final String searchQuery = value.toString();
-        RecentActivity.sSearchParentView = OpenBooksManager.get().getLastLibraryView();
+        OpenBooksManager.get().searchParentView = OpenBooksManager.get().getLastLibraryView();
         if (bookshelfAdapter.startSearch(searchQuery)) {
             if (LibSettings.current().useBookcase) {
                 getManagedComponent().showBookshelf(BooksAdapter.SEARCH_INDEX);
@@ -265,8 +265,8 @@ public class RecentActivityController extends AbstractActivityController<RecentA
 
     @ActionMethod(ids = R.id.recentmenu_closeSearch)
     public void closeSearch(final ActionEx action) {
-        final boolean returnToBook = RecentActivity.sSearchFromNavigation;
-        final int parentView = RecentActivity.sSearchParentView;
+        final boolean returnToBook = OpenBooksManager.get().searchFromNavigation;
+        final int parentView = OpenBooksManager.get().searchParentView;
         getManagedComponent().closeSearchResults();
         OpenBooksManager.get().setLastLibraryView(parentView);
         if (returnToBook) {
@@ -436,21 +436,10 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     @Override
     public void showDocument(final Uri uri, final Bookmark b) {
         final int viewMode = getManagedComponent().getViewMode();
-        OpenBooksManager.get().setLastLibraryView(
-                viewMode == RecentActivity.VIEW_SEARCH
-                        ? OpenBooksManager.LIBRARY_VIEW_SEARCH
-                        : OpenBooksManager.LIBRARY_VIEW_RECENT);
-        final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        intent.setClass(getManagedComponent(), ViewerActivity.class);
-        if (b != null) {
-            intent.putExtra("pageIndex", "" + b.page.viewIndex);
-            intent.putExtra("offsetX", "" + b.offsetX);
-            intent.putExtra("offsetY", "" + b.offsetY);
-        }
-        if (OpenBooksManager.get().isOpen(uri.getPath())) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        }
-        getManagedComponent().startActivity(intent);
+        final int libraryView = viewMode == RecentActivity.VIEW_SEARCH
+                ? OpenBooksManager.LIBRARY_VIEW_SEARCH
+                : OpenBooksManager.LIBRARY_VIEW_RECENT;
+        NavigationHelper.openDocument(getManagedComponent(), libraryView, uri, b);
     }
 
     public void showSelectShelfDlg() {
@@ -483,9 +472,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     }
 
     public void goFileBrowserFromSpinner() {
-        final Intent myIntent = new Intent(getManagedComponent(), BrowserActivity.class);
-        myIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        getManagedComponent().startActivity(myIntent);
+        NavigationHelper.bringToFront(getManagedComponent(), BrowserActivity.class);
     }
 
     @ActionMethod(ids = { R.id.recent_showbrowser, R.id.recent_storage_all, R.id.recent_storage_external,

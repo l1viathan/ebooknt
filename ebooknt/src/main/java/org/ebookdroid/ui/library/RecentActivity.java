@@ -83,12 +83,6 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     private OpenBooksDrawerHelper.Adapter openBooksAdapter;
     private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
-    static boolean sHasSearchResults = false;
-    public static int sPendingView = -1;
-    public static boolean sSearchFromNavigation = false;
-    public static int sSearchParentView = org.ebookdroid.ui.viewer.OpenBooksManager.LIBRARY_VIEW_RECENT;
-    public static java.util.List<org.ebookdroid.ui.library.adapters.BookNode> sPendingSearchNodes = null;
-
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
     private ArrayAdapter<String> locationAdapter;
@@ -152,7 +146,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
                     UIManagerAppCompat.invalidateOptionsMenu(RecentActivity.this);
                 } else if (position == 1) {
                     getController().goFileBrowserFromSpinner();
-                } else if (position == 2 && sHasSearchResults) {
+                } else if (position == 2 && OpenBooksManager.get().hasSearchResults) {
                     changeLibraryView(VIEW_SEARCH);
                     UIManagerAppCompat.invalidateOptionsMenu(RecentActivity.this);
                 }
@@ -172,14 +166,15 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     @Override
     protected void onResumeImpl() {
         if (openBooksAdapter != null) openBooksAdapter.refresh();
-        if (sPendingSearchNodes != null) {
-            final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> nodes = sPendingSearchNodes;
-            sPendingSearchNodes = null;
-            sPendingView = -1;
+        final OpenBooksManager mgr = OpenBooksManager.get();
+        if (mgr.pendingSearchNodes != null) {
+            final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> nodes = mgr.pendingSearchNodes;
+            mgr.pendingSearchNodes = null;
+            mgr.pendingView = -1;
             getController().showExternalSearchResults(nodes);
-        } else if (sPendingView >= 0) {
-            final int view = sPendingView;
-            sPendingView = -1;
+        } else if (mgr.pendingView >= 0) {
+            final int view = mgr.pendingView;
+            mgr.pendingView = -1;
             changeLibraryView(view);
         }
         rebuildLocationSpinner();
@@ -214,8 +209,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             return;
         }
         if (getViewMode() == VIEW_SEARCH) {
-            final boolean returnToBook = sSearchFromNavigation;
-            final int parentView = sSearchParentView;
+            final boolean returnToBook = OpenBooksManager.get().searchFromNavigation;
+            final int parentView = OpenBooksManager.get().searchParentView;
             closeSearchResults();
             org.ebookdroid.ui.viewer.OpenBooksManager.get().setLastLibraryView(parentView);
             if (returnToBook) {
@@ -269,7 +264,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
                     @Override
                     public boolean onMenuItemActionCollapse(MenuItem item) {
-                        if (sHasSearchResults) {
+                        if (OpenBooksManager.get().hasSearchResults) {
                             changeLibraryView(VIEW_SEARCH);
                         } else {
                             changeLibraryView(VIEW_RECENT);
@@ -435,15 +430,15 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     }
 
     void showSearchResults() {
-        sHasSearchResults = true;
-        sSearchFromNavigation = false;
+        OpenBooksManager.get().hasSearchResults = true;
+        OpenBooksManager.get().searchFromNavigation = false;
         rebuildLocationSpinner();
         changeLibraryView(VIEW_SEARCH);
     }
 
     void closeSearchResults() {
-        sHasSearchResults = false;
-        sSearchFromNavigation = false;
+        OpenBooksManager.get().hasSearchResults = false;
+        OpenBooksManager.get().searchFromNavigation = false;
         rebuildLocationSpinner();
         changeLibraryView(VIEW_RECENT);
     }
@@ -533,14 +528,14 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         locationItems.clear();
         locationItems.add(getString(R.string.nav_label_recent));
         locationItems.add(getString(R.string.nav_label_files));
-        if (sHasSearchResults) {
+        if (OpenBooksManager.get().hasSearchResults) {
             locationItems.add(getString(R.string.nav_label_search_results));
         }
 
         locationAdapter.notifyDataSetChanged();
 
         int selection = 0;
-        if (viewMode == VIEW_SEARCH && sHasSearchResults) {
+        if (viewMode == VIEW_SEARCH && OpenBooksManager.get().hasSearchResults) {
             selection = 2;
         }
         locationSpinner.setSelection(selection);

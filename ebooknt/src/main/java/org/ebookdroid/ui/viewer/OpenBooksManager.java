@@ -7,6 +7,7 @@ import android.net.Uri;
 
 import org.ebookdroid.ui.library.BrowserActivity;
 import org.ebookdroid.ui.library.RecentActivity;
+import org.ebookdroid.ui.library.adapters.BookNode;
 import org.emdev.BaseDroidApp;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,6 +36,12 @@ public final class OpenBooksManager {
     private final Set<String> activeBooks = new HashSet<>();
     private final Map<String, Integer> pageCounts = new HashMap<>();
     private boolean loaded;
+
+    public boolean hasSearchResults;
+    public int pendingView = -1;
+    public boolean searchFromNavigation;
+    public int searchParentView = LIBRARY_VIEW_RECENT;
+    public List<BookNode> pendingSearchNodes;
 
     private OpenBooksManager() {}
 
@@ -202,17 +209,13 @@ public final class OpenBooksManager {
     public static void navigateToLibrary(final Activity activity) {
         final int view = get().getLastLibraryView();
         if (view == LIBRARY_VIEW_BROWSER) {
-            final Intent intent = new Intent(activity, BrowserActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            activity.startActivity(intent);
+            NavigationHelper.bringToFront(activity, BrowserActivity.class);
         } else {
             if (view == LIBRARY_VIEW_SEARCH) {
-                RecentActivity.sPendingView = RecentActivity.VIEW_SEARCH;
-                RecentActivity.sSearchFromNavigation = true;
+                get().pendingView = RecentActivity.VIEW_SEARCH;
+                get().searchFromNavigation = true;
             }
-            final Intent intent = new Intent(activity, RecentActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-            activity.startActivity(intent);
+            NavigationHelper.bringToFront(activity, RecentActivity.class);
         }
     }
 }

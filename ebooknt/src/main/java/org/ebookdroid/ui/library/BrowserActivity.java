@@ -8,7 +8,6 @@ import org.ebookdroid.common.settings.books.Bookmark;
 import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.ui.library.views.FileBrowserView;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.view.ContextMenu;
@@ -38,6 +37,8 @@ import java.util.List;
 
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.ui.viewer.OpenBooksDrawerHelper;
+import org.ebookdroid.ui.viewer.NavigationHelper;
+import org.ebookdroid.ui.viewer.OpenBooksManager;
 import android.support.v4.widget.DrawerLayout;
 import android.view.MotionEvent;
 import android.widget.ListView;
@@ -114,8 +115,8 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
                 if (!spinnerInitialized) return;
                 if (position == 0) {
                     navigateToRecent();
-                } else if (position == 2 && RecentActivity.sHasSearchResults) {
-                    RecentActivity.sPendingView = RecentActivity.VIEW_SEARCH;
+                } else if (position == 2 && OpenBooksManager.get().hasSearchResults) {
+                    OpenBooksManager.get().pendingView = RecentActivity.VIEW_SEARCH;
                     navigateToRecent();
                 }
             }
@@ -132,9 +133,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     }
 
     private void navigateToRecent() {
-        final Intent intent = new Intent(this, RecentActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        startActivity(intent);
+        NavigationHelper.bringToFront(this, RecentActivity.class);
     }
 
     @Override
@@ -245,7 +244,7 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
         locationItems.clear();
         locationItems.add(getString(R.string.nav_label_recent));
         locationItems.add(currentDir != null ? getLibraryDisplayName(currentDir) : getString(R.string.nav_label_files));
-        if (RecentActivity.sHasSearchResults) {
+        if (OpenBooksManager.get().hasSearchResults) {
             locationItems.add(getString(R.string.nav_label_search_results));
         }
 
