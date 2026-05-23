@@ -108,7 +108,7 @@ public class BrowserActivityController extends AbstractActivityController<Browse
             final boolean atHome = dir != null && dir.getAbsolutePath().equals(home.getAbsolutePath());
             if (!atHome && dir != null && dir.getParentFile() != null) {
                 setCurrentDir(dir.getParentFile());
-            } else {
+            } else if (!org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
                 getManagedComponent().finish();
             }
             return true;
@@ -134,7 +134,9 @@ public class BrowserActivityController extends AbstractActivityController<Browse
 
     @ActionMethod(ids = R.id.browsermenu_close)
     public void closeBrowser(final ActionEx action) {
-        getManagedComponent().finish();
+        if (!org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
+            getManagedComponent().finish();
+        }
     }
 
     public void goRecent(final ActionEx action) {

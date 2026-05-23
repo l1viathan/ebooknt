@@ -274,6 +274,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
 
     @ActionMethod(ids = R.id.mainmenu_exit)
     public void exitApp(final ActionEx action) {
+        org.ebookdroid.ui.viewer.OpenBooksManager.get().closeAll();
         getManagedComponent().finishAffinity();
     }
 
@@ -489,7 +490,9 @@ public class RecentActivityController extends AbstractActivityController<RecentA
 
     @ActionMethod(ids = R.id.mainmenu_close)
     public void close(final ActionEx action) {
-        getManagedComponent().finish();
+        if (!org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
+            getManagedComponent().finish();
+        }
     }
 
     @Override

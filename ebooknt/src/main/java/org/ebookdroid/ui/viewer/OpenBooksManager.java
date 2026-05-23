@@ -1,6 +1,9 @@
 package org.ebookdroid.ui.viewer;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 
 import org.emdev.BaseDroidApp;
 import org.json.JSONArray;
@@ -74,6 +77,13 @@ public final class OpenBooksManager {
         if (path == null) return;
         ensureLoaded();
         openBooks.remove(path);
+        save();
+    }
+
+    public synchronized void closeAll() {
+        ensureLoaded();
+        openBooks.clear();
+        activeBooks.clear();
         save();
     }
 
@@ -156,5 +166,17 @@ public final class OpenBooksManager {
         title = title.replaceAll("\\[.*?\\]", "").replaceAll("\\(.*?\\)", "");
         title = title.trim().replaceAll("\\s{2,}", " ");
         return title;
+    }
+
+    public static boolean navigateToLastOpenBook(final Activity activity) {
+        final List<String> books = get().getOpenBooks();
+        if (books.isEmpty()) {
+            return false;
+        }
+        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(books.get(0))));
+        intent.setClass(activity, ViewerActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        activity.startActivity(intent);
+        return true;
     }
 }

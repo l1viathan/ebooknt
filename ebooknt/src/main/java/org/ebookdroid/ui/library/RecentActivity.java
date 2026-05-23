@@ -199,6 +199,18 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         return super.dispatchTouchEvent(ev);
     }
 
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(android.view.Gravity.START)) {
+            drawerLayout.closeDrawers();
+            return;
+        }
+        if (org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(this)) {
+            return;
+        }
+        super.onBackPressed();
+    }
+
     /**
      * {@inheritDoc}
      *

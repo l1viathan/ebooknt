@@ -1115,6 +1115,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.actions_doClose)
     public void doClose(final ActionEx action) {
+        final String closingPath = m_fileName;
+
         if (documentModel != null) {
             documentModel.recycle();
         }
@@ -1125,9 +1127,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         if (getOrCreateAction(R.id.actions_doClose).getParameter("up", Boolean.FALSE).booleanValue()) {
             goUp();
-        } else {
-            getManagedComponent().finish();
+            return;
         }
+
+        OpenBooksManager.get().removeBook(closingPath);
+        OpenBooksManager.navigateToLastOpenBook(getActivity());
+        getManagedComponent().finish();
     }
 
     private void goUp() {
