@@ -93,6 +93,10 @@ public class RecentAdapter extends BaseAdapter {
         notifyDataSetChanged();
     }
 
+    public List<BookNode> getBooks() {
+        return books;
+    }
+
     public void addNode(final BookNode node) {
         this.books.add(node);
         nodes.put(node.path, node);

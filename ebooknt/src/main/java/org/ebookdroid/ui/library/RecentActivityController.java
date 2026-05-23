@@ -253,6 +253,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     public void searchBook(final ActionEx action) {
         final Editable value = action.getParameter("input");
         final String searchQuery = value.toString();
+        RecentActivity.sSearchParentView = OpenBooksManager.get().getLastLibraryView();
         if (bookshelfAdapter.startSearch(searchQuery)) {
             if (LibSettings.current().useBookcase) {
                 getManagedComponent().showBookshelf(BooksAdapter.SEARCH_INDEX);
@@ -265,11 +266,17 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     @ActionMethod(ids = R.id.recentmenu_closeSearch)
     public void closeSearch(final ActionEx action) {
         final boolean returnToBook = RecentActivity.sSearchFromNavigation;
+        final int parentView = RecentActivity.sSearchParentView;
         getManagedComponent().closeSearchResults();
-        OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_RECENT);
+        OpenBooksManager.get().setLastLibraryView(parentView);
         if (returnToBook) {
             OpenBooksManager.navigateToLastOpenBook(getManagedComponent());
         }
+    }
+
+    public void showExternalSearchResults(final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> nodes) {
+        bookshelfAdapter.setSearchResults(nodes);
+        getManagedComponent().showSearchResults();
     }
 
     @ActionMethod(ids = R.id.mainmenu_settings)

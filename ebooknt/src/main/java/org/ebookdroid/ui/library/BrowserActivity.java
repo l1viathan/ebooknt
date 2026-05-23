@@ -174,6 +174,31 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     public boolean onCreateOptionsMenu(final Menu menu) {
         final MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.browsermenu, menu);
+
+        final MenuItem searchItem = menu.findItem(R.id.browsermenu_searchBook);
+        if (searchItem != null) {
+            android.view.View actionView = searchItem.getActionView();
+            if (actionView == null) {
+                actionView = android.support.v4.view.MenuItemCompat.getActionView(searchItem);
+            }
+            if (actionView instanceof android.support.v7.widget.SearchView) {
+                final android.support.v7.widget.SearchView searchView =
+                        (android.support.v7.widget.SearchView) actionView;
+                searchView.setOnQueryTextListener(
+                        new android.support.v7.widget.SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(final String query) {
+                        getController().searchCurrentDirectory(query);
+                        searchItem.collapseActionView();
+                        return true;
+                    }
+                    @Override
+                    public boolean onQueryTextChange(final String newText) {
+                        return false;
+                    }
+                });
+            }
+        }
         return true;
     }
 

@@ -277,6 +277,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
     }
 
     public synchronized void clearSearch() {
+        searchQuery = null;
         final BookShelfAdapter search = getService(SEARCH_INDEX);
         search.nodes.clear();
         search.notifyDataSetChanged();
@@ -368,23 +369,24 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
     }
 
     public boolean startSearch(final String searchQuery) {
+        clearSearch();
+
         this.searchQuery = LengthUtils.safeString(searchQuery).trim();
         LibSettings.updateSearchBookQuery(this.searchQuery);
-
-        clearSearch();
 
         if (LengthUtils.isEmpty(this.searchQuery)) {
             return false;
         }
 
-        if (scanner.isScan()) {
-            // scanner already running; onFileScan will match against searchQuery live
-        } else if (getListCount() > SERVICE_SHELVES) {
-            // shelves already populated, search within them
-            new SearchTask().execute("");
-        } else {
-            // shelves empty; trigger scan — onFileScan matches against searchQuery as it goes
-            startScan();
+        final BookShelfAdapter search = getService(SEARCH_INDEX);
+        for (final BookNode node : recent.getBooks()) {
+            if (acceptSearch(node)) {
+                search.nodes.add(node);
+            }
+        }
+        if (!search.nodes.isEmpty()) {
+            Collections.sort(search.nodes);
+            search.notifyDataSetChanged();
         }
 
         return true;
@@ -396,6 +398,14 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
 
     public String getSearchQuery() {
         return searchQuery;
+    }
+
+    public synchronized void setSearchResults(final List<BookNode> nodes) {
+        clearSearch();
+        final BookShelfAdapter search = getService(SEARCH_INDEX);
+        search.nodes.addAll(nodes);
+        Collections.sort(search.nodes);
+        search.notifyDataSetChanged();
     }
 
     protected synchronized void onNodesFound(final List<BookNode> nodes) {

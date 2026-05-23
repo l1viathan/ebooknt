@@ -30,6 +30,8 @@ import android.widget.ImageView;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.emdev.BaseDroidApp;
 import org.emdev.common.android.AndroidVersion;
@@ -426,6 +428,45 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         if (file.delete()) {
             CacheManager.clear(file.getAbsolutePath());
             adapter.remove(file);
+        }
+    }
+
+    public void searchCurrentDirectory(final String query) {
+        final String q = query == null ? "" : query.trim();
+        if (q.isEmpty()) return;
+        final File dir = adapter.getCurrentDirectory();
+        if (dir == null) return;
+
+        final FileFilter bookFilter = LibSettings.current().allowedFileTypes;
+        final List<BookNode> results = new ArrayList<>();
+        collectMatchingFiles(dir, q.toLowerCase(), bookFilter, results);
+
+        if (results.isEmpty()) return;
+
+        RecentActivity.sSearchParentView = OpenBooksManager.LIBRARY_VIEW_BROWSER;
+        RecentActivity.sPendingSearchNodes = results;
+        final Intent intent = new Intent(getManagedComponent(), RecentActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        getManagedComponent().startActivity(intent);
+    }
+
+    private void collectMatchingFiles(final File dir, final String query,
+            final FileFilter bookFilter, final List<BookNode> results) {
+        final File[] children = dir.listFiles();
+        if (children == null) return;
+        for (final File f : children) {
+            if (f.isDirectory()) {
+                if (!f.isHidden()) {
+                    collectMatchingFiles(f, query, bookFilter, results);
+                }
+            } else if (bookFilter != null && bookFilter.accept(f)) {
+                final String name = f.getName();
+                final int dot = name.lastIndexOf('.');
+                final String base = (dot > 0 ? name.substring(0, dot) : name).toLowerCase();
+                if (base.contains(query)) {
+                    results.add(new BookNode(f, SettingsManager.getBookSettings(f.getAbsolutePath())));
+                }
+            }
         }
     }
 }

@@ -86,6 +86,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     static boolean sHasSearchResults = false;
     public static int sPendingView = -1;
     public static boolean sSearchFromNavigation = false;
+    public static int sSearchParentView = org.ebookdroid.ui.viewer.OpenBooksManager.LIBRARY_VIEW_RECENT;
+    public static java.util.List<org.ebookdroid.ui.library.adapters.BookNode> sPendingSearchNodes = null;
 
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
@@ -170,7 +172,12 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     @Override
     protected void onResumeImpl() {
         if (openBooksAdapter != null) openBooksAdapter.refresh();
-        if (sPendingView >= 0) {
+        if (sPendingSearchNodes != null) {
+            final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> nodes = sPendingSearchNodes;
+            sPendingSearchNodes = null;
+            sPendingView = -1;
+            getController().showExternalSearchResults(nodes);
+        } else if (sPendingView >= 0) {
             final int view = sPendingView;
             sPendingView = -1;
             changeLibraryView(view);
@@ -208,9 +215,9 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         }
         if (getViewMode() == VIEW_SEARCH) {
             final boolean returnToBook = sSearchFromNavigation;
+            final int parentView = sSearchParentView;
             closeSearchResults();
-            org.ebookdroid.ui.viewer.OpenBooksManager.get().setLastLibraryView(
-                    org.ebookdroid.ui.viewer.OpenBooksManager.LIBRARY_VIEW_RECENT);
+            org.ebookdroid.ui.viewer.OpenBooksManager.get().setLastLibraryView(parentView);
             if (returnToBook) {
                 org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(this);
             }

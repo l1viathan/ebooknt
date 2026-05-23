@@ -9,6 +9,14 @@
         android:title="@string/nav_label_library"/>
 
     <item
+        android:id="@+id/browsermenu_searchBook"
+        android:alphabeticShortcut="s"
+        android:icon="@drawable/recent_actionbar_searchbook"
+        app:showAsAction="ifRoom|collapseActionView"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        android:title="@string/menu_searchbook"/>
+
+    <item
         android:id="@+id/browsermenu_close"
         android:icon="@drawable/common_actionbar_close"
         app:showAsAction="always"
