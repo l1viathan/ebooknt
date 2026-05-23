@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import org.ebookdroid.ui.library.BrowserActivity;
+import org.ebookdroid.ui.library.RecentActivity;
 import org.emdev.BaseDroidApp;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,9 +22,14 @@ import java.util.Set;
 
 public final class OpenBooksManager {
 
+    public static final int LIBRARY_VIEW_RECENT = 0;
+    public static final int LIBRARY_VIEW_BROWSER = 1;
+    public static final int LIBRARY_VIEW_SEARCH = 2;
+
     private static final OpenBooksManager INSTANCE = new OpenBooksManager();
     private static final String PREFS_NAME = "open_books";
     private static final String KEY_PATHS = "paths";
+    private static final String KEY_LAST_LIBRARY_VIEW = "lastLibraryView";
 
     private final List<String> openBooks = new ArrayList<>();
     private final Set<String> activeBooks = new HashSet<>();
@@ -168,6 +175,18 @@ public final class OpenBooksManager {
         return title;
     }
 
+    public void setLastLibraryView(final int view) {
+        if (BaseDroidApp.context == null) return;
+        BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0)
+                .edit().putInt(KEY_LAST_LIBRARY_VIEW, view).apply();
+    }
+
+    public int getLastLibraryView() {
+        if (BaseDroidApp.context == null) return LIBRARY_VIEW_RECENT;
+        return BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0)
+                .getInt(KEY_LAST_LIBRARY_VIEW, LIBRARY_VIEW_RECENT);
+    }
+
     public static boolean navigateToLastOpenBook(final Activity activity) {
         final List<String> books = get().getOpenBooks();
         if (books.isEmpty()) {
@@ -178,5 +197,22 @@ public final class OpenBooksManager {
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(intent);
         return true;
+    }
+
+    public static void navigateToLibrary(final Activity activity) {
+        final int view = get().getLastLibraryView();
+        if (view == LIBRARY_VIEW_BROWSER) {
+            final Intent intent = new Intent(activity, BrowserActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            activity.startActivity(intent);
+        } else {
+            if (view == LIBRARY_VIEW_SEARCH) {
+                RecentActivity.sPendingView = RecentActivity.VIEW_SEARCH;
+                RecentActivity.sSearchFromNavigation = true;
+            }
+            final Intent intent = new Intent(activity, RecentActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            activity.startActivity(intent);
+        }
     }
 }

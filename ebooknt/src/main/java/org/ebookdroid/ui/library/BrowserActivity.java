@@ -132,20 +132,18 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
     }
 
     private void navigateToRecent() {
-        if (!isTaskRoot()) {
-            finish();
-        } else {
-            final Intent intent = new Intent(this, RecentActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-            finish();
-        }
+        final Intent intent = new Intent(this, RecentActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        startActivity(intent);
     }
 
     @Override
     protected void onResumeImpl() {
         if (openBooksAdapter != null) openBooksAdapter.refresh();
         rebuildLocationSpinner();
+        if (getController().adapter != null) {
+            getController().adapter.notifyDataSetInvalidated();
+        }
     }
 
     /**

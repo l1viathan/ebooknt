@@ -134,8 +134,11 @@ public class BrowserActivityController extends AbstractActivityController<Browse
 
     @ActionMethod(ids = R.id.browsermenu_close)
     public void closeBrowser(final ActionEx action) {
+        OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_RECENT);
         if (!org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(getManagedComponent())) {
-            getManagedComponent().finish();
+            final Intent intent = new Intent(getManagedComponent(), RecentActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            getManagedComponent().startActivity(intent);
         }
     }
 
@@ -159,6 +162,7 @@ public class BrowserActivityController extends AbstractActivityController<Browse
      */
     @Override
     public void showDocument(final Uri uri, final Bookmark b) {
+        OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_BROWSER);
         final BrowserActivity activity = getManagedComponent();
         final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         intent.setClass(activity, ViewerActivity.class);

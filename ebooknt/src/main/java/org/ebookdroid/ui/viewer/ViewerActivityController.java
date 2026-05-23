@@ -925,10 +925,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     }
 
     public void goToLibrary(final ActionEx action) {
-        final ViewerActivity activity = getManagedComponent();
-        final Intent intent = new Intent(activity, RecentActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(intent);
+        OpenBooksManager.navigateToLibrary(getManagedComponent());
     }
 
     /**
@@ -1131,7 +1128,9 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         }
 
         OpenBooksManager.get().removeBook(closingPath);
-        OpenBooksManager.navigateToLastOpenBook(getActivity());
+        if (!OpenBooksManager.navigateToLastOpenBook(getActivity())) {
+            OpenBooksManager.navigateToLibrary(getActivity());
+        }
         getManagedComponent().finish();
     }
 

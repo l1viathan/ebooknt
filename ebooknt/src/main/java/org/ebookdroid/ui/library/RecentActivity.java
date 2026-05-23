@@ -84,7 +84,8 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
     private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
     static boolean sHasSearchResults = false;
-    static int sPendingView = -1;
+    public static int sPendingView = -1;
+    public static boolean sSearchFromNavigation = false;
 
     private Spinner locationSpinner;
     private ArrayList<String> locationItems;
@@ -205,6 +206,16 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             drawerLayout.closeDrawers();
             return;
         }
+        if (getViewMode() == VIEW_SEARCH) {
+            final boolean returnToBook = sSearchFromNavigation;
+            closeSearchResults();
+            org.ebookdroid.ui.viewer.OpenBooksManager.get().setLastLibraryView(
+                    org.ebookdroid.ui.viewer.OpenBooksManager.LIBRARY_VIEW_RECENT);
+            if (returnToBook) {
+                org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(this);
+            }
+            return;
+        }
         if (org.ebookdroid.ui.viewer.OpenBooksManager.navigateToLastOpenBook(this)) {
             return;
         }
@@ -282,6 +293,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.mainmenu_settings);
         ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.mainmenu_about);
         ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.recentmenu_cleanrecent);
+        ActionMenuHelper.setMenuItemVisible(menu, isRecent, R.id.mainmenu_exit);
 
         final LibSettings ls = LibSettings.current();
         ActionMenuHelper.setMenuItemExtra(menu, R.id.recent_storage_all, "path", "/");
@@ -417,12 +429,14 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
     void showSearchResults() {
         sHasSearchResults = true;
+        sSearchFromNavigation = false;
         rebuildLocationSpinner();
         changeLibraryView(VIEW_SEARCH);
     }
 
     void closeSearchResults() {
         sHasSearchResults = false;
+        sSearchFromNavigation = false;
         rebuildLocationSpinner();
         changeLibraryView(VIEW_RECENT);
     }

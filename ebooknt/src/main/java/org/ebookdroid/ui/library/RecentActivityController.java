@@ -264,7 +264,12 @@ public class RecentActivityController extends AbstractActivityController<RecentA
 
     @ActionMethod(ids = R.id.recentmenu_closeSearch)
     public void closeSearch(final ActionEx action) {
+        final boolean returnToBook = RecentActivity.sSearchFromNavigation;
         getManagedComponent().closeSearchResults();
+        OpenBooksManager.get().setLastLibraryView(OpenBooksManager.LIBRARY_VIEW_RECENT);
+        if (returnToBook) {
+            OpenBooksManager.navigateToLastOpenBook(getManagedComponent());
+        }
     }
 
     @ActionMethod(ids = R.id.mainmenu_settings)
@@ -423,6 +428,11 @@ public class RecentActivityController extends AbstractActivityController<RecentA
      */
     @Override
     public void showDocument(final Uri uri, final Bookmark b) {
+        final int viewMode = getManagedComponent().getViewMode();
+        OpenBooksManager.get().setLastLibraryView(
+                viewMode == RecentActivity.VIEW_SEARCH
+                        ? OpenBooksManager.LIBRARY_VIEW_SEARCH
+                        : OpenBooksManager.LIBRARY_VIEW_RECENT);
         final Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         intent.setClass(getManagedComponent(), ViewerActivity.class);
         if (b != null) {
