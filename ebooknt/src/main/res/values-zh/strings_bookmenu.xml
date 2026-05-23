@@ -4,7 +4,7 @@
     <string name="bookmenu_open">"打开书籍"</string>
     <string name="bookmenu_settings">"设置"</string>
     <string name="bookmenu_openbookshelf">"显示书架"</string>
-    <string name="bookmenu_openbookfolder">"显示目录"</string>
+    <string name="bookmenu_openbookfolder">"打开所在目录"</string>
     <string name="bookmenu_recentgroup">"清空最近的浏览记录"</string>
     <string name="bookmenu_removefromrecent">"清空浏览记录"</string>
     <string name="bookmenu_cleardata">"清除缓存的数据"</string>
