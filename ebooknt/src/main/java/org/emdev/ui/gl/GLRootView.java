@@ -17,31 +17,26 @@
 package org.emdev.ui.gl;
 
 import android.content.Context;
-import android.graphics.PixelFormat;
-import android.opengl.GLSurfaceView;
+import android.graphics.SurfaceTexture;
 import android.os.Process;
 import android.util.AttributeSet;
-import android.view.SurfaceHolder;
+import android.view.TextureView;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.egl.EGLContext;
+import javax.microedition.khronos.egl.EGLDisplay;
+import javax.microedition.khronos.egl.EGLSurface;
 import javax.microedition.khronos.opengles.GL10;
 import javax.microedition.khronos.opengles.GL11;
 
 import org.emdev.common.log.LogContext;
 import org.emdev.common.log.LogManager;
 
-// The root component of all <code>GLView</code>s. The rendering is done in GL
-// thread while the event handling is done in the main thread.  To synchronize
-// the two threads, the entry points of this package need to synchronize on the
-// <code>GLRootView</code> instance unless it can be proved that the rendering
-// thread won't access the same thing as the method. The entry points include:
-// (1) The public methods of HeadUpDisplay
-// (2) The public methods of CameraHeadUpDisplay
-// (3) The overridden methods in GLRootView.
-public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer {
+public class GLRootView extends TextureView implements TextureView.SurfaceTextureListener {
 
     private static final LogContext LCTX = LogManager.root().lctx("GLRootView");
 
@@ -62,6 +57,8 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
     protected boolean mInDownState = false;
     protected boolean mFirstDraw = true;
 
+    private GLThread mGLThread;
+
     public GLRootView(final Context context) {
         this(context, null);
     }
@@ -69,22 +66,53 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
     public GLRootView(final Context context, final AttributeSet attrs) {
         super(context, attrs);
         mFlags |= FLAG_INITIALIZED;
-        setEGLConfigChooser(GLConfiguration.getConfigChooser());
-        setRenderer(this);
-        if (GLConfiguration.use8888) {
-            getHolder().setFormat(PixelFormat.RGBA_8888);
-        } else {
-            getHolder().setFormat(PixelFormat.RGB_565);
+        setOpaque(true);
+        setSurfaceTextureListener(this);
+    }
+
+    @Override
+    public void onSurfaceTextureAvailable(final SurfaceTexture surface, final int width, final int height) {
+        LCTX.i("onSurfaceTextureAvailable: " + width + "x" + height);
+        mGLThread = new GLThread(surface, width, height);
+        mGLThread.start();
+    }
+
+    @Override
+    public void onSurfaceTextureSizeChanged(final SurfaceTexture surface, final int width, final int height) {
+        LCTX.i("onSurfaceTextureSizeChanged: " + width + "x" + height);
+        if (mGLThread != null) {
+            mGLThread.onWindowResize(width, height);
         }
     }
 
     @Override
+    public boolean onSurfaceTextureDestroyed(final SurfaceTexture surface) {
+        LCTX.i("onSurfaceTextureDestroyed");
+        unfreeze();
+        if (mGLThread != null) {
+            mGLThread.finish();
+            try {
+                mGLThread.join();
+            } catch (final InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            mGLThread = null;
+        }
+        return true;
+    }
+
+    @Override
+    public void onSurfaceTextureUpdated(final SurfaceTexture surface) {
+    }
+
     public void requestRender() {
         if (mRenderRequested) {
             return;
         }
         mRenderRequested = true;
-        super.requestRender();
+        if (mGLThread != null) {
+            mGLThread.requestRender();
+        }
     }
 
     public void requestLayoutContentPane() {
@@ -94,8 +122,6 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
                 return;
             }
 
-            // "View" system will invoke onLayout() for initialization(bug ?), we
-            // have to ignore it since the GLThread is not ready yet.
             if ((mFlags & FLAG_INITIALIZED) == 0) {
                 return;
             }
@@ -113,26 +139,20 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         final int w = getWidth();
         final int h = getHeight();
 
-        // Do the actual layout.
         LCTX.i("layout content pane " + w + "x" + h);
     }
 
     @Override
     protected void onLayout(final boolean changed, final int left, final int top, final int right, final int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
         if (changed) {
             requestLayoutContentPane();
         }
     }
 
-    /**
-     * Called when the context is created, possibly after automatic destruction.
-     */
-    // This is a GLSurfaceView.Renderer callback
-    @Override
     public void onSurfaceCreated(final GL10 gl1, final EGLConfig config) {
         final GL11 gl = (GL11) gl1;
         if (mGL != null) {
-            // The GL Object has changed
             LCTX.i("GLObject has changed from " + mGL + " to " + gl);
         }
         mRenderLock.lock();
@@ -143,27 +163,18 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         } finally {
             mRenderLock.unlock();
         }
-
-        setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
-    /**
-     * Called when the OpenGL surface is recreated without destroying the
-     * context.
-     */
-    // This is a GLSurfaceView.Renderer callback
-    @Override
     public void onSurfaceChanged(final GL10 gl1, final int width, final int height) {
-        LCTX.i("onSurfaceChanged: " + width + "x" + height + ", gl10: " + gl1.toString());
+        LCTX.i("onSurfaceChanged: " + width + "x" + height);
         Process.setThreadPriority(Process.THREAD_PRIORITY_DISPLAY);
-        mCanvas.setSize(width, height);
-        // Ensure one render frame with the new surface dimensions so the screen
-        // doesn't stay gray if a size change cleared the GL surface buffer.
+        if (mCanvas != null) {
+            mCanvas.setSize(width, height);
+        }
         mRenderRequested = false;
         requestRender();
     }
 
-    @Override
     public void onDrawFrame(final GL10 gl) {
         mRenderLock.lock();
 
@@ -176,15 +187,12 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         } finally {
             mRenderLock.unlock();
         }
-
     }
 
     protected void onDrawFrameLocked(final GL10 gl) {
 
-        // release the unbound textures and deleted buffers.
         mCanvas.deleteRecycledResources();
 
-        // reset texture upload limit
         UploadedTexture.resetUploadLimit();
 
         mRenderRequested = false;
@@ -195,7 +203,6 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
 
         mCanvas.save(GLCanvas.SAVE_FLAG_ALL);
 
-        // render
         draw(this.mCanvas);
 
         mCanvas.restore();
@@ -216,10 +223,17 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         mRenderLock.unlock();
     }
 
-    @Override
     public void onPause() {
         unfreeze();
-        super.onPause();
+        if (mGLThread != null) {
+            mGLThread.onPause();
+        }
+    }
+
+    public void onResume() {
+        if (mGLThread != null) {
+            mGLThread.onResume();
+        }
     }
 
     public void freeze() {
@@ -235,28 +249,6 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
         mRenderLock.unlock();
     }
 
-    // We need to unfreeze in the following methods and in onPause().
-    // These methods will wait on GLThread. If we have freezed the GLRootView,
-    // the GLThread will wait on main thread to call unfreeze and cause dead
-    // lock.
-    @Override
-    public void surfaceChanged(final SurfaceHolder holder, final int format, final int w, final int h) {
-        unfreeze();
-        super.surfaceChanged(holder, format, w, h);
-    }
-
-    @Override
-    public void surfaceCreated(final SurfaceHolder holder) {
-        unfreeze();
-        super.surfaceCreated(holder);
-    }
-
-    @Override
-    public void surfaceDestroyed(final SurfaceHolder holder) {
-        unfreeze();
-        super.surfaceDestroyed(holder);
-    }
-
     @Override
     protected void onDetachedFromWindow() {
         unfreeze();
@@ -269,6 +261,132 @@ public class GLRootView extends GLSurfaceView implements GLSurfaceView.Renderer 
             unfreeze();
         } finally {
             super.finalize();
+        }
+    }
+
+    private class GLThread extends Thread {
+
+        private final SurfaceTexture mSurfaceTexture;
+        private volatile boolean mRunning = true;
+        private volatile boolean mPaused = false;
+        private volatile boolean mSizeChanged = false;
+        private int mWidth;
+        private int mHeight;
+
+        private EGL10 mEgl;
+        private EGLDisplay mEglDisplay;
+        private EGLConfig mEglConfig;
+        private EGLContext mEglContext;
+        private EGLSurface mEglSurface;
+
+        GLThread(final SurfaceTexture surfaceTexture, final int width, final int height) {
+            super("GLThread");
+            this.mSurfaceTexture = surfaceTexture;
+            this.mWidth = width;
+            this.mHeight = height;
+        }
+
+        synchronized void requestRender() {
+            notify();
+        }
+
+        synchronized void onWindowResize(final int w, final int h) {
+            mWidth = w;
+            mHeight = h;
+            mSizeChanged = true;
+            notify();
+        }
+
+        synchronized void onPause() {
+            mPaused = true;
+        }
+
+        synchronized void onResume() {
+            mPaused = false;
+            notify();
+        }
+
+        synchronized void finish() {
+            mRunning = false;
+            notify();
+        }
+
+        @Override
+        public void run() {
+            initEGL();
+
+            final GL10 gl10 = (GL10) mEglContext.getGL();
+
+            GLRootView.this.onSurfaceCreated(gl10, mEglConfig);
+            GLRootView.this.onSurfaceChanged(gl10, mWidth, mHeight);
+
+            while (mRunning) {
+                synchronized (this) {
+                    while (mRunning && (mPaused || (!mRenderRequested && !mSizeChanged))) {
+                        try {
+                            wait();
+                        } catch (final InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
+                    if (!mRunning) {
+                        break;
+                    }
+
+                    if (mSizeChanged) {
+                        mSizeChanged = false;
+                        GLRootView.this.onSurfaceChanged(gl10, mWidth, mHeight);
+                    }
+                }
+
+                GLRootView.this.onDrawFrame(gl10);
+
+                if (!mEgl.eglSwapBuffers(mEglDisplay, mEglSurface)) {
+                    LCTX.e("eglSwapBuffers failed: " + mEgl.eglGetError());
+                    break;
+                }
+            }
+
+            destroyEGL();
+        }
+
+        private void initEGL() {
+            mEgl = (EGL10) EGLContext.getEGL();
+            mEglDisplay = mEgl.eglGetDisplay(EGL10.EGL_DEFAULT_DISPLAY);
+
+            final int[] version = new int[2];
+            if (!mEgl.eglInitialize(mEglDisplay, version)) {
+                throw new RuntimeException("eglInitialize failed");
+            }
+
+            final BaseEGLConfigChooser chooser = new BaseEGLConfigChooser();
+            mEglConfig = chooser.chooseConfig(mEgl, mEglDisplay);
+
+            final int[] contextAttribs = { EGL10.EGL_NONE };
+            mEglContext = mEgl.eglCreateContext(mEglDisplay, mEglConfig,
+                    EGL10.EGL_NO_CONTEXT, contextAttribs);
+
+            mEglSurface = mEgl.eglCreateWindowSurface(mEglDisplay, mEglConfig,
+                    mSurfaceTexture, null);
+
+            if (!mEgl.eglMakeCurrent(mEglDisplay, mEglSurface, mEglSurface, mEglContext)) {
+                throw new RuntimeException("eglMakeCurrent failed: " + mEgl.eglGetError());
+            }
+        }
+
+        private void destroyEGL() {
+            if (mEgl != null) {
+                mEgl.eglMakeCurrent(mEglDisplay, EGL10.EGL_NO_SURFACE,
+                        EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_CONTEXT);
+                if (mEglSurface != null) {
+                    mEgl.eglDestroySurface(mEglDisplay, mEglSurface);
+                }
+                if (mEglContext != null) {
+                    mEgl.eglDestroyContext(mEglDisplay, mEglContext);
+                }
+                mEgl.eglTerminate(mEglDisplay);
+            }
         }
     }
 }

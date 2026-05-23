@@ -69,8 +69,8 @@ public class EventGotoPage implements IEvent {
 
         final IView view = ctrl.getView();
 
-        final int scrollX = view.getScrollX();
-        final int scrollY = view.getScrollY();
+        final int scrollX = view.getContentScrollX();
+        final int scrollY = view.getContentScrollY();
 
         final PointF p = calculateScroll(page, scrollX, scrollY);
         final int left = Math.round(p.x);

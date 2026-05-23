@@ -190,8 +190,8 @@ public class ViewState {
         final PointF pos = new PointF();
         final IView view = ctrl.getView();
         if (view != null) {
-            final int left = view.getScrollX();
-            final int top = view.getScrollY();
+            final int left = view.getContentScrollX();
+            final int top = view.getContentScrollY();
             final RectF cpBounds = getBounds(page);
 
             pos.x = (left - cpBounds.left) / cpBounds.width();
@@ -204,8 +204,8 @@ public class ViewState {
         final PointF pos = new PointF();
         final IView view = ctrl.getView();
         if (view != null) {
-            final int left = x + view.getScrollX();
-            final int top = y + view.getScrollY();
+            final int left = x + view.getContentScrollX();
+            final int top = y + view.getContentScrollY();
             final RectF cpBounds = getBounds(page);
 
             pos.x = (left - cpBounds.left) / cpBounds.width();

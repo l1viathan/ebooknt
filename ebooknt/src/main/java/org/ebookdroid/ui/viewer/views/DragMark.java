@@ -43,8 +43,8 @@ public enum DragMark {
         final Rect l = viewState.ctrl.getScrollLimits();
         if (showAlways || (l.width() + l.height() > 0)) {
             final IView view = viewState.ctrl.getView();
-            final float x = view.getScrollX() - viewState.viewBase.x + view.getWidth() - dragBitmap.getWidth() - 1;
-            final float y = view.getScrollY() - viewState.viewBase.y + view.getHeight() - dragBitmap.getHeight() - 1;
+            final float x = view.getContentScrollX() - viewState.viewBase.x + view.getWidth() - dragBitmap.getWidth() - 1;
+            final float y = view.getContentScrollY() - viewState.viewBase.y + view.getHeight() - dragBitmap.getHeight() - 1;
 
             canvas.drawBitmap(dragBitmap, x, y, PAINT);
         }
@@ -70,8 +70,8 @@ public enum DragMark {
             final int w = dragBitmap.getWidth();
             final int h = dragBitmap.getHeight();
 
-            final float x = view.getScrollX() - viewState.viewBase.x + view.getWidth() - w - 1;
-            final float y = view.getScrollY() - viewState.viewBase.y + view.getHeight() - h - 1;
+            final float x = view.getContentScrollX() - viewState.viewBase.x + view.getWidth() - w - 1;
+            final float y = view.getContentScrollY() - viewState.viewBase.y + view.getHeight() - h - 1;
 
             canvas.setClipRect(x, y, w, h);
             canvas.drawTexture(dragBitmapTx, (int) x, (int) y, dragBitmapTx.getWidth(), dragBitmapTx.getHeight());

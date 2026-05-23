@@ -28,7 +28,7 @@
         android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#303030"
+        android:background="#FE303030"
         android:divider="#505050"
         android:dividerHeight="1dp" />
 

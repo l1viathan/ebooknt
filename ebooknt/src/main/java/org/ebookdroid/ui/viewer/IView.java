@@ -68,9 +68,9 @@ public interface IView {
 
     void redrawView(final ViewState viewState);
 
-    int getScrollX();
+    int getContentScrollX();
 
-    int getScrollY();
+    int getContentScrollY();
 
     int getWidth();
 

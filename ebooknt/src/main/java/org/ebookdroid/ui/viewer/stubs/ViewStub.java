@@ -113,12 +113,12 @@ public class ViewStub implements IView {
     }
 
     @Override
-    public int getScrollX() {
+    public int getContentScrollX() {
         return 0;
     }
 
     @Override
-    public int getScrollY() {
+    public int getContentScrollY() {
         return 0;
     }
 

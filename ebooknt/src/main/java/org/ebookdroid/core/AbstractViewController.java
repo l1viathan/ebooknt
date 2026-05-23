@@ -357,7 +357,7 @@ public abstract class AbstractViewController extends AbstractComponentController
     }
 
     public final int getScrollX() {
-        return getView().getScrollX();
+        return getView().getContentScrollX();
     }
 
     public final int getWidth() {
@@ -365,7 +365,7 @@ public abstract class AbstractViewController extends AbstractComponentController
     }
 
     public final int getScrollY() {
-        return getView().getScrollY();
+        return getView().getContentScrollY();
     }
 
     public final int getHeight() {

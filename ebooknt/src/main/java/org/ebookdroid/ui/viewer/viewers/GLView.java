@@ -14,7 +14,6 @@ import android.graphics.RectF;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
 import android.view.View;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -28,7 +27,7 @@ import org.emdev.ui.gl.GLRootView;
 import org.emdev.ui.widget.Flinger;
 import org.emdev.utils.concurrent.Flag;
 
-public final class GLView extends GLRootView implements IView, SurfaceHolder.Callback {
+public final class GLView extends GLRootView implements IView {
 
     protected final IActivityController base;
 
@@ -43,6 +42,9 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
     protected final AtomicReference<Rect> layout = new AtomicReference<Rect>();
 
     protected final Flag layoutFlag = new Flag();
+
+    protected int mGLScrollX;
+    protected int mGLScrollY;
 
     protected final FullScreenCallback fullScreenCallback;
 
@@ -65,12 +67,10 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
 
     @Override
     public void onSurfaceCreated(final GL10 gl, final EGLConfig config) {
-        android.util.Log.e("EBOOKNT", "GLView.onSurfaceCreated");
         super.onSurfaceCreated(gl, config);
         post(new Runnable() {
             @Override
             public void run() {
-                android.util.Log.e("EBOOKNT", "GLView.onSurfaceCreated post running");
                 final org.ebookdroid.ui.viewer.IViewController dc = base.getDocumentController();
                 if (dc != null) {
                     dc.toggleRenderingEffects();
@@ -118,7 +118,7 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
         stopScroller();
 
         final float scrollScaleRatio = getScrollScaleRatio();
-        scrollTo((int) (getScrollX() * scrollScaleRatio), (int) (getScrollY() * scrollScaleRatio));
+        scrollTo((int) (mGLScrollX * scrollScaleRatio), (int) (mGLScrollY * scrollScaleRatio));
     }
 
     /**
@@ -141,8 +141,8 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
             centerY = center.y;
         }
 
-        final int x = (int) ((getScrollX() + centerX) * ratio - centerX);
-        final int y = (int) ((getScrollY() + centerY) * ratio - centerY);
+        final int x = (int) ((mGLScrollX + centerX) * ratio - centerX);
+        final int y = (int) ((mGLScrollY + centerY) * ratio - centerY);
 
         // if (LCTX.isDebugEnabled()) {
         // LCTX.d("invalidateScroll(" + newZoom + ", " + oldZoom + "): " + x + ", " + y);
@@ -157,7 +157,7 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
      */
     @Override
     public void startPageScroll(final int dx, final int dy) {
-        scroller.startScroll(getScrollX(), getScrollY(), dx, dy);
+        scroller.startScroll(mGLScrollX, mGLScrollY, dx, dy);
         redrawView();
     }
 
@@ -168,7 +168,7 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
      */
     @Override
     public void startFling(final float vX, final float vY, final Rect limits) {
-        scroller.fling(getScrollX(), getScrollY(), -(int) vX, -(int) vY, limits.left, limits.right, limits.top,
+        scroller.fling(mGLScrollX, mGLScrollY, -(int) vX, -(int) vY, limits.left, limits.right, limits.top,
                 limits.bottom);
     }
 
@@ -260,8 +260,29 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
     }
 
     @Override
+    public void scrollBy(int x, int y) {
+        scrollTo(mGLScrollX + x, mGLScrollY + y);
+    }
+
+    @Override
+    public int getContentScrollX() {
+        return mGLScrollX;
+    }
+
+    @Override
+    public int getContentScrollY() {
+        return mGLScrollY;
+    }
+
+    @Override
     public void _scrollTo(int x, int y) {
-        super.scrollTo(x, y);
+        int oldX = mGLScrollX;
+        int oldY = mGLScrollY;
+        mGLScrollX = x;
+        mGLScrollY = y;
+        if (oldX != x || oldY != y) {
+            onScrollChanged(x, y, oldX, oldY);
+        }
     }
 
     /**
@@ -271,7 +292,7 @@ public final class GLView extends GLRootView implements IView, SurfaceHolder.Cal
      */
     @Override
     public final RectF getViewRect() {
-        return new RectF(getScrollX(), getScrollY(), getScrollX() + getWidth(), getScrollY() + getHeight());
+        return new RectF(mGLScrollX, mGLScrollY, mGLScrollX + getWidth(), mGLScrollY + getHeight());
     }
 
     /**

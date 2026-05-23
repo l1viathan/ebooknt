@@ -1,14 +1,9 @@
 package org.ebookdroid.ui.viewer.viewers;
 
-import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.ui.viewer.IActivityController;
-import org.ebookdroid.ui.viewer.IView;
 import org.ebookdroid.ui.viewer.IViewController;
 
 import android.graphics.Rect;
-import android.view.View;
-
-import java.lang.reflect.Field;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -21,25 +16,9 @@ final class ScrollEventThread extends Thread {
 
     private static boolean mergeEvents = false;
 
-    private static Field SCROLL_X;
-    private static Field SCROLL_Y;
-
-    static {
-        final Field[] fields = View.class.getDeclaredFields();
-        for (final Field f : fields) {
-            if ("mScrollX".equals(f.getName())) {
-                SCROLL_X = f;
-                SCROLL_X.setAccessible(true);
-            } else if ("mScrollY".equals(f.getName())) {
-                SCROLL_Y = f;
-                SCROLL_Y.setAccessible(true);
-            }
-        }
-    }
-
     private final IActivityController base;
 
-    private final IView view;
+    private final GLView glView;
 
     private final Flag stop = new Flag();
     private volatile boolean paused = false;
@@ -48,10 +27,10 @@ final class ScrollEventThread extends Thread {
 
     private final ConcurrentLinkedQueue<OnScrollEvent> pool = new ConcurrentLinkedQueue<OnScrollEvent>();
 
-    ScrollEventThread(final IActivityController base, IView view) {
+    ScrollEventThread(final IActivityController base, GLView glView) {
         super("ScrollEventThread");
         this.base = base;
-        this.view = view;
+        this.glView = glView;
     }
 
     void setPaused(final boolean p) {
@@ -95,39 +74,18 @@ final class ScrollEventThread extends Thread {
 
     void scrollTo(final int x, final int y) {
         final IViewController dc = base.getDocumentController();
-        final DocumentModel dm = base.getDocumentModel();
-        final View w = view.getView();
 
-        if (dc != null && dm != null) {
+        if (dc != null && base.getDocumentModel() != null) {
             final Rect l = dc.getScrollLimits();
             final int xx = MathUtils.adjust(x, l.left, l.right);
             final int yy = MathUtils.adjust(y, l.top, l.bottom);
 
-            if (SCROLL_X == null || SCROLL_Y == null) {
-                try {
-                    view._scrollTo(xx, yy);
-                } catch (Throwable th) {
-                    System.err.println("(1) " + th.getMessage());
-                }
-            } else {
-                try {
-                    int mScrollX = SCROLL_X.getInt(w);
-                    int mScrollY = SCROLL_Y.getInt(w);
-                    if (mScrollX != xx || mScrollY != yy) {
-                        int oldX = mScrollX;
-                        int oldY = mScrollY;
-                        SCROLL_X.setInt(w, xx);
-                        SCROLL_Y.setInt(w, yy);
-                        view.onScrollChanged(mScrollX, mScrollY, oldX, oldY);
-                    }
-                } catch (Throwable th) {
-                    System.err.println("(2) " + th.getMessage());
-                    try {
-                        view._scrollTo(xx, yy);
-                    } catch (Throwable thh) {
-                        System.err.println("(3) " + thh.getMessage());
-                    }
-                }
+            int oldX = glView.mGLScrollX;
+            int oldY = glView.mGLScrollY;
+            if (oldX != xx || oldY != yy) {
+                glView.mGLScrollX = xx;
+                glView.mGLScrollY = yy;
+                glView.onScrollChanged(xx, yy, oldX, oldY);
             }
         }
     }

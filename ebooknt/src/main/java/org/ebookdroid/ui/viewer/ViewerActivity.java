@@ -28,6 +28,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.Toolbar;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.widget.ImageView;
@@ -175,6 +176,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         }
 
         drawerLayout = (DrawerLayout) rootLayout.findViewById(R.id.viewer_drawer_layout);
+        drawerLayout.setScrimColor(Color.TRANSPARENT);
         drawerList = (ListView) rootLayout.findViewById(R.id.viewer_drawer_list);
 
         setContentView(rootLayout);
@@ -218,10 +220,23 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             }
         });
 
-        drawerLayout.addDrawerListener(new DrawerLayout.SimpleDrawerListener() {
+        drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(final View drawerView, float slideOffset) {
+            }
             @Override
             public void onDrawerOpened(final View drawerView) {
                 centerDrawerItems(headerSpacer, footerSpacer);
+            }
+            @Override
+            public void onDrawerClosed(final View drawerView) {
+                final View glView = view.getView();
+                if (glView instanceof org.emdev.ui.gl.GLRootView) {
+                    ((org.emdev.ui.gl.GLRootView) glView).requestLayoutContentPane();
+                }
+            }
+            @Override
+            public void onDrawerStateChanged(int newState) {
             }
         });
 
