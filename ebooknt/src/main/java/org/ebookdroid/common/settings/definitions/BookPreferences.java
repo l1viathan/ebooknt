@@ -28,6 +28,7 @@ import static org.ebooknt.viewer.R.string.pref_book_posimages_in_nightmode_id;
 import static org.ebooknt.viewer.R.string.pref_book_rotation_id;
 import static org.ebooknt.viewer.R.string.pref_book_rtl_id;
 import static org.ebooknt.viewer.R.string.pref_book_splitpages_id;
+import static org.ebooknt.viewer.R.string.pref_book_textselection_id;
 import static org.ebooknt.viewer.R.string.pref_book_splitpages_rtl_id;
 import static org.ebooknt.viewer.R.string.pref_book_viewmode_id;
 import static org.ebooknt.viewer.R.string.pref_contrast_defvalue;
@@ -46,6 +47,7 @@ import static org.ebooknt.viewer.R.string.pref_rotation_unspecified;
 import static org.ebooknt.viewer.R.string.pref_rtl_defvalue;
 import static org.ebooknt.viewer.R.string.pref_splitpages_defvalue;
 import static org.ebooknt.viewer.R.string.pref_splitpages_rtl_defvalue;
+import static org.ebooknt.viewer.R.string.pref_textselection_defvalue;
 import static org.ebooknt.viewer.R.string.pref_tint_color_defvalue;
 import static org.ebooknt.viewer.R.string.pref_book_tint_color_id;
 import static org.ebooknt.viewer.R.string.pref_tint_defvalue;
@@ -118,4 +120,6 @@ public interface BookPreferences {
             PageAnimationType.class, pref_book_animation_type_id, pref_animation_type_none);
 
     BooleanPreferenceDefinition BOOK_RTL= new BooleanPreferenceDefinition(pref_book_rtl_id, pref_rtl_defvalue);
+
+    BooleanPreferenceDefinition BOOK_TEXT_SELECTION = new BooleanPreferenceDefinition(pref_book_textselection_id, pref_textselection_defvalue);
 }

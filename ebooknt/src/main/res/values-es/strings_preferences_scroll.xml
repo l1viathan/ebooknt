@@ -22,4 +22,8 @@
     <string name="pref_tapfullscreen_title">Toque alterna pantalla completa</string>
     <string name="pref_tapfullscreen_summary">Alternar pantalla completa con un toque en cualquier zona de toque o hiperenlace</string>
 
+
+    <string name="pref_textselection_category">Selección de texto</string>
+    <string name="pref_textselection_title">Habilitar selección de texto</string>
+    <string name="pref_textselection_summary">Mantener pulsado para seleccionar texto para buscar o copiar</string>
 </resources>

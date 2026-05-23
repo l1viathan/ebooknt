@@ -16,4 +16,8 @@
     <string name="pref_animate_scrolling_title">スクロールのアニメーション</string>
     <string name="pref_animate_scrolling_summary">スクロールモードでスクロールをアニメーション化します</string>
 
+
+    <string name="pref_textselection_category">テキスト選択</string>
+    <string name="pref_textselection_title">テキスト選択を有効にする</string>
+    <string name="pref_textselection_summary">長押しでテキストを選択して検索またはコピー</string>
 </resources>

@@ -22,4 +22,8 @@
     <string name="pref_tapfullscreen_title">Stuknięcie przełącza pełny ekran</string>
     <string name="pref_tapfullscreen_summary">Przełącz tryb pełnego ekranu stuknięciem gdziekolwiek w ekran z wyjątkiem stref stuknięcia i odnośników</string>
 
+
+    <string name="pref_textselection_category">Zaznaczanie tekstu</string>
+    <string name="pref_textselection_title">Włącz zaznaczanie tekstu</string>
+    <string name="pref_textselection_summary">Przytrzymaj, aby zaznaczyć tekst do wyszukania lub skopiowania</string>
 </resources>

@@ -36,4 +36,15 @@
         android:summary="@string/pref_tapfullscreen_summary"
         android:title="@string/pref_tapfullscreen_title" />
 
+    <PreferenceCategory
+        android:title="@string/pref_textselection_category">
+
+        <org.emdev.ui.preference.SwitchPreferenceEx
+            android:defaultValue="@string/pref_textselection_defvalue"
+            android:key="@string/pref_textselection_id"
+            android:summary="@string/pref_textselection_summary"
+            android:title="@string/pref_textselection_title" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

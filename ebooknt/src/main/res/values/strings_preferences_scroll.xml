@@ -22,4 +22,8 @@
     <string name="pref_tapfullscreen_title">Tap toggles fullscreen</string>
     <string name="pref_tapfullscreen_summary">Toggle fullscreen by tapping anywhere outside of a tap zone or hyperlink</string>
 
+    <string name="pref_textselection_category">Text selection</string>
+    <string name="pref_textselection_title">Enable text selection</string>
+    <string name="pref_textselection_summary">Long press to select text for lookup or copy</string>
+
 </resources>

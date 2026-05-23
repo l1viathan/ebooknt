@@ -12,4 +12,8 @@
     <string name="pref_animate_scrolling_title">"הנפשת הגלילה"</string>
     <string name="pref_animate_scrolling_summary">"הנפשת הגלילה במצב מגילה"</string>
 
+
+    <string name="pref_textselection_category">בחירת טקסט</string>
+    <string name="pref_textselection_title">הפעל בחירת טקסט</string>
+    <string name="pref_textselection_summary">לחיצה ארוכה לבחירת טקסט לחיפוש או העתקה</string>
 </resources>

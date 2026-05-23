@@ -55,6 +55,12 @@
         android:summary="@string/pref_rtl_summary"
         android:title="@string/pref_rtl_title" />
 
+    <CheckBoxPreference
+        android:defaultValue="@string/pref_textselection_defvalue"
+        android:key="@string/pref_book_textselection_id"
+        android:summary="@string/pref_textselection_summary"
+        android:title="@string/pref_textselection_title" />
+
 	<PreferenceCategory
 		android:summary="@string/pref_singlepage_category_summary"
 		android:title="@string/pref_singlepage_category">

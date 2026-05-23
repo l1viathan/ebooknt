@@ -65,6 +65,10 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     public final boolean tapTogglesFullscreen;
 
+    /* =============== Text selection settings =============== */
+
+    public final boolean textSelection;
+
     /* =============== Tap & Keyboard settings =============== */
 
     public final String tapProfiles;
@@ -195,6 +199,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         animateScrolling = ANIMATE_SCROLLING.getPreferenceValue(prefs);
         volumeKeyScrolling = VOLUME_KEY_SCROLLING.getPreferenceValue(prefs);
         tapTogglesFullscreen = TAP_TOGGLES_FULLSCREEN.getPreferenceValue(prefs);
+        /* =============== Text selection settings =============== */
+        textSelection = TEXT_SELECTION.getPreferenceValue(prefs);
         /* =============== Navigation & History settings =============== */
         showBookmarksInMenu = SHOW_BOOKMARKs_MENU.getPreferenceValue(prefs);
         linkHighlightColor = LINK_HIGHLIGHT_COLOR.getPreferenceValue(prefs);
@@ -344,6 +350,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.pageAlign = current.pageAlign;
         bs.animationType = current.animationType;
         bs.rtl = current.rtl;
+        bs.textSelection = current.textSelection;
     }
 
     static void fillBookSettings(final BookSettings bs) {
@@ -368,6 +375,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         bs.animationType = BOOK_ANIMATION_TYPE.getPreferenceValue(prefs, current.animationType);
         bs.firstPageOffset = 2 - BOOK_FIRST_PAGE_OFFSET.getPreferenceValue(prefs);
         bs.rtl = BOOK_RTL.getPreferenceValue(prefs, current.rtl);
+        bs.textSelection = BOOK_TEXT_SELECTION.getPreferenceValue(prefs, current.textSelection);
     }
 
     static void clearPseudoBookSettings() {
@@ -393,6 +401,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         edit.remove(BOOK_ANIMATION_TYPE.key);
         edit.remove(BOOK_FIRST_PAGE_OFFSET.key);
         edit.remove(BOOK_RTL.key);
+        edit.remove(BOOK_TEXT_SELECTION.key);
         edit.commit();
     }
 
@@ -419,6 +428,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         BOOK_ANIMATION_TYPE.setPreferenceValue(edit, bs.animationType);
         BOOK_FIRST_PAGE_OFFSET.setPreferenceValue(edit, 2 - bs.firstPageOffset);
         BOOK_RTL.setPreferenceValue(edit, bs.rtl);
+        BOOK_TEXT_SELECTION.setPreferenceValue(edit, bs.textSelection);
         edit.commit();
     }
 

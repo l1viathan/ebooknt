@@ -77,6 +77,8 @@ public class BookSettings implements CurrentPageListener {
 
     public boolean rtl;
 
+    public boolean textSelection;
+
     public JSONObject typeSpecific;
 
     public BookSettings(final BookSettings current) {
@@ -109,6 +111,7 @@ public class BookSettings implements CurrentPageListener {
         this.threshold = current.threshold;
         this.smoothness = current.smoothness;
         this.rtl = current.rtl;
+        this.textSelection = current.textSelection;
         try {
             this.typeSpecific = current.typeSpecific != null ? new JSONObject(current.typeSpecific.toString()) : null;
         } catch (JSONException e) {
@@ -145,6 +148,7 @@ public class BookSettings implements CurrentPageListener {
         this.threshold = current.threshold;
         this.smoothness = current.smoothness;
         this.rtl = current.rtl;
+        this.textSelection = current.textSelection;
         try {
             this.typeSpecific = current.typeSpecific != null ? new JSONObject(current.typeSpecific.toString()) : null;
         } catch (JSONException e) {
@@ -195,6 +199,7 @@ public class BookSettings implements CurrentPageListener {
         final int rawSmoothness = object.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
         this.smoothness = rawSmoothness < 100 ? rawSmoothness * 10 : rawSmoothness;
         this.rtl = object.optBoolean("rtl", BookPreferences.BOOK_RTL.getDefaultValue());
+        this.textSelection = object.optBoolean("textSelection", false);
 
         final JSONArray bookmarks = object.optJSONArray("bookmarks");
         if (LengthUtils.isNotEmpty(bookmarks)) {
@@ -236,6 +241,7 @@ public class BookSettings implements CurrentPageListener {
         obj.put("threshold", threshold);
         obj.put("smoothness", smoothness);
         obj.put("rtl", rtl);
+        obj.put("textSelection", textSelection);
 
         final JSONArray bookmarks = new JSONArray();
         obj.put("bookmarks", bookmarks);

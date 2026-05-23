@@ -14,4 +14,8 @@
     <string name="pref_volumekeyscrolling_summary">Lautstärketasten zum Scrollen verwenden</string>
     <string name="pref_tapfullscreen_title">Antippen schaltet Vollbildmodus um</string>
     <string name="pref_tapfullscreen_summary">Vollbildmodus umschalten durch Antippen</string>
+
+    <string name="pref_textselection_category">Textauswahl</string>
+    <string name="pref_textselection_title">Textauswahl aktivieren</string>
+    <string name="pref_textselection_summary">Lange drücken, um Text zum Nachschlagen oder Kopieren auszuwählen</string>
 </resources>

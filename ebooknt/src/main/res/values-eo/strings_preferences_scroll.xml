@@ -22,4 +22,8 @@
     <string name="pref_tapfullscreen_title">Frapeto enigas plenekranon</string>
     <string name="pref_tapfullscreen_summary">Ŝalti plenekranon per frapi iam ajn ekstere frap-regiono aŭ ligilo</string>
 
+
+    <string name="pref_textselection_category">Tekst-elekto</string>
+    <string name="pref_textselection_title">Aktivigi tekst-elekton</string>
+    <string name="pref_textselection_summary">Longe premu por elekti tekston por serĉi aŭ kopii</string>
 </resources>

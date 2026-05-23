@@ -16,4 +16,8 @@
 <string name="pref_animate_scrolling_title">스크롤링 움직임</string>
 <string name="pref_animate_scrolling_summary">스크롤 모드에서 스크롤링 구현</string>
 
+
+    <string name="pref_textselection_category">텍스트 선택</string>
+    <string name="pref_textselection_title">텍스트 선택 사용</string>
+    <string name="pref_textselection_summary">길게 눌러 텍스트를 선택하여 검색 또는 복사</string>
 </resources>

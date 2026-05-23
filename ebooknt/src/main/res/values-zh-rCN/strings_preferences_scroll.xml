@@ -17,4 +17,8 @@
     <string name="pref_tapfullscreen_title">"点击切换全屏"</string>
     <string name="pref_tapfullscreen_summary">"在点击区域或超链接外的任何位置点击以切换全屏"</string>
 
+
+    <string name="pref_textselection_category">文本选择</string>
+    <string name="pref_textselection_title">启用文本选择</string>
+    <string name="pref_textselection_summary">长按选择文本进行查词或复制</string>
 </resources>

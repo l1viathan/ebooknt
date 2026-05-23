@@ -12,4 +12,8 @@
     <string name="pref_animate_scrolling_title">"Animazione del trascinamento"</string>
     <string name="pref_animate_scrolling_summary">"Anima l'operazione di trascinamento nelle modalità che lo consentono"</string>
 
+
+    <string name="pref_textselection_category">Selezione testo</string>
+    <string name="pref_textselection_title">Attiva selezione testo</string>
+    <string name="pref_textselection_summary">Premi a lungo per selezionare il testo da cercare o copiare</string>
 </resources>

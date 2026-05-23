@@ -12,4 +12,8 @@
     <string name="pref_animate_scrolling_title">"Анимировать прокрутку"</string>
     <string name="pref_animate_scrolling_summary">"Анимировать прокрутку в режиме рулона"</string>
 
+
+    <string name="pref_textselection_category">Выделение текста</string>
+    <string name="pref_textselection_title">Включить выделение текста</string>
+    <string name="pref_textselection_summary">Долгое нажатие для выделения текста для поиска или копирования</string>
 </resources>

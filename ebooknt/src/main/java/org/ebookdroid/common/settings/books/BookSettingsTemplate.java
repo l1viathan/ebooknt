@@ -31,6 +31,7 @@ public class BookSettingsTemplate {
     public int threshold;
     public int smoothness;
     public boolean rtl;
+    public boolean textSelection;
 
     public BookSettingsTemplate(final String name, final BookSettings bs) {
         this.name = name;
@@ -52,6 +53,7 @@ public class BookSettingsTemplate {
         this.threshold = bs.threshold;
         this.smoothness = bs.smoothness;
         this.rtl = bs.rtl;
+        this.textSelection = bs.textSelection;
     }
 
     BookSettingsTemplate(final JSONObject obj) throws JSONException {
@@ -81,6 +83,7 @@ public class BookSettingsTemplate {
         final int rawSmoothness = obj.optInt("smoothness", AppPreferences.SMOOTHNESS.defValue);
         this.smoothness = rawSmoothness < 100 ? rawSmoothness * 10 : rawSmoothness;
         this.rtl = obj.optBoolean("rtl", false);
+        this.textSelection = obj.optBoolean("textSelection", false);
     }
 
     JSONObject toJSON() throws JSONException {
@@ -105,6 +108,7 @@ public class BookSettingsTemplate {
         obj.put("threshold", threshold);
         obj.put("smoothness", smoothness);
         obj.put("rtl", rtl);
+        obj.put("textSelection", textSelection);
         return obj;
     }
 
@@ -127,6 +131,7 @@ public class BookSettingsTemplate {
         bs.threshold = this.threshold;
         bs.smoothness = this.smoothness;
         bs.rtl = this.rtl;
+        bs.textSelection = this.textSelection;
         bs.lastChanged = System.currentTimeMillis();
     }
 }

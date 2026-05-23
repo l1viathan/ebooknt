@@ -58,4 +58,6 @@
 
     <string translatable="false" name="pref_book_rtl_id">book_rtl</string>
 
+    <string translatable="false" name="pref_book_textselection_id">book_textselection</string>
+
 </resources>

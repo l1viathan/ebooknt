@@ -18,5 +18,7 @@
     <string translatable="false" name="pref_tapfullscreen_id">tapfullscreen</string>
     <string translatable="false" name="pref_tapfullscreen_defvalue">true</string>
 
+    <string translatable="false" name="pref_textselection_id">textselection</string>
+    <string translatable="false" name="pref_textselection_defvalue">false</string>
 
 </resources>

@@ -947,6 +947,10 @@ public abstract class AbstractViewController extends AbstractComponentController
             if (multiTouchDetector != null && multiTouchDetector.isMultiTouchActive()) {
                 return;
             }
+            final BookSettings bs = base.getBookSettings();
+            if (bs == null || !bs.textSelection) {
+                return;
+            }
             processTextLookup(e.getX(), e.getY());
         }
 

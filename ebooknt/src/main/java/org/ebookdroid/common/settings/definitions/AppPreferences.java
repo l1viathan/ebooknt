@@ -71,6 +71,11 @@ public interface AppPreferences {
     BooleanPreferenceDefinition TAP_TOGGLES_FULLSCREEN = new BooleanPreferenceDefinition(pref_tapfullscreen_id,
             pref_tapfullscreen_defvalue);
 
+    /* =============== Text selection settings =============== */
+
+    BooleanPreferenceDefinition TEXT_SELECTION = new BooleanPreferenceDefinition(pref_textselection_id,
+            pref_textselection_defvalue);
+
     /* =============== Navigation & history settings =============== */
 
     BooleanPreferenceDefinition SHOW_BOOKMARKs_MENU = new BooleanPreferenceDefinition(pref_showbookmarksmenu_id,
