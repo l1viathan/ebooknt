@@ -67,7 +67,6 @@ public class ManualCropView extends View {
         PAINT.setColor(Color.CYAN);
 
         setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-        setLayerType(LAYER_TYPE_SOFTWARE, null);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
@@ -250,8 +249,12 @@ public class ManualCropView extends View {
     @Override
     public void setVisibility(final int visibility) {
         final boolean wasVisible = getVisibility() == View.VISIBLE;
+        if (visibility == View.VISIBLE) {
+            setLayerType(LAYER_TYPE_SOFTWARE, null);
+        }
         super.setVisibility(visibility);
         if (wasVisible && visibility != View.VISIBLE) {
+            setLayerType(LAYER_TYPE_NONE, null);
             if (needCropRestore && page != null) {
                 needCropRestore = false;
                 new EventCrop(base.getDocumentController(), savedRelativeCrop, false)
