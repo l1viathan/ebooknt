@@ -280,14 +280,17 @@ public final class OpenBooksManager {
 
     public static boolean navigateToLastOpenBook(final Activity activity) {
         final List<String> books = get().getOpenBooks();
-        if (books.isEmpty()) {
-            return false;
+        for (final String path : books) {
+            if (new File(path).exists()) {
+                final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(path)));
+                intent.setClass(activity, ViewerActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                activity.startActivity(intent);
+                return true;
+            }
+            get().removeBook(path);
         }
-        final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(books.get(0))));
-        intent.setClass(activity, ViewerActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(intent);
-        return true;
+        return false;
     }
 
     public static void navigateToLibrary(final Activity activity) {

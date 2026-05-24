@@ -270,6 +270,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             m_fileName = PathFromUri.retrieve(activity.getContentResolver(), uri);
         }
 
+        if (scheme == ContentScheme.FILE && m_fileName != null && !new File(m_fileName).exists()) {
+            OpenBooksManager.get().removeBook(m_fileName);
+            getManagedComponent().finish();
+            return;
+        }
+
         bookSettings = SettingsManager.create(id, m_fileName, scheme.temporary, intent);
         SettingsManager.applyBookSettingsChanges(null, bookSettings);
 
@@ -917,6 +923,10 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     }
 
     public void switchToOpenBook(final String path) {
+        if (!new File(path).exists()) {
+            OpenBooksManager.get().removeBook(path);
+            return;
+        }
         final ViewerActivity activity = getManagedComponent();
         final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(path)));
         intent.setClass(activity, ViewerActivity.class);

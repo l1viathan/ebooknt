@@ -86,6 +86,9 @@ public class RecentAdapter extends BaseAdapter {
         this.nodes.clear();
         for (final BookSettings bs : books) {
             if (filter == null || filter.accept(bs.fileName)) {
+                if (!new File(bs.fileName).exists()) {
+                    continue;
+                }
                 final BookNode node = new BookNode(bs);
                 addNode(node);
             }

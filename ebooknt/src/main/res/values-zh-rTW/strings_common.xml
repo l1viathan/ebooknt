@@ -11,6 +11,7 @@
     <string name="msg_bad_intent">"錯誤:\n%s"</string>
     <string name="msg_no_intent_data">"資料丟失:\n%s"</string>
     <string name="msg_unknown_intent_data_type">"未知的資料型別:\n%s"</string>
+
     <string name="msg_loading_book">"載入書籍： %1$s…"</string>
     <string name="msg_wrong_password">"密碼錯誤&quot;…"</string>
     <string name="msg_password_required">"請輸入密碼…"</string>
