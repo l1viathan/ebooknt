@@ -21,12 +21,15 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.zip.CRC32;
 
 import org.emdev.common.log.LogContext;
 import org.emdev.common.log.LogManager;
@@ -93,13 +96,26 @@ public class SettingsManager {
             boolean created = false;
             BookSettings current = getBookSettingsImpl(fileName);
             if (current == null) {
-                created = true;
-                current = new BookSettings(fileName);
-                AppSettings.setDefaultSettings(current);
-                if (temporaryBook) {
-                    current.persistent = false;
+                final BookSettings migrated = findAndMigrateSettings(fileName);
+                if (migrated != null) {
+                    current = migrated;
+                } else {
+                    created = true;
+                    current = new BookSettings(fileName);
+                    AppSettings.setDefaultSettings(current);
+                    if (temporaryBook) {
+                        current.persistent = false;
+                    }
                 }
             }
+            if (current.fingerprint == null) {
+                final String fp = computeFingerprint(fileName);
+                if (fp != null) {
+                    current.fingerprint = fp;
+                    current.lastChanged = System.currentTimeMillis();
+                }
+            }
+
             bookSettings.put(current.fileName, current);
 
             if (intent != null) {
@@ -176,6 +192,68 @@ public class SettingsManager {
             bs = db.getBookSettings(fileName);
         }
         return bs;
+    }
+
+    static String computeFingerprint(final String path) {
+        final File f = new File(path);
+        if (!f.isFile()) {
+            return null;
+        }
+        final long size = f.length();
+        if (size <= 0) {
+            return null;
+        }
+        try {
+            final FileInputStream fis = new FileInputStream(f);
+            try {
+                final byte[] buf = new byte[(int) Math.min(65536, size)];
+                int off = 0;
+                while (off < buf.length) {
+                    final int n = fis.read(buf, off, buf.length - off);
+                    if (n < 0) break;
+                    off += n;
+                }
+                final CRC32 crc = new CRC32();
+                crc.update(buf, 0, off);
+                return size + ":" + crc.getValue();
+            } finally {
+                fis.close();
+            }
+        } catch (final IOException e) {
+            LCTX.e("Failed to compute fingerprint for " + path, e);
+            return null;
+        }
+    }
+
+    private static BookSettings findAndMigrateSettings(final String newPath) {
+        final String newFp = computeFingerprint(newPath);
+        if (newFp == null) {
+            return null;
+        }
+
+        BookSettings match = null;
+        for (final BookSettings bs : db.getAllBooks().values()) {
+            if (!newFp.equals(bs.fingerprint)) {
+                continue;
+            }
+            if (new File(bs.fileName).exists()) {
+                continue;
+            }
+            if (match != null) {
+                return null;
+            }
+            match = bs;
+        }
+        if (match == null) {
+            return null;
+        }
+
+        final BookSettings migrated = new BookSettings(newPath, match);
+        migrated.fingerprint = newFp;
+        db.delete(match);
+        db.storeBookSettings(migrated);
+        LCTX.i("Migrated book settings: " + match.fileName + " -> " + newPath);
+        return migrated;
     }
 
     public static void releaseBookSettings(final long ownerId, final BookSettings current) {

@@ -83,6 +83,8 @@ public class BookSettings implements CurrentPageListener {
 
     public JSONObject typeSpecific;
 
+    public String fingerprint;
+
     public BookSettings(final BookSettings current) {
         this.persistent = current.persistent;
         this.lastChanged = current.lastChanged;
@@ -115,6 +117,7 @@ public class BookSettings implements CurrentPageListener {
         this.smoothness = current.smoothness;
         this.rtl = current.rtl;
         this.textSelection = current.textSelection;
+        this.fingerprint = current.fingerprint;
         try {
             this.typeSpecific = current.typeSpecific != null ? new JSONObject(current.typeSpecific.toString()) : null;
         } catch (JSONException e) {
@@ -215,6 +218,7 @@ public class BookSettings implements CurrentPageListener {
         }
 
         this.typeSpecific = object.optJSONObject("typeSpecific");
+        this.fingerprint = object.optString("fp", null);
 
     }
 
@@ -256,6 +260,7 @@ public class BookSettings implements CurrentPageListener {
         }
 
         obj.putOpt("typeSpecific", typeSpecific);
+        obj.putOpt("fp", fingerprint);
 
         return obj;
     }
