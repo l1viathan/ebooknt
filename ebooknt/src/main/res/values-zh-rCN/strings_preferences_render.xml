@@ -25,8 +25,8 @@
     <string name="pref_splitpages_summary">"将纵向页面拆分为两个横向页面"</string>
     <string name="pref_splitpages_rtl_title">"从右往左拆分页面"</string>
     <string name="pref_splitpages_rtl_summary">"将横向页面从右往左拆分为两个纵向页面"</string>
-    <string name="pref_croppages_title">"裁剪页面"</string>
-    <string name="pref_croppages_summary">"裁剪页面边框"</string>
+    <string name="pref_croppages_title">"自动切边"</string>
+    <string name="pref_croppages_summary">"自动裁去页面空白边距"</string>
     <string name="pref_viewmode_title">"页面视图模式"</string>
     <string name="pref_viewmode_summary">"页面视图模式"</string>
     <string name="list_viewmode_vertical_scroll">"上下滚动"</string>

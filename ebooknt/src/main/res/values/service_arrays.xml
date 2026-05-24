@@ -15,6 +15,15 @@
         <item>@string/manual_cropping_all</item>
         <item>@string/manual_cropping_remove_current</item>
         <item>@string/manual_cropping_remove_all</item>
+        <item>@string/manual_cropping_set_default</item>
+        <item>@string/manual_cropping_clear_default</item>
         </string-array>
+
+    <string-array name="list_crop_default_options" translatable="false">
+        <item>@string/manual_cropping_current</item>
+        <item>@string/manual_cropping_even</item>
+        <item>@string/manual_cropping_even_symm</item>
+        <item>@string/manual_cropping_all</item>
+    </string-array>
 
 </resources>

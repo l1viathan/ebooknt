@@ -25,8 +25,8 @@
     <string name="pref_splitpages_summary">"將縱向頁面拆分為兩個橫向頁面"</string>
     <string name="pref_splitpages_rtl_title">"從右往左拆分頁面"</string>
     <string name="pref_splitpages_rtl_summary">"將橫向頁面從右往左拆分為兩個縱向頁面"</string>
-    <string name="pref_croppages_title">"裁剪頁面"</string>
-    <string name="pref_croppages_summary">"裁剪頁面邊框"</string>
+    <string name="pref_croppages_title">"自動裁邊"</string>
+    <string name="pref_croppages_summary">"自動裁去頁面空白邊距"</string>
     <string name="pref_viewmode_title">"頁面檢視模式"</string>
     <string name="pref_viewmode_summary">"頁面檢視模式"</string>
     <string name="list_viewmode_vertical_scroll">"上下滾動"</string>

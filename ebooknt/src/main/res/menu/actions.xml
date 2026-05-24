@@ -32,6 +32,7 @@
     <item android:id="@+id/actions_selectShelf"/>
 
     <item android:id="@+id/actions_applyCrop"/>
+    <item android:id="@+id/actions_setDefaultCrop"/>
 
     <item android:id="@+id/actions_storageGroup"/>
     <item android:id="@+id/actions_storage"/>

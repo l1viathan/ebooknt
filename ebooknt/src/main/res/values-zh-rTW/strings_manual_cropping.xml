@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
-<!--<string name="manual_cropping_title">"Custom crop options (requires single page):"</string>-->
-<!--<string name="manual_cropping_current">"Crop current page only"</string>-->
-<!--<string name="manual_cropping_even">"Crop all even (odd) pages"</string>-->
-<!--<string name="manual_cropping_even_symm">"Crop even and odd pages, symmetrically"</string>-->
-<!--<string name="manual_cropping_all">"Crop all pages"</string>-->
-<!--<string name="manual_cropping_remove_current">"Remove crop settings from current page(s)"</string>-->
-<!--<string name="manual_cropping_remove_all">"Remove all crop setting"</string>-->
-<!--<string name="manual_cropping_back">"Return to area selection"</string>-->
+    <string name="manual_cropping_title">"手動裁邊選項（需單頁模式）："</string>
+    <string name="manual_cropping_current">"僅裁邊目前頁"</string>
+    <string name="manual_cropping_even">"裁邊所有偶（奇）數頁"</string>
+    <string name="manual_cropping_even_symm">"對稱裁邊奇偶頁"</string>
+    <string name="manual_cropping_all">"裁邊所有頁"</string>
+    <string name="manual_cropping_remove_current">"移除目前頁的裁邊設定"</string>
+    <string name="manual_cropping_remove_all">"移除所有裁邊設定"</string>
+    <string name="manual_cropping_back">"返回區域選取"</string>
+    <string name="manual_cropping_set_default">"設為本書預設"</string>
+    <string name="manual_cropping_clear_default">"清除預設操作"</string>
 
 </resources>

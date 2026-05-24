@@ -51,6 +51,8 @@ public class BookSettings implements CurrentPageListener {
 
     public boolean cropPages;
 
+    public int defaultCropAction = -1;
+
     public float offsetX;
 
     public float offsetY;
@@ -98,6 +100,7 @@ public class BookSettings implements CurrentPageListener {
         this.animationType = current.animationType;
         this.bookmarks.addAll(current.bookmarks);
         this.cropPages = current.cropPages;
+        this.defaultCropAction = current.defaultCropAction;
         this.offsetX = current.offsetX;
         this.offsetY = current.offsetY;
         this.nightMode = current.nightMode;
@@ -135,6 +138,7 @@ public class BookSettings implements CurrentPageListener {
         this.animationType = current.animationType;
         this.bookmarks.addAll(current.bookmarks);
         this.cropPages = current.cropPages;
+        this.defaultCropAction = current.defaultCropAction;
         this.offsetX = current.offsetX;
         this.offsetY = current.offsetY;
         this.nightMode = current.nightMode;
@@ -179,6 +183,7 @@ public class BookSettings implements CurrentPageListener {
         this.pageAlign = EnumUtils.getByName(PageAlign.class, object, "pageAlign", PageAlign.AUTO);
         this.animationType = EnumUtils.getByName(PageAnimationType.class, object, "animationType", PageAnimationType.NONE);
         this.cropPages = object.getBoolean("cropPages");
+        this.defaultCropAction = object.optInt("defaultCropAction", -1);
         this.offsetX = (float) object.getDouble("offsetX");
         this.offsetY = (float) object.getDouble("offsetY");
         this.nightMode = object.getBoolean("nightMode");
@@ -227,6 +232,7 @@ public class BookSettings implements CurrentPageListener {
         obj.put("pageAlign", pageAlign != null ? pageAlign.name() : null);
         obj.put("animationType", animationType != null ? animationType.name() : null);
         obj.put("cropPages", cropPages);
+        obj.put("defaultCropAction", defaultCropAction);
         obj.put("offsetX", offsetX);
         obj.put("offsetY", offsetY);
         obj.put("nightMode", nightMode);

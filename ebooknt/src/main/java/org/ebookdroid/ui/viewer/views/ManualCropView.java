@@ -1,11 +1,14 @@
 package org.ebookdroid.ui.viewer.views;
 
 import org.ebooknt.viewer.R;
+import org.ebookdroid.common.settings.SettingsManager;
+import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.core.EventCrop;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.ViewState;
 import org.ebookdroid.ui.viewer.IActivityController;
+import org.ebookdroid.ui.viewer.IViewController;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -31,6 +34,11 @@ import org.emdev.utils.MathUtils;
 public class ManualCropView extends View {
 
     private static final Paint PAINT = new Paint();
+    private static final Paint BTN_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private static final Paint BTN_TEXT_PAINT = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    private final RectF btnOk = new RectF();
+    private final RectF btnCancel = new RectF();
 
     private final IActivityController base;
 
@@ -46,6 +54,11 @@ public class ManualCropView extends View {
 
     private RectF result;
 
+    private PageAlign savedPageAlign;
+    private float savedZoom;
+    private boolean needCropRestore;
+    private RectF savedRelativeCrop;
+
     public ManualCropView(final IActivityController base) {
         super(base.getContext());
         this.base = base;
@@ -54,6 +67,7 @@ public class ManualCropView extends View {
         PAINT.setColor(Color.CYAN);
 
         setLayoutParams(new ViewGroup.LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
         setFocusable(true);
         setFocusableInTouchMode(true);
 
@@ -66,13 +80,27 @@ public class ManualCropView extends View {
             return;
         }
 
+        savedZoom = base.getZoomModel().getZoom();
+        savedPageAlign = base.getBookSettings().pageAlign;
+
         base.getZoomModel().setZoom(1.0f, true);
 
         base.getBookSettings().pageAlign = PageAlign.AUTO;
 
+        needCropRestore = false;
+        savedRelativeCrop = null;
+
         final RectF oldCb = page.nodes.root.getCropping();
 
         if (page.shouldCrop() && oldCb != null) {
+            if (page.nodes.root.hasManualCropping()) {
+                final RectF ir = new RectF(page.type.getInitialRect());
+                final float irw = ir.width();
+                savedRelativeCrop = new RectF(
+                        (oldCb.left - ir.left) / irw, oldCb.top,
+                        (oldCb.right - ir.left) / irw, oldCb.bottom);
+            }
+            needCropRestore = true;
             new EventCrop(base.getDocumentController()).add(page).process().release();
         }
 
@@ -102,6 +130,12 @@ public class ManualCropView extends View {
         result = new RectF(Math.min(topLeft.x, bottomRight.x), Math.min(topLeft.y, bottomRight.y), Math.max(topLeft.x,
                 bottomRight.x), Math.max(topLeft.y, bottomRight.y));
 
+        final BookSettings bs = base.getBookSettings();
+        if (bs != null && bs.defaultCropAction >= 0 && bs.defaultCropAction <= 3) {
+            applyAction(bs.defaultCropAction);
+            return;
+        }
+
         final ActionDialogBuilder builder = new ActionDialogBuilder(getContext(), controller);
         builder.setTitle(R.string.manual_cropping_title);
         builder.setItems(R.array.list_crop_actions, controller.getOrCreateAction(R.id.actions_applyCrop));
@@ -109,32 +143,21 @@ public class ManualCropView extends View {
         builder.show();
     }
 
-    @ActionMethod(ids = R.id.actions_applyCrop)
-    public void onApply(final ActionEx action) {
-        final Integer index = action.getParameter(IActionController.DIALOG_ITEM_PROPERTY);
-        if (index == null) {
-            return;
-        }
-
+    private void applyAction(final int index) {
+        needCropRestore = false;
         ViewEffects.toggleControls(this);
 
-        EventCrop event = null;
-
-        switch (index.intValue()) {
+        EventCrop event;
+        switch (index) {
             case 0:
-                // Apply to current only
                 event = new EventCrop(base.getDocumentController(), result, true);
                 event.add(page).process().release();
                 return;
-
             case 1:
-                // Apply to even(odd)
                 event = new EventCrop(base.getDocumentController(), result, true);
                 event.addEvenOdd(page, true).process().release();
                 return;
-
             case 2:
-                // Apply to even(odd) symmetrically
                 event = new EventCrop(base.getDocumentController(), result, true);
                 event.addEvenOdd(page, true).process().release();
 
@@ -146,24 +169,101 @@ public class ManualCropView extends View {
 
                 event = new EventCrop(base.getDocumentController(), symm, true);
                 event.addEvenOdd(page, false).process().release();
-
                 return;
-
             case 3:
-                // Apply to all
                 event = new EventCrop(base.getDocumentController(), result, true);
                 event.addAll().process().release();
                 return;
-            case 4:
-                // Remove manual cropping
-                event = new EventCrop(base.getDocumentController(), null, true);
+        }
+    }
+
+    @ActionMethod(ids = R.id.actions_applyCrop)
+    public void onApply(final ActionEx action) {
+        final Integer index = action.getParameter(IActionController.DIALOG_ITEM_PROPERTY);
+        if (index == null) {
+            return;
+        }
+
+        switch (index.intValue()) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+                applyAction(index.intValue());
+                return;
+            case 4: {
+                needCropRestore = false;
+                ViewEffects.toggleControls(this);
+                final EventCrop event = new EventCrop(base.getDocumentController(), null, true);
                 event.add(page).process().release();
                 return;
-            case 5:
-                // Remove all manual cropping
-                event = new EventCrop(base.getDocumentController(), null, true);
+            }
+            case 5: {
+                needCropRestore = false;
+                ViewEffects.toggleControls(this);
+                final EventCrop event = new EventCrop(base.getDocumentController(), null, true);
                 event.addAll().process().release();
                 return;
+            }
+            case 6: {
+                final ActionDialogBuilder subBuilder = new ActionDialogBuilder(getContext(), controller);
+                subBuilder.setTitle(R.string.manual_cropping_set_default);
+                subBuilder.setItems(R.array.list_crop_default_options,
+                        controller.getOrCreateAction(R.id.actions_setDefaultCrop));
+                subBuilder.setNegativeButton();
+                subBuilder.show();
+                return;
+            }
+            case 7: {
+                needCropRestore = false;
+                ViewEffects.toggleControls(this);
+                final BookSettings bs = base.getBookSettings();
+                if (bs != null) {
+                    bs.defaultCropAction = -1;
+                    bs.lastChanged = System.currentTimeMillis();
+                    SettingsManager.storeBookSettings(bs);
+                }
+                return;
+            }
+        }
+    }
+
+    @ActionMethod(ids = R.id.actions_setDefaultCrop)
+    public void onSetDefault(final ActionEx action) {
+        final Integer index = action.getParameter(IActionController.DIALOG_ITEM_PROPERTY);
+        if (index == null) {
+            return;
+        }
+
+        final int actionIndex = index.intValue();
+        if (actionIndex >= 0 && actionIndex <= 3) {
+            final BookSettings bs = base.getBookSettings();
+            if (bs != null) {
+                bs.defaultCropAction = actionIndex;
+                bs.lastChanged = System.currentTimeMillis();
+                SettingsManager.storeBookSettings(bs);
+            }
+            applyAction(actionIndex);
+        }
+    }
+
+    @Override
+    public void setVisibility(final int visibility) {
+        final boolean wasVisible = getVisibility() == View.VISIBLE;
+        super.setVisibility(visibility);
+        if (wasVisible && visibility != View.VISIBLE) {
+            if (needCropRestore && page != null) {
+                needCropRestore = false;
+                new EventCrop(base.getDocumentController(), savedRelativeCrop, false)
+                        .add(page).process().release();
+            }
+            if (savedPageAlign != null) {
+                base.getBookSettings().pageAlign = savedPageAlign;
+                savedPageAlign = null;
+                base.getDocumentController().invalidatePageSizes(
+                        IViewController.InvalidateSizeReason.PAGE_LOADED, null);
+                base.getZoomModel().setZoom(savedZoom, true);
+            }
         }
     }
 
@@ -195,6 +295,33 @@ public class ManualCropView extends View {
         canvas.drawLine(r.left, 0, r.left, getHeight(), PAINT);
         canvas.drawLine(r.right, 0, r.right, getHeight(), PAINT);
 
+        final float density = getResources().getDisplayMetrics().density;
+        final float btnW = 72 * density;
+        final float btnH = 44 * density;
+        final float btnGap = 24 * density;
+        final float btnY = getHeight() - btnH - 24 * density;
+        final float centerX = getWidth() / 2f;
+
+        btnCancel.set(centerX - btnGap / 2 - btnW, btnY, centerX - btnGap / 2, btnY + btnH);
+        btnOk.set(centerX + btnGap / 2, btnY, centerX + btnGap / 2 + btnW, btnY + btnH);
+
+        BTN_PAINT.setColor(0xCC333333);
+        BTN_PAINT.setStyle(Paint.Style.FILL);
+        canvas.drawRoundRect(btnCancel, 8 * density, 8 * density, BTN_PAINT);
+        canvas.drawRoundRect(btnOk, 8 * density, 8 * density, BTN_PAINT);
+
+        BTN_PAINT.setColor(Color.CYAN);
+        BTN_PAINT.setStyle(Paint.Style.STROKE);
+        BTN_PAINT.setStrokeWidth(2 * density);
+        canvas.drawRoundRect(btnCancel, 8 * density, 8 * density, BTN_PAINT);
+        canvas.drawRoundRect(btnOk, 8 * density, 8 * density, BTN_PAINT);
+
+        BTN_TEXT_PAINT.setColor(Color.WHITE);
+        BTN_TEXT_PAINT.setTextSize(20 * density);
+        BTN_TEXT_PAINT.setTextAlign(Paint.Align.CENTER);
+        final float textY = btnY + btnH / 2 - (BTN_TEXT_PAINT.descent() + BTN_TEXT_PAINT.ascent()) / 2;
+        canvas.drawText("✗", btnCancel.centerX(), textY, BTN_TEXT_PAINT);
+        canvas.drawText("✓", btnOk.centerX(), textY, BTN_TEXT_PAINT);
     }
 
     private RectF getActualRect() {
@@ -232,6 +359,16 @@ public class ManualCropView extends View {
 
         if ((ev.getAction() & MotionEvent.ACTION_UP) == MotionEvent.ACTION_UP) {
             currentPoint = null;
+            final float x = ev.getX();
+            final float y = ev.getY();
+            if (btnOk.contains(x, y)) {
+                applyCropping();
+                return true;
+            }
+            if (btnCancel.contains(x, y)) {
+                ViewEffects.toggleControls(this);
+                return true;
+            }
         }
 
         return gestureDetector.onTouchEvent(ev);
