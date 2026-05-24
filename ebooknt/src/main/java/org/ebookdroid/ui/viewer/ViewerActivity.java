@@ -278,11 +278,21 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         }
     }
 
+    private boolean edgeSwipeIntercepting;
+
     @Override
     public boolean dispatchTouchEvent(final MotionEvent ev) {
-        if (edgeSwipeHelper != null) {
-            edgeSwipeHelper.handleTouch(ev, this);
+        if (edgeSwipeHelper != null && edgeSwipeHelper.handleTouch(ev, this)) {
+            if (!edgeSwipeIntercepting) {
+                edgeSwipeIntercepting = true;
+                final MotionEvent cancel = MotionEvent.obtain(ev);
+                cancel.setAction(MotionEvent.ACTION_CANCEL);
+                super.dispatchTouchEvent(cancel);
+                cancel.recycle();
+            }
+            return true;
         }
+        edgeSwipeIntercepting = false;
         return super.dispatchTouchEvent(ev);
     }
 

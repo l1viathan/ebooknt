@@ -227,6 +227,7 @@ public class OpenBooksDrawerHelper {
         private float edgeSwipeStartY = -1;
         private float closeSwipeStartX = -1;
         private float closeSwipeStartY = -1;
+        private boolean intercepting;
 
         public EdgeSwipeHelper(DrawerLayout drawerLayout) {
             this.drawerLayout = drawerLayout;
@@ -235,7 +236,7 @@ public class OpenBooksDrawerHelper {
 
         public void setOnBeforeOpen(Runnable r) { onBeforeOpen = r; }
 
-        public void handleTouch(MotionEvent ev, Activity activity) {
+        public boolean handleTouch(MotionEvent ev, Activity activity) {
             final float density = activity.getResources().getDisplayMetrics().density;
             final float edgeSize = 40 * density;
             final float minSwipe = 60 * density;
@@ -257,33 +258,42 @@ public class OpenBooksDrawerHelper {
                         edgeSwipeStartX = -1;
                         closeSwipeStartX = -1;
                     }
-                    break;
+                    intercepting = false;
+                    return false;
                 case MotionEvent.ACTION_MOVE:
                     if (edgeSwipeStartX >= 0) {
                         final float dx = ev.getX() - edgeSwipeStartX;
                         final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
+                        if (dy > dx && dy > edgeSize) {
+                            edgeSwipeStartX = -1;
+                            intercepting = false;
+                            return false;
+                        }
                         if (dx > minSwipe && dy < dx) {
                             if (onBeforeOpen != null) onBeforeOpen.run();
                             drawerLayout.openDrawer(Gravity.START);
                             edgeSwipeStartX = -1;
-                            ev.setAction(MotionEvent.ACTION_CANCEL);
                         }
+                        intercepting = true;
+                        return true;
                     } else if (closeSwipeStartX >= 0) {
                         final float dx = ev.getX() - closeSwipeStartX;
                         final float dy = Math.abs(ev.getY() - closeSwipeStartY);
                         if (dx < -minSwipe && dy < -dx) {
                             drawerLayout.closeDrawers();
                             closeSwipeStartX = -1;
-                            ev.setAction(MotionEvent.ACTION_CANCEL);
                         }
                     }
-                    break;
+                    return false;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
+                    final boolean was = intercepting;
                     edgeSwipeStartX = -1;
                     closeSwipeStartX = -1;
-                    break;
+                    intercepting = false;
+                    return was;
             }
+            return false;
         }
     }
 }
