@@ -70,12 +70,53 @@ public class PageTreeNode implements DecodeService.DecodeCallback {
     }
 
     public void setAutoCropping(final RectF r, final boolean commit) {
+        if (r != null) {
+            clampAutoCropBounds(r);
+        }
         autoCropping = r;
         if (id == 0) {
             if (commit) {
                 page.base.getDocumentModel().updateAutoCropping(page, r);
             }
             page.updateAspectRatio();
+        }
+    }
+
+    private void clampAutoCropBounds(final RectF r) {
+        final float MIN_FRACTION = 2.0f / 3.0f;
+        final float psbW = pageSliceBounds.width();
+        final float psbH = pageSliceBounds.height();
+        final float minW = psbW * MIN_FRACTION;
+        final float minH = psbH * MIN_FRACTION;
+
+        if (r.width() < minW) {
+            final float expand = (minW - r.width()) / 2;
+            r.left -= expand;
+            r.right += expand;
+            if (r.left < pageSliceBounds.left) {
+                r.right += pageSliceBounds.left - r.left;
+                r.left = pageSliceBounds.left;
+            }
+            if (r.right > pageSliceBounds.right) {
+                r.left -= r.right - pageSliceBounds.right;
+                r.right = pageSliceBounds.right;
+            }
+            r.left = Math.max(r.left, pageSliceBounds.left);
+        }
+
+        if (r.height() < minH) {
+            final float expand = (minH - r.height()) / 2;
+            r.top -= expand;
+            r.bottom += expand;
+            if (r.top < pageSliceBounds.top) {
+                r.bottom += pageSliceBounds.top - r.top;
+                r.top = pageSliceBounds.top;
+            }
+            if (r.bottom > pageSliceBounds.bottom) {
+                r.top -= r.bottom - pageSliceBounds.bottom;
+                r.bottom = pageSliceBounds.bottom;
+            }
+            r.top = Math.max(r.top, pageSliceBounds.top);
         }
     }
 
