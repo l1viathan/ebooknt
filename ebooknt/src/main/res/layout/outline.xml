@@ -38,6 +38,8 @@
         android:layout_weight="1"
         android:choiceMode="singleChoice"
         android:cacheColorHint="#00000000"
-        android:divider="@null"/>
+        android:divider="@null"
+        android:fastScrollEnabled="true"
+        android:fastScrollThumbDrawable="@drawable/fastscroll_thumb"/>
 
 </LinearLayout>
