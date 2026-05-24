@@ -15,7 +15,8 @@
     <string name="menu_about">アプリについて</string>
     <string name="menu_tap_configuration">タップの設定</string>
     <string name="menu_key_bindings">キーの設定</string>
-    <string name="menu_searchbook">本を検索</string>
+    <string name="menu_searchbook_recent">履歴を検索</string>
+    <string name="menu_searchbook_browser">現在のフォルダを検索</string>
     <string name="menu_searchtext">文字列の検索</string>
     <string name="menu_show_options_menu">オプションメニューを表示</string>
     <string name="menu_backupsettings">バックアップ &amp; 復元</string>

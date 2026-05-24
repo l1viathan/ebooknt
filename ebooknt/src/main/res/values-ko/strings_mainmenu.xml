@@ -15,7 +15,8 @@
 <string name="menu_about">앱 정보</string>
 <string name="menu_tap_configuration">두드리기 설정</string>
 <string name="menu_key_bindings">키 설정</string>
-<string name="menu_searchbook">책 찾기</string>
+<string name="menu_searchbook_recent">기록 검색</string>
+<string name="menu_searchbook_browser">현재 디렉터리 검색</string>
 <string name="menu_searchtext">텍스트 찾기</string>
 <string name="menu_show_options_menu">옵션 메뉴 표시</string>
 <string name="menu_backupsettings">백업 &amp; 복원</string>

@@ -15,7 +15,8 @@
     <string name="menu_about">Pri</string>
     <string name="menu_tap_configuration">Agordi frapetojn</string>
     <string name="menu_key_bindings">Agordi klavojn</string>
-    <string name="menu_searchbook">Serĉi libron</string>
+    <string name="menu_searchbook_recent">Serĉi en historio</string>
+    <string name="menu_searchbook_browser">Serĉi en nuna dosierujo</string>
     <string name="menu_searchtext">Serĉi tekston</string>
     <string name="menu_show_options_menu">Montri menuon de agordoj</string>
     <string name="menu_backupsettings">Sekurkopio</string>

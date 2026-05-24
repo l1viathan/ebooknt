@@ -14,7 +14,7 @@
         android:icon="@drawable/recent_actionbar_searchbook"
         app:showAsAction="ifRoom|collapseActionView"
         app:actionViewClass="android.support.v7.widget.SearchView"
-        android:title="@string/menu_searchbook"/>
+        android:title="@string/menu_searchbook_browser"/>
 
     <item
         android:id="@+id/browsermenu_close"

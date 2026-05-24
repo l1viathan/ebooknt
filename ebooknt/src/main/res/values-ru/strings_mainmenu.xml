@@ -15,7 +15,8 @@
     <string name="menu_about">"О программе"</string>
     <string name="menu_tap_configuration">"Настройка нажатий"</string>
     <string name="menu_key_bindings">"Настройка клавиш"</string>
-    <string name="menu_searchbook">"Поиск"</string>
+    <string name="menu_searchbook_recent">"Поиск в истории"</string>
+    <string name="menu_searchbook_browser">"Поиск в текущей папке"</string>
     <string name="menu_searchtext">"Поиск"</string>
     <string name="menu_show_options_menu">"Показать меню"</string>
     <string name="menu_backupsettings">"Сохранение и восстановление"</string>

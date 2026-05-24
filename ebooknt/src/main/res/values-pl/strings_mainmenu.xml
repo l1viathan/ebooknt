@@ -15,7 +15,8 @@
     <string name="menu_about">O programie</string>
     <string name="menu_tap_configuration">Ustaw stuknięcia</string>
     <string name="menu_key_bindings">Ustaw klawisze</string>
-    <string name="menu_searchbook">Znajdź książki</string>
+    <string name="menu_searchbook_recent">Szukaj w historii</string>
+    <string name="menu_searchbook_browser">Szukaj w bieżącym katalogu</string>
     <string name="menu_searchtext">Znajdź tekst</string>
     <string name="menu_show_options_menu">Pokaż menu ustawień</string>
     <string name="menu_backupsettings">Kopia zapasowa</string>

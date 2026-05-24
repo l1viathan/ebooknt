@@ -15,7 +15,8 @@
     <string name="menu_about">"על התכנית"</string>
     <string name="menu_tap_configuration">"הגדרות אזורי מגעה"</string>
     <string name="menu_key_bindings">"הגדרות הלחצנים"</string>
-    <string name="menu_searchbook">"לחפש"</string>
+    <string name="menu_searchbook_recent">"חיפוש בהיסטוריה"</string>
+    <string name="menu_searchbook_browser">"חיפוש בתיקייה הנוכחית"</string>
     <string name="menu_searchtext">"לחפש"</string>
     <string name="menu_show_options_menu">"הצג תפריט"</string>
     <string name="menu_backupsettings">"שמירה ושחזור"</string>

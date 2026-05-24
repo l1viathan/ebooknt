@@ -15,7 +15,8 @@
     <string name="menu_about">"À propos"</string>
     <string name="menu_tap_configuration">"Configurer les zones"</string>
     <string name="menu_key_bindings">"Configurer les raccourcis"</string>
-    <string name="menu_searchbook">"Trouver des livres"</string>
+    <string name="menu_searchbook_recent">"Rechercher dans l'historique"</string>
+    <string name="menu_searchbook_browser">"Rechercher dans le dossier actuel"</string>
     <string name="menu_searchtext">"Chercher texte"</string>
     <string name="menu_show_options_menu">"Afficher le menu d'options"</string>
     <string name="menu_backupsettings">"Sauvegarde &amp; Restauration"</string>

@@ -15,7 +15,8 @@
     <string name="menu_about">Acerca de</string>
     <string name="menu_tap_configuration">Configurar toque</string>
     <string name="menu_key_bindings">Atajos de teclado</string>
-    <string name="menu_searchbook">Buscar libros</string>
+    <string name="menu_searchbook_recent">Buscar en historial</string>
+    <string name="menu_searchbook_browser">Buscar en directorio actual</string>
     <string name="menu_searchtext">Buscar texto</string>
     <string name="menu_show_options_menu">Mostrar menú de opciones</string>
     <string name="menu_backupsettings">Copia de seguridad y restauración</string>

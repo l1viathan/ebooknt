@@ -15,7 +15,8 @@
     <string name="menu_about">"关于"</string>
     <string name="menu_tap_configuration">"感应器设置"</string>
     <string name="menu_key_bindings">"按键绑定"</string>
-    <string name="menu_searchbook">"搜索"</string>
+    <string name="menu_searchbook_recent">"搜索历史"</string>
+    <string name="menu_searchbook_browser">"搜索当前目录"</string>
     <string name="menu_searchtext">"搜索"</string>
     <string name="menu_show_options_menu">"显示菜单"</string>
     <string name="menu_backupsettings">"备份与恢复"</string>
