@@ -421,34 +421,50 @@ public class BrowserActivityController extends AbstractActivityController<Browse
         final File dir = adapter.getCurrentDirectory();
         if (dir == null) return;
 
-        final FileFilter bookFilter = LibSettings.current().allowedFileTypes;
-        final List<BookNode> results = new ArrayList<>();
-        collectMatchingFiles(dir, q.toLowerCase(), bookFilter, results);
-
-        if (results.isEmpty()) return;
-
-        OpenBooksManager.get().searchParentView = OpenBooksManager.LIBRARY_VIEW_BROWSER;
-        OpenBooksManager.get().pendingSearchNodes = results;
+        final OpenBooksManager mgr = OpenBooksManager.get();
+        mgr.searchParentView = OpenBooksManager.LIBRARY_VIEW_BROWSER;
+        mgr.pendingSearchNodes = new ArrayList<>();
+        final int generation = mgr.startSearch();
         NavigationHelper.bringToFront(getManagedComponent(), RecentActivity.class);
+
+        final FileFilter bookFilter = LibSettings.current().allowedFileTypes;
+        final String lq = q.toLowerCase();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                collectMatchingFilesAsync(dir, lq, bookFilter, generation);
+                mgr.postSearchComplete(generation);
+            }
+        }).start();
     }
 
-    private void collectMatchingFiles(final File dir, final String query,
-            final FileFilter bookFilter, final List<BookNode> results) {
+    private void collectMatchingFilesAsync(final File dir, final String query,
+            final FileFilter bookFilter, final int generation) {
+        if (OpenBooksManager.get().isSearchCancelled(generation)) return;
         final File[] children = dir.listFiles();
         if (children == null) return;
+        final List<BookNode> batch = new ArrayList<>();
         for (final File f : children) {
+            if (OpenBooksManager.get().isSearchCancelled(generation)) return;
             if (f.isDirectory()) {
                 if (!f.isHidden()) {
-                    collectMatchingFiles(f, query, bookFilter, results);
+                    if (!batch.isEmpty()) {
+                        OpenBooksManager.get().postSearchResults(generation, new ArrayList<>(batch));
+                        batch.clear();
+                    }
+                    collectMatchingFilesAsync(f, query, bookFilter, generation);
                 }
             } else if (bookFilter != null && bookFilter.accept(f)) {
                 final String name = f.getName();
                 final int dot = name.lastIndexOf('.');
                 final String base = (dot > 0 ? name.substring(0, dot) : name).toLowerCase();
                 if (base.contains(query)) {
-                    results.add(new BookNode(f, SettingsManager.getBookSettings(f.getAbsolutePath())));
+                    batch.add(new BookNode(f, SettingsManager.getBookSettings(f.getAbsolutePath())));
                 }
             }
+        }
+        if (!batch.isEmpty()) {
+            OpenBooksManager.get().postSearchResults(generation, batch);
         }
     }
 }

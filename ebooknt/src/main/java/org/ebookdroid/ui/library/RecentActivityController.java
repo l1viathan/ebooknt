@@ -161,6 +161,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     @Override
     public void onDestroy(final boolean finishing) {
         if (finishing) {
+            OpenBooksManager.get().cancelSearch();
             if (BackupSettings.current().backupOnExit) {
                 BackupManager.backup();
             }
@@ -265,6 +266,7 @@ public class RecentActivityController extends AbstractActivityController<RecentA
 
     @ActionMethod(ids = R.id.recentmenu_closeSearch)
     public void closeSearch(final ActionEx action) {
+        OpenBooksManager.get().cancelSearch();
         final boolean returnToBook = OpenBooksManager.get().searchFromNavigation;
         final int parentView = OpenBooksManager.get().searchParentView;
         getManagedComponent().closeSearchResults();
@@ -275,8 +277,22 @@ public class RecentActivityController extends AbstractActivityController<RecentA
     }
 
     public void showExternalSearchResults(final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> nodes) {
-        bookshelfAdapter.setSearchResults(nodes);
+        if (nodes != null && !nodes.isEmpty()) {
+            bookshelfAdapter.setSearchResults(nodes);
+        } else {
+            bookshelfAdapter.clearSearch();
+        }
         getManagedComponent().showSearchResults();
+        OpenBooksManager.get().setSearchResultListener(new OpenBooksManager.SearchResultListener() {
+            @Override
+            public void onResultsFound(final java.util.List<org.ebookdroid.ui.library.adapters.BookNode> results) {
+                bookshelfAdapter.onNodesFound(results);
+            }
+
+            @Override
+            public void onSearchComplete() {
+            }
+        });
     }
 
     @ActionMethod(ids = R.id.mainmenu_settings)

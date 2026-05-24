@@ -209,6 +209,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
             return;
         }
         if (getViewMode() == VIEW_SEARCH) {
+            org.ebookdroid.ui.viewer.OpenBooksManager.get().cancelSearch();
             final boolean returnToBook = OpenBooksManager.get().searchFromNavigation;
             final int parentView = OpenBooksManager.get().searchParentView;
             closeSearchResults();

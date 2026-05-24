@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 
 import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.ui.library.BrowserActivity;
@@ -44,6 +46,16 @@ public final class OpenBooksManager {
     public boolean searchFromNavigation;
     public int searchParentView = LIBRARY_VIEW_RECENT;
     public List<BookNode> pendingSearchNodes;
+
+    public interface SearchResultListener {
+        void onResultsFound(List<BookNode> results);
+        void onSearchComplete();
+    }
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final List<List<BookNode>> pendingBatches = new ArrayList<>();
+    private SearchResultListener searchResultListener;
+    private volatile int searchGeneration;
 
     private OpenBooksManager() {}
 
@@ -212,6 +224,58 @@ public final class OpenBooksManager {
         if (BaseDroidApp.context == null) return LIBRARY_VIEW_RECENT;
         return BaseDroidApp.context.getSharedPreferences(PREFS_NAME, 0)
                 .getInt(KEY_LAST_LIBRARY_VIEW, LIBRARY_VIEW_RECENT);
+    }
+
+    public int startSearch() {
+        searchGeneration++;
+        pendingBatches.clear();
+        return searchGeneration;
+    }
+
+    public void cancelSearch() {
+        searchGeneration++;
+        pendingBatches.clear();
+        searchResultListener = null;
+    }
+
+    public boolean isSearchCancelled(final int generation) {
+        return generation != searchGeneration;
+    }
+
+    public void setSearchResultListener(final SearchResultListener listener) {
+        this.searchResultListener = listener;
+        if (listener != null && !pendingBatches.isEmpty()) {
+            for (final List<BookNode> batch : pendingBatches) {
+                listener.onResultsFound(batch);
+            }
+            pendingBatches.clear();
+        }
+    }
+
+    public void postSearchResults(final int generation, final List<BookNode> results) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (generation != searchGeneration) return;
+                if (searchResultListener != null) {
+                    searchResultListener.onResultsFound(results);
+                } else {
+                    pendingBatches.add(results);
+                }
+            }
+        });
+    }
+
+    public void postSearchComplete(final int generation) {
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (generation != searchGeneration) return;
+                if (searchResultListener != null) {
+                    searchResultListener.onSearchComplete();
+                }
+            }
+        });
     }
 
     public static boolean navigateToLastOpenBook(final Activity activity) {

@@ -408,7 +408,7 @@ public class BooksAdapter extends PagerAdapter implements FileSystemScanner.List
         search.notifyDataSetChanged();
     }
 
-    protected synchronized void onNodesFound(final List<BookNode> nodes) {
+    public synchronized void onNodesFound(final List<BookNode> nodes) {
         final BookShelfAdapter search = getService(SEARCH_INDEX);
         search.nodes.addAll(nodes);
         Collections.sort(search.nodes);
