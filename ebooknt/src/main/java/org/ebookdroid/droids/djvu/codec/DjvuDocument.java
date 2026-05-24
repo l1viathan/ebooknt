@@ -65,6 +65,12 @@ public class DjvuDocument extends AbstractCodecDocument {
 
     private native static void free(long pageHandle);
 
+    private native static int getPageLabelStart(long docHandle);
+
+    public int getPageLabelStart() {
+        return getPageLabelStart(documentHandle);
+    }
+
     @Override
     public List<? extends RectF> searchText(final int pageNuber, final String pattern) {
         final List<PageTextBox> list = DjvuPage.getPageText(documentHandle, pageNuber, context.getContextHandle(), pattern.toLowerCase());

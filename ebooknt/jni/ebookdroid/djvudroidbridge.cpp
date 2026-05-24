@@ -726,6 +726,13 @@ JNI_DJVU_FN(DjvuOutline_getLink)(JNIEnv *env, jclass cls, jlong expr, jlong docH
     return NULL;
 }
 
+extern "C" jint
+JNI_DJVU_FN(DjvuDocument_getPageLabelStart)(JNIEnv *env, jclass cls, jlong docHandle)
+{
+    int pageno = ddjvu_document_search_pageno((ddjvu_document_t*) docHandle, "1");
+    return pageno >= 0 ? pageno + 1 : -1;
+}
+
 extern "C" jlong
 JNI_DJVU_FN(DjvuOutline_getNext)(JNIEnv *env, jclass cls, jlong expr)
 {

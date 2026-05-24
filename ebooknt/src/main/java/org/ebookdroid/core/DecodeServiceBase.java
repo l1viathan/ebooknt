@@ -392,6 +392,9 @@ public class DecodeServiceBase implements DecodeService {
         if (document instanceof org.ebookdroid.droids.mupdf.codec.MuPdfDocument) {
             return ((org.ebookdroid.droids.mupdf.codec.MuPdfDocument) document).getPageLabelStart();
         }
+        if (document instanceof org.ebookdroid.droids.djvu.codec.DjvuDocument) {
+            return ((org.ebookdroid.droids.djvu.codec.DjvuDocument) document).getPageLabelStart();
+        }
         return -1;
     }
 
