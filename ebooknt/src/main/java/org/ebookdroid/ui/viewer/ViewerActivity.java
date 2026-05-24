@@ -868,7 +868,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);
                 tv.setTextColor(0xFFB0B0B0);
-                icon.setImageResource(R.drawable.recent_actionbar_library);
+                icon.setImageResource(R.drawable.application_icon);
                 icon.setAlpha(0.7f);
                 progressTv.setVisibility(View.GONE);
             }
