@@ -80,7 +80,7 @@ public class OpenBooksDrawerHelper {
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp16, dp12, dp16, dp12);
+                row.setPadding(dp16, dp12, dp8, dp12);
                 row.setLayoutParams(new AbsListView.LayoutParams(
                     AbsListView.LayoutParams.MATCH_PARENT,
                     AbsListView.LayoutParams.WRAP_CONTENT));
@@ -142,8 +142,7 @@ public class OpenBooksDrawerHelper {
             if (pc > 0) {
                 final BookSettings bs = SettingsManager.getBookSettings(path);
                 final int cur = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
-                final int pct = Math.min(100, cur * 100 / pc);
-                progressTv.setText("[" + pct + "%]");
+                progressTv.setText(cur + "/" + pc);
                 progressTv.setTextColor(0xFFAAAAAA);
                 progressTv.setVisibility(View.VISIBLE);
             } else {

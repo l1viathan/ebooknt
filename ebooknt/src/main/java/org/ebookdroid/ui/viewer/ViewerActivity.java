@@ -726,18 +726,18 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             final String path;
             final String title;
             final boolean isCurrent;
-            final int progress;
+            final int currentPage;
+            final int pageCount;
             BookItem(final String path, final boolean isCurrent) {
                 this.path = path;
                 this.title = OpenBooksManager.getDisplayTitle(path);
                 this.isCurrent = isCurrent;
-                final int pc = OpenBooksManager.get().getPageCount(path);
-                if (pc > 0) {
+                this.pageCount = OpenBooksManager.get().getPageCount(path);
+                if (pageCount > 0) {
                     final BookSettings bs = SettingsManager.getBookSettings(path);
-                    final int cur = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
-                    this.progress = Math.min(100, cur * 100 / pc);
+                    this.currentPage = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
                 } else {
-                    this.progress = -1;
+                    this.currentPage = 0;
                 }
             }
         }
@@ -786,7 +786,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp16, dp12, dp16, dp12);
+                row.setPadding(dp16, dp12, dp8, dp12);
                 row.setLayoutParams(new android.widget.AbsListView.LayoutParams(
                     android.widget.AbsListView.LayoutParams.MATCH_PARENT,
                     android.widget.AbsListView.LayoutParams.WRAP_CONTENT));
@@ -843,8 +843,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     icon.setAlpha(0.5f);
                 }
                 icon.setImageResource(R.drawable.viewer_menu_bookmark);
-                if (book.progress >= 0) {
-                    progressTv.setText("[" + book.progress + "%]");
+                if (book.pageCount > 0) {
+                    progressTv.setText(book.currentPage + "/" + book.pageCount);
                     progressTv.setTextColor(0xFFAAAAAA);
                     progressTv.setVisibility(View.VISIBLE);
                 } else {
