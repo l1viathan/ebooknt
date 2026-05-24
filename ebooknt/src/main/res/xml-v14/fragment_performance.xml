@@ -5,6 +5,14 @@
         android:title="@string/pref_performance_category" >
 
         <org.emdev.ui.preference.SeekBarPreference
+            android:defaultValue="@string/pref_maxopenfiles_defvalue"
+            android:key="@string/pref_maxopenfiles_id"
+            ebookdroid:minValue="@string/pref_maxopenfiles_minvalue"
+            ebookdroid:maxValue="@string/pref_maxopenfiles_maxvalue"
+            android:summary="@string/pref_maxopenfiles_summary"
+            android:title="@string/pref_maxopenfiles_title" />
+
+        <org.emdev.ui.preference.SeekBarPreference
             android:defaultValue="@string/pref_pagesinmemory_defvalue"
             android:key="@string/pref_pagesinmemory_id"
             ebookdroid:minValue="@string/pref_pagesinmemory_minvalue"

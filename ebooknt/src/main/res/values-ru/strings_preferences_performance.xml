@@ -3,6 +3,9 @@
 
     <string name="pref_performance_category">"Настройки производительности"</string>
     <string name="pref_performance_category_summary">"Настройки производительности"</string>
+    <string name="pref_maxopenfiles_title">Макс. открытых файлов</string>
+    <string name="pref_maxopenfiles_summary">Максимальное количество одновременно открытых файлов (по умолчанию: 6)</string>
+
     <string name="pref_pagesinmemory_title">"Страниц в памяти"</string>
     <string name="pref_pagesinmemory_summary">"Число страниц, хранящихся в памяти"</string>
     <string name="pref_lowlevel_category">"Тонкие настройки приложения (Требуется переоткрытие документа)"</string>

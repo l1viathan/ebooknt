@@ -3,6 +3,9 @@
 
     <string name="pref_performance_category">"效能設定"</string>
     <string name="pref_performance_category_summary">"設定效能引數"</string>
+    <string name="pref_maxopenfiles_title">最大開啟檔案數</string>
+    <string name="pref_maxopenfiles_summary">最多允許同時開啟的檔案數（預設：6）</string>
+
     <string name="pref_pagesinmemory_title">"記憶體頁面"</string>
     <string name="pref_pagesinmemory_summary">"儲存在記憶體中的頁數"</string>
     <string name="pref_lowlevel_category">"底層應用程式首選項（需重新載入檔案）"</string>

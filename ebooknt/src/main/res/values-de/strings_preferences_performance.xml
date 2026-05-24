@@ -3,6 +3,9 @@
 
     <string name="pref_performance_category">"Leistungs-Einstellungen"</string>
     <string name="pref_performance_category_summary">"Einstellungen, welche die Leistung beinflussen"</string>
+    <string name="pref_maxopenfiles_title">Max. geöffnete Dateien</string>
+    <string name="pref_maxopenfiles_summary">Maximale Anzahl gleichzeitig geöffneter Dateien (Standard: 6)</string>
+
     <string name="pref_pagesinmemory_title">"Seiten im Arbeitsspeicher"</string>
     <string name="pref_pagesinmemory_summary">"Anzahl der im Arbeitsspeicher abgelegten Seiten"</string>
     <string name="pref_lowlevel_category">"Tiefgreifende Programmoptionen (sichtbar nach erneutem Laden des Dokuments)"</string>-->

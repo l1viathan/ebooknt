@@ -112,6 +112,9 @@ public interface AppPreferences {
 
     /* =============== Performance settings =============== */
 
+    IntegerPreferenceDefinition MAX_OPEN_FILES = new IntegerPreferenceDefinition(pref_maxopenfiles_id,
+            pref_maxopenfiles_defvalue, pref_maxopenfiles_minvalue, pref_maxopenfiles_maxvalue);
+
     IntegerPreferenceDefinition PAGES_IN_MEMORY = new IntegerPreferenceDefinition(pref_pagesinmemory_id,
             pref_pagesinmemory_defvalue, pref_pagesinmemory_minvalue, pref_pagesinmemory_maxvalue);
 

@@ -3,6 +3,9 @@
 
     <string name="pref_performance_category">"ההגדרות ביצועים"</string>
     <string name="pref_performance_category_summary">"ההגדרות ביצועים"</string>
+    <string name="pref_maxopenfiles_title">קבצים פתוחים מקסימום</string>
+    <string name="pref_maxopenfiles_summary">מספר מקסימלי של קבצים פתוחים בו-זמנית (ברירת מחדל: 6)</string>
+
     <string name="pref_pagesinmemory_title">"דפים בזיכרון"</string>
     <string name="pref_pagesinmemory_summary">"מספר העמודים המאוחסנים בזיכרון"</string>
     <string name="pref_lowlevel_category">"אפליקצית Tweaks (חובה לפתוח מחדש את המסמך)"</string>

@@ -273,7 +273,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         bookSettings = SettingsManager.create(id, m_fileName, scheme.temporary, intent);
         SettingsManager.applyBookSettingsChanges(null, bookSettings);
 
-        OpenBooksManager.get().onBookOpened(m_fileName);
+        OpenBooksManager.get().onBookOpened(m_fileName, activity);
     }
 
     /**

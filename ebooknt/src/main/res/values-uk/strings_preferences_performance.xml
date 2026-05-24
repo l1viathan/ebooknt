@@ -3,6 +3,9 @@
 
 <!--<string name="pref_performance_category">"Performance settings"</string>-->
 <!--<string name="pref_performance_category_summary">"Performance settings"</string>-->
+    <string name="pref_maxopenfiles_title">Макс. відкритих файлів</string>
+    <string name="pref_maxopenfiles_summary">Максимальна кількість одночасно відкритих файлів (за замовчуванням: 6)</string>
+
     <string name="pref_pagesinmemory_title">"Сторінок в пам’яті"</string>
     <string name="pref_pagesinmemory_summary">"Число сторінок, що зберігаються в пам’яті"</string>
 <!--<string name="pref_lowlevel_category">"Low level application preferences (Applied after document reload)"</string>-->

@@ -198,14 +198,18 @@ public class OpenBooksDrawerHelper {
             @Override
             public void run() {
                 final int listH = list.getHeight();
-                int contentH = 0;
+                if (listH <= 0) return;
+                int itemH = 0;
                 for (int i = 0; i < list.getChildCount(); i++) {
                     final View child = list.getChildAt(i);
                     if (child != null && child != header && child != footer) {
-                        contentH += child.getHeight();
+                        itemH = child.getHeight();
+                        break;
                     }
                 }
-                if (contentH <= 0 || listH <= 0) return;
+                if (itemH <= 0) return;
+                final int totalItems = list.getAdapter().getCount() - 2;
+                final int contentH = totalItems * itemH;
                 final int spacerH = Math.max(0, (listH - contentH) / 2);
                 final AbsListView.LayoutParams lp = new AbsListView.LayoutParams(
                     AbsListView.LayoutParams.MATCH_PARENT, spacerH);

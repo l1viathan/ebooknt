@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
+    <string translatable="false" name="pref_maxopenfiles_id">maxopenfiles</string>
+    <string translatable="false" name="pref_maxopenfiles_defvalue">6</string>
+    <string translatable="false" name="pref_maxopenfiles_minvalue">2</string>
+    <string translatable="false" name="pref_maxopenfiles_maxvalue">12</string>
+
     <string translatable="false" name="pref_pagesinmemory_id">pagesinmemory</string>
     <string translatable="false" name="pref_pagesinmemory_defvalue">4</string>
     <string translatable="false" name="pref_pagesinmemory_minvalue">1</string>

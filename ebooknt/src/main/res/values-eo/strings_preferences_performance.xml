@@ -4,6 +4,9 @@
     <string name="pref_performance_category">Rendimentaj agordoj</string>
     <string name="pref_performance_category_summary">Agordoj de rendimento</string>
 
+    <string name="pref_maxopenfiles_title">Maks. malfermitaj dosieroj</string>
+    <string name="pref_maxopenfiles_summary">Maksimuma nombro da samtempe malfermitaj dosieroj (defaŭlte: 6)</string>
+
     <string name="pref_pagesinmemory_title">Paĝoj en memoro</string>
     <string name="pref_pagesinmemory_summary">Nombro da paĝoj konservitaj en memoro</string>
 

@@ -3,6 +3,9 @@
 
 <!--<string name="pref_performance_category">"Performance settings"</string>-->
 <!--<string name="pref_performance_category_summary">"Performance settings"</string>-->
+    <string name="pref_maxopenfiles_title">Fichiers ouverts max.</string>
+    <string name="pref_maxopenfiles_summary">Nombre maximal de fichiers ouverts simultanément (par défaut : 6)</string>
+
     <string name="pref_pagesinmemory_title">"Pages en mémoire"</string>
     <string name="pref_pagesinmemory_summary">"Nombre de pages conservées en mémoire"</string>
 <!--<string name="pref_lowlevel_category">"Low level application preferences (Applied after document reload)"</string>-->

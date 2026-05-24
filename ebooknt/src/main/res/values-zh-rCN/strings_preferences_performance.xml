@@ -3,6 +3,9 @@
 
     <string name="pref_performance_category">"性能设置"</string>
     <string name="pref_performance_category_summary">"设置性能参数"</string>
+    <string name="pref_maxopenfiles_title">最大打开文件数</string>
+    <string name="pref_maxopenfiles_summary">最多允许同时打开的文件数（默认：6）</string>
+
     <string name="pref_pagesinmemory_title">"内存页面"</string>
     <string name="pref_pagesinmemory_summary">"存储在内存中的页数"</string>
     <string name="pref_lowlevel_category">"底层应用程序首选项（需重新加载文件）"</string>

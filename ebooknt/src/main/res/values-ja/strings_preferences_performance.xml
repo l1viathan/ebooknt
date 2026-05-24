@@ -4,6 +4,9 @@
     <string name="pref_performance_category">パフォーマンス設定</string>
     <string name="pref_performance_category_summary">パフォーマンス設定</string>
 
+    <string name="pref_maxopenfiles_title">最大オープンファイル数</string>
+    <string name="pref_maxopenfiles_summary">同時に開くファイルの最大数（デフォルト: 6）</string>
+
     <string name="pref_pagesinmemory_title">メモリー中のページ数</string>
     <string name="pref_pagesinmemory_summary">メモリーに保存するページ数</string>
 

@@ -95,6 +95,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     /* =============== Performance settings =============== */
 
+    public final int maxOpenFiles;
+
     public final int pagesInMemory;
 
     public final int decodingThreads;
@@ -214,6 +216,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         tapProfiles = TAP_PROFILES.getPreferenceValue(prefs);
         keysBinding = KEY_BINDINGS.getPreferenceValue(prefs);
         /* =============== Performance settings =============== */
+        maxOpenFiles = MAX_OPEN_FILES.getPreferenceValue(prefs);
         pagesInMemory = PAGES_IN_MEMORY.getPreferenceValue(prefs);
         decodingThreads = DECODING_THREADS.getPreferenceValue(prefs);
         decodingThreadPriority = DECODE_THREAD_PRIORITY.getPreferenceValue(prefs);

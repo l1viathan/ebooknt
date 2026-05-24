@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.ui.library.BrowserActivity;
 import org.ebookdroid.ui.library.RecentActivity;
 import org.ebookdroid.ui.library.adapters.BookNode;
@@ -35,6 +36,7 @@ public final class OpenBooksManager {
     private final List<String> openBooks = new ArrayList<>();
     private final Set<String> activeBooks = new HashSet<>();
     private final Map<String, Integer> pageCounts = new HashMap<>();
+    private final Map<String, Activity> viewerActivities = new HashMap<>();
     private boolean loaded;
 
     public boolean hasSearchResults;
@@ -49,13 +51,14 @@ public final class OpenBooksManager {
         return INSTANCE;
     }
 
-    private static final int MAX_FILES = 6;
-
-    public synchronized void onBookOpened(final String path) {
+    public synchronized void onBookOpened(final String path, final Activity activity) {
         if (path == null) return;
         ensureLoaded();
         openBooks.remove(path);
         openBooks.add(0, path);
+        if (activity != null) {
+            viewerActivities.put(path, activity);
+        }
         trimToMax();
         save();
     }
@@ -63,6 +66,7 @@ public final class OpenBooksManager {
     public synchronized void onBookClosed(final String path) {
         if (path == null) return;
         activeBooks.remove(path);
+        viewerActivities.remove(path);
     }
 
     public synchronized void onBookResumed(final String path) {
@@ -91,11 +95,22 @@ public final class OpenBooksManager {
         if (path == null) return;
         ensureLoaded();
         openBooks.remove(path);
+        activeBooks.remove(path);
+        final Activity a = viewerActivities.remove(path);
+        if (a != null && !a.isFinishing()) {
+            a.finish();
+        }
         save();
     }
 
     public synchronized void closeAll() {
         ensureLoaded();
+        for (final Activity a : viewerActivities.values()) {
+            if (a != null && !a.isFinishing()) {
+                a.finish();
+            }
+        }
+        viewerActivities.clear();
         openBooks.clear();
         activeBooks.clear();
         save();
@@ -120,9 +135,14 @@ public final class OpenBooksManager {
     }
 
     private void trimToMax() {
-        while (openBooks.size() > MAX_FILES) {
+        final int maxFiles = AppSettings.current().maxOpenFiles;
+        while (openBooks.size() > maxFiles) {
             final String removed = openBooks.remove(openBooks.size() - 1);
             activeBooks.remove(removed);
+            final Activity a = viewerActivities.remove(removed);
+            if (a != null && !a.isFinishing()) {
+                a.finish();
+            }
         }
     }
 
