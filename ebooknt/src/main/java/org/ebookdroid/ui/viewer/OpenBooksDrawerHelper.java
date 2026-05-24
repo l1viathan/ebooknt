@@ -228,6 +228,7 @@ public class OpenBooksDrawerHelper {
         private float closeSwipeStartX = -1;
         private float closeSwipeStartY = -1;
         private boolean intercepting;
+        private boolean closeIntercepting;
 
         public EdgeSwipeHelper(DrawerLayout drawerLayout) {
             this.drawerLayout = drawerLayout;
@@ -259,6 +260,7 @@ public class OpenBooksDrawerHelper {
                         closeSwipeStartX = -1;
                     }
                     intercepting = false;
+                    closeIntercepting = false;
                     return false;
                 case MotionEvent.ACTION_MOVE:
                     if (edgeSwipeStartX >= 0) {
@@ -279,18 +281,28 @@ public class OpenBooksDrawerHelper {
                     } else if (closeSwipeStartX >= 0) {
                         final float dx = ev.getX() - closeSwipeStartX;
                         final float dy = Math.abs(ev.getY() - closeSwipeStartY);
+                        if (dy > edgeSize && dy > Math.abs(dx)) {
+                            closeSwipeStartX = -1;
+                            closeIntercepting = false;
+                            return false;
+                        }
+                        if (Math.abs(dx) > edgeSize) {
+                            closeIntercepting = true;
+                        }
                         if (dx < -minSwipe && dy < -dx) {
                             drawerLayout.closeDrawers();
                             closeSwipeStartX = -1;
                         }
+                        return closeIntercepting;
                     }
                     return false;
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    final boolean was = intercepting;
+                    final boolean was = intercepting || closeIntercepting;
                     edgeSwipeStartX = -1;
                     closeSwipeStartX = -1;
                     intercepting = false;
+                    closeIntercepting = false;
                     return was;
             }
             return false;
