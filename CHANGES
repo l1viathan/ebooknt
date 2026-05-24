@@ -22,12 +22,15 @@ Build & Toolchain
   monolithic repository to simplify builds.
 - Upgraded MuPDF from 1.11 to 1.14, including all third-party
   dependencies (freetype, harfbuzz, libjpeg, openjpeg, mujs, etc.).
+- Integrated the native (NDK) build into Gradle via
+  externalNativeBuild; no separate ndk-build step required.
 
 
 Application Identity
 --------------------
 - Renamed from "Document Viewer" to "EbookNT".
 - Changed application ID (package name) to org.ebooknt.viewer.
+- Redesigned application icon and logo.
 
 
 Network & Permissions
@@ -55,6 +58,7 @@ User Interface
   corrections, plus additions/corrections for all 16 supported locales.
 - Renamed user-visible "folder" terminology to "directory" across all
   locales (Android is not Windows).
+- Added an "Exit the app" option to the main UI menu.
 
 
 Library & File Browser
@@ -74,6 +78,9 @@ Library & File Browser
 - Fixed file-browser root listing on modern Android where
   File("/").listFiles() returns null: enumerate storage volumes via
   the StorageManager API instead.
+- Book thumbnails in file-browser listings.
+- Restored Home and Library navigation actions in the file-browser
+  toolbar.
 
 
 PDF Outline & Rendering
@@ -106,6 +113,81 @@ Settings & Preferences
 - Removed several obsolete preferences (auto-scan removable media,
   show scan dirs, show notifications) that no longer had backing code.
 - Fixed a crash when switching view modes in book settings.
+
+
+Cropping
+--------
+- Manual crop: visible OK/Cancel buttons and improved dialog
+  layout.
+- Manual crop: per-book default crop action — choose once and
+  the dialog is skipped on subsequent uses; clearable per book.
+- Manual crop: page alignment, zoom, and crop state are properly
+  saved and restored across crop/cancel operations.
+- Autocrop: conservative clamping — cropped bounds retain at
+  least 2/3 of the original page width and height, preventing
+  extreme zoom on sparse pages.
+
+
+DjVu
+----
+- Added logical page-number detection for DjVu documents via
+  JNI bridge to ddjvu_document_search_pageno().  The page-label
+  offset is now auto-detected at load time, matching the existing
+  PDF behavior.
+
+
+Open Books & Navigation Drawer
+-------------------------------
+- Drawer now shows file-page numbers (e.g. "42/514") instead of
+  percentage.
+- Drawer "home" icon replaced with the EbookNT application icon.
+- Proper landscape layout and improved overlay behavior (drawer
+  no longer masks the reading page or conflicts with edge swipes).
+- Improved book-close, flush, and app-exit lifecycle.
+
+
+Search
+------
+- Progressive/asynchronous directory search: results appear
+  incrementally as the file tree is traversed.
+- Distinct search button labels per context: "Search History"
+  (Recent view) vs. "Search Current Directory" (Browser view),
+  across all 16 supported locales.
+
+
+Outline & Page Navigation
+-------------------------
+- Added fast-scroll thumb to outline list for documents with
+  many entries.
+- Enhanced "Go to page" dialog.
+
+
+Rendering & Display
+-------------------
+- Replaced GLSurfaceView with TextureView for the document
+  viewer, with explicit EGL lifecycle management.
+- Simplified Rotate settings.
+- Added Text Selection toggle in both global and per-book
+  settings.
+
+
+Localization
+------------
+- Manual-crop dialog strings translated across all locales
+  (previously displayed in English only).
+- Traditional Chinese (zh-rTW): updated to Taiwan-common
+  terminology.
+- Various Chinese translation corrections.
+
+
+Tooling
+-------
+- Added tools/debug-monitor.sh: unified ADB-based crash and
+  black-screen monitor.  Runs on the development PC; detects
+  crashes via logcat filtering and black screens via periodic
+  screenshot analysis; automatically dumps diagnostics
+  (thread traces, activity/window/gfxinfo state) on events.
+- Added crash logging support for debug builds.
 
 
 Bug Fixes

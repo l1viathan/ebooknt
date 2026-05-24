@@ -26,6 +26,8 @@ Major changes:
 * **Removed submodules:** applied necessary patches and merged them into a monolithic repo
 * **100% Offline:** Removed OPDS support and the `INTERNET` permission entirely.
 * **Redesigned UI:** Tailored specifically for an uninterrupted offline reading experience.
+* **Manual & auto cropping:** Per-book default crop actions, conservative auto-crop clamping.
+* **PDF/DjVu logical page numbers:** Automatic detection of page label offsets.
 * **Various bug fixes and stability improvements.**
 
 
