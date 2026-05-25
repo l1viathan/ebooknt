@@ -75,6 +75,7 @@ public class CrashLogger {
 
     private static void collectExitInfo() {
         if (Build.VERSION.SDK_INT < 30) {
+            Log.w(TAG, "API < 30, skip collectExitInfo");
             return;
         }
 
@@ -86,6 +87,7 @@ public class CrashLogger {
         final List<ApplicationExitInfo> exits =
                 am.getHistoricalProcessExitReasons(sContext.getPackageName(), 0, 10);
         if (exits == null || exits.isEmpty()) {
+            Log.i(TAG, "No historical exit reasons found");
             return;
         }
 
@@ -94,7 +96,11 @@ public class CrashLogger {
         final long lastTs = prefs.getLong(KEY_LAST_EXIT_TS, 0);
         long maxTs = lastTs;
 
+        Log.i(TAG, "Found " + exits.size() + " exits, lastTs=" + formatTime(lastTs));
         for (final ApplicationExitInfo info : exits) {
+            Log.i(TAG, "  exit: reason=" + info.getReason()
+                    + " ts=" + formatTime(info.getTimestamp())
+                    + " desc=" + info.getDescription());
             if (info.getTimestamp() <= lastTs) {
                 continue;
             }
@@ -105,6 +111,8 @@ public class CrashLogger {
                 writeExitInfo(info);
                 Log.i(TAG, "Recorded " + reasonString(reason)
                         + " at " + formatTime(info.getTimestamp()));
+                Log.e(TAG, "Description: " + info.getDescription());
+                dumpTraceToLogcat(info);
             }
             if (info.getTimestamp() > maxTs) {
                 maxTs = info.getTimestamp();
@@ -242,6 +250,23 @@ public class CrashLogger {
             out.close();
         } catch (final IOException e) {
             Log.e(TAG, "Failed to trim crash log", e);
+        }
+    }
+
+    private static void dumpTraceToLogcat(final ApplicationExitInfo info) {
+        try {
+            final InputStream is = info.getTraceInputStream();
+            if (is == null) return;
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null && count < 80) {
+                Log.e(TAG, line);
+                count++;
+            }
+            is.close();
+        } catch (final IOException e) {
+            Log.e(TAG, "Failed to read trace", e);
         }
     }
 
