@@ -40,7 +40,7 @@
             android:marqueeRepeatLimit="marquee_forever"
             android:singleLine="true"
             android:textSize="@dimen/browser_item_info_textsize"
-            android:textColor="@color/actionbar_white"
+            android:textColor="?android:attr/textColorSecondary"
             android:gravity="top|left" />
 
         <TextView
@@ -49,7 +49,7 @@
             android:layout_height="match_parent"
             android:singleLine="true"
             android:textSize="@dimen/browser_item_info_textsize"
-            android:textColor="@color/actionbar_white"
+            android:textColor="?android:attr/textColorSecondary"
             android:gravity="top|right"
             android:paddingLeft="8dp" />
 

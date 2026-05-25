@@ -4,6 +4,7 @@ import org.emdev.ui.actions.ActionEx;
 import org.emdev.ui.actions.params.Constant;
 import org.emdev.ui.uimanager.UIManagerAppCompat;
 import org.ebooknt.viewer.R;
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.LibSettings;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.books.Bookmark;
@@ -127,7 +128,19 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         });
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        if (AppSettings.current().einkMode) {
+            toolbar.setBackgroundColor(0xFF333333);
+        }
         setSupportActionBar(toolbar);
+        if (AppSettings.current().einkMode) {
+            toolbar.post(() -> {
+                android.graphics.drawable.Drawable overflow = toolbar.getOverflowIcon();
+                if (overflow != null) {
+                    overflow.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+                    toolbar.setOverflowIcon(overflow);
+                }
+            });
+        }
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         locationItems = new ArrayList<String>();

@@ -36,6 +36,6 @@
         android:background="@drawable/components_search_background"
         android:gravity="center"
         android:singleLine="true"
-        android:textColor="@color/actionbar_white" />
+        android:textColor="?android:attr/textColorPrimary" />
 
 </RelativeLayout>

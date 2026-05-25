@@ -64,4 +64,7 @@
     <string name="pref_showanimicon_title">Show animation icon</string>
     <string name="pref_showanimicon_summary">Show animation or dragging icon when animations or dragging are enabled</string>
 
+    <string name="pref_einkmode_title">E-ink mode</string>
+    <string name="pref_einkmode_summary">Dark text on light background for e-ink screens (restart required)</string>
+
 </resources>

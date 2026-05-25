@@ -179,11 +179,31 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         drawerLayout.setScrimColor(Color.TRANSPARENT);
         drawerList = (ListView) rootLayout.findViewById(R.id.viewer_drawer_list);
 
+        if (AppSettings.current().einkMode) {
+            drawerList.setBackgroundColor(0xFEF0F0F0);
+            drawerList.setDivider(new ColorDrawable(0xFFCCCCCC));
+            drawerList.setDividerHeight(1);
+        }
+
         setContentView(rootLayout);
         initOverlays();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        if (AppSettings.current().einkMode) {
+            toolbar.setBackgroundColor(0xFF333333);
+        }
         setSupportActionBar(toolbar);
+        if (AppSettings.current().einkMode) {
+            toolbar.post(() -> {
+                android.graphics.drawable.Drawable overflow = toolbar.getOverflowIcon();
+                if (overflow != null) {
+                    overflow.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+                    toolbar.setOverflowIcon(overflow);
+                }
+                android.graphics.drawable.Drawable nav = toolbar.getNavigationIcon();
+                if (nav != null) nav.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+            });
+        }
 
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -345,14 +365,15 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     }
 
     private TextView createOverlay(final float dp) {
+        final boolean eink = AppSettings.current().einkMode;
         final TextView tv = new TextView(this);
-        tv.setTextColor(0xFFFFFFFF);
+        tv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         final int ph = (int) (12 * dp);
         final int pv = (int) (8 * dp);
         tv.setPadding(ph, pv, ph, pv);
         final GradientDrawable bg = new GradientDrawable();
-        bg.setColor(0x80000000);
+        bg.setColor(eink ? 0xCCE0E0E0 : 0x80000000);
         bg.setCornerRadius(pv);
         tv.setBackground(bg);
         tv.setVisibility(View.GONE);
@@ -837,29 +858,30 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 progressTv = (TextView) ((ViewGroup) convertView).getChildAt(2);
             }
             final Object item = items.get(pos);
+            final boolean eink = AppSettings.current().einkMode;
             if (item instanceof BookItem) {
                 final BookItem book = (BookItem) item;
                 final boolean isActive = book.isCurrent || OpenBooksManager.get().isActive(book.path);
                 if (book.isCurrent) {
                     tv.setText("▸ " + book.title);
                     tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    tv.setTextColor(0xFFFFCC80);
+                    tv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
                     icon.setAlpha(1.0f);
                 } else if (isActive) {
                     tv.setText(book.title);
                     tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    tv.setTextColor(0xFFFFFFFF);
+                    tv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
                     icon.setAlpha(0.9f);
                 } else {
                     tv.setText(book.title);
                     tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                    tv.setTextColor(0xFFD0D0D0);
+                    tv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
                     icon.setAlpha(0.5f);
                 }
                 icon.setImageResource(R.drawable.viewer_menu_bookmark);
                 if (book.pageCount > 0) {
                     progressTv.setText(book.currentPage + "/" + book.pageCount);
-                    progressTv.setTextColor(0xFFAAAAAA);
+                    progressTv.setTextColor(eink ? 0xFF777777 : 0xFFAAAAAA);
                     progressTv.setVisibility(View.VISIBLE);
                 } else {
                     progressTv.setVisibility(View.GONE);
@@ -867,7 +889,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             } else {
                 tv.setText(R.string.drawer_action_library);
                 tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(0xFFB0B0B0);
+                tv.setTextColor(eink ? 0xFF505050 : 0xFFB0B0B0);
                 icon.setImageResource(R.drawable.application_icon);
                 icon.setAlpha(0.7f);
                 progressTv.setVisibility(View.GONE);

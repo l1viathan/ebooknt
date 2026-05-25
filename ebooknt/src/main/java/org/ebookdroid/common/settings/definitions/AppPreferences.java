@@ -54,6 +54,9 @@ public interface AppPreferences {
     BooleanPreferenceDefinition SHOW_ANIM_ICON = new BooleanPreferenceDefinition(pref_showanimicon_id,
             pref_showanimicon_defvalue);
 
+    BooleanPreferenceDefinition EINK_MODE = new BooleanPreferenceDefinition(pref_einkmode_id,
+            pref_einkmode_defvalue);
+
     /* =============== Tap & Scroll settings =============== */
 
     BooleanPreferenceDefinition TAPS_ENABLED = new BooleanPreferenceDefinition(pref_tapsenabled_id,

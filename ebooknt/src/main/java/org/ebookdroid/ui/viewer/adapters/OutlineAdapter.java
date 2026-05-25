@@ -8,8 +8,11 @@ import org.ebookdroid.core.codec.OutlineLink;
 import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.ui.viewer.IActivityController;
 
+import org.ebookdroid.common.settings.AppSettings;
+
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -261,6 +264,9 @@ public class OutlineAdapter extends BaseAdapter {
             holder.btn.setOnClickListener(collapseListener);
             holder.btn.setImageResource(states[id] == OutlineItemState.EXPANDED ? R.drawable.viewer_outline_item_expanded
                     : R.drawable.viewer_outline_item_collapsed);
+            if (AppSettings.current().einkMode) {
+                holder.btn.setColorFilter(0xFF333333, PorterDuff.Mode.SRC_IN);
+            }
         }
 
         return container;

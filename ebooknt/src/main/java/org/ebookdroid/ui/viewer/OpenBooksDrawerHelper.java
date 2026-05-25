@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.support.v4.widget.DrawerLayout;
 import android.text.TextUtils;
@@ -19,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.SettingsManager;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebooknt.viewer.R;
@@ -119,21 +121,22 @@ public class OpenBooksDrawerHelper {
             final String path = items.get(pos);
             final boolean isCurrent = path.equals(currentBookPath);
             final boolean isActive = isCurrent || OpenBooksManager.get().isActive(path);
+            final boolean eink = AppSettings.current().einkMode;
 
             if (isCurrent) {
                 tv.setText("▸ " + OpenBooksManager.getDisplayTitle(path));
                 tv.setTypeface(Typeface.DEFAULT_BOLD);
-                tv.setTextColor(0xFFFFCC80);
+                tv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
                 icon.setAlpha(1.0f);
             } else if (isActive) {
                 tv.setText(OpenBooksManager.getDisplayTitle(path));
                 tv.setTypeface(Typeface.DEFAULT_BOLD);
-                tv.setTextColor(0xFFFFFFFF);
+                tv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
                 icon.setAlpha(0.9f);
             } else {
                 tv.setText(OpenBooksManager.getDisplayTitle(path));
                 tv.setTypeface(Typeface.DEFAULT);
-                tv.setTextColor(0xFFD0D0D0);
+                tv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
                 icon.setAlpha(0.5f);
             }
             icon.setImageResource(R.drawable.viewer_menu_bookmark);
@@ -143,7 +146,7 @@ public class OpenBooksDrawerHelper {
                 final BookSettings bs = SettingsManager.getBookSettings(path);
                 final int cur = bs != null && bs.currentPage != null ? bs.currentPage.viewIndex + 1 : 0;
                 progressTv.setText(cur + "/" + pc);
-                progressTv.setTextColor(0xFFAAAAAA);
+                progressTv.setTextColor(eink ? 0xFF777777 : 0xFFAAAAAA);
                 progressTv.setVisibility(View.VISIBLE);
             } else {
                 progressTv.setVisibility(View.GONE);
@@ -159,6 +162,12 @@ public class OpenBooksDrawerHelper {
             final ListView drawerList) {
 
         final Adapter adapter = new Adapter(host);
+
+        if (AppSettings.current().einkMode) {
+            drawerList.setBackgroundColor(0xFEF0F0F0);
+            drawerList.setDivider(new ColorDrawable(0xFFCCCCCC));
+            drawerList.setDividerHeight(1);
+        }
 
         final View headerSpacer = new View(host);
         final View footerSpacer = new View(host);

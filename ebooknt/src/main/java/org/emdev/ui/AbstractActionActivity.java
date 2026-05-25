@@ -105,6 +105,10 @@ public abstract class AbstractActionActivity<A extends Activity, C extends Abstr
             }
         }
 
+        if (AppSettings.current().einkMode) {
+            setTheme(R.style.ebookdroid_eink);
+        }
+
         super.onCreate(savedInstanceState);
 
         if (Helper.enabled(this.eventMask, ON_CREATE)) {

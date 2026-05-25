@@ -86,4 +86,10 @@
             android:summary="@string/pref_showanimicon_summary"
             android:title="@string/pref_showanimicon_title" />
 
+    <CheckBoxPreference
+            android:defaultValue="@string/pref_einkmode_defvalue"
+            android:key="@string/pref_einkmode_id"
+            android:summary="@string/pref_einkmode_summary"
+            android:title="@string/pref_einkmode_title" />
+
 </PreferenceScreen>

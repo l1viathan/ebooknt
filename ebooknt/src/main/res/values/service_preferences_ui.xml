@@ -126,4 +126,7 @@ Others						33,711	13.00 %
     <string translatable="false" name="pref_showanimicon_id">showanimicon</string>
     <string translatable="false" name="pref_showanimicon_defvalue">true</string>
 
+    <string translatable="false" name="pref_einkmode_id">einkmode</string>
+    <string translatable="false" name="pref_einkmode_defvalue">false</string>
+
 </resources>

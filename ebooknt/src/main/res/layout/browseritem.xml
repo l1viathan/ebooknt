@@ -3,7 +3,7 @@
     android:layout_width="fill_parent"
     android:layout_height="?android:attr/listPreferredItemHeight"
     android:orientation="horizontal"
-    android:background="@color/actionbar_black" >
+    android:background="?android:attr/colorBackground" >
 
     <ImageView
         android:id="@+id/browserItemIcon"
@@ -41,7 +41,7 @@
             android:marqueeRepeatLimit="marquee_forever"
             android:singleLine="true"
             android:textSize="@dimen/browser_item_info_textsize"
-            android:textColor="@color/actionbar_white"
+            android:textColor="?android:attr/textColorSecondary"
             android:gravity="center_vertical|left"/>
 
         <TextView
@@ -50,7 +50,7 @@
             android:layout_height="match_parent"
             android:singleLine="true"
             android:textSize="@dimen/browser_item_info_textsize"
-            android:textColor="@color/actionbar_white"
+            android:textColor="?android:attr/textColorSecondary"
             android:gravity="center_vertical|right"
             android:paddingLeft="8dp"/>
 

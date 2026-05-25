@@ -70,6 +70,15 @@ public class GoToPageDialog extends Dialog {
         win.setBackgroundDrawableResource(android.R.color.transparent);
         win.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
+        if (AppSettings.current().einkMode) {
+            final View root = findViewById(R.id.gotopageView);
+            root.setBackgroundColor(0xFFF0F0F0);
+            final android.widget.CheckBox cb = (android.widget.CheckBox) findViewById(R.id.useFilePageCheckBox);
+            if (cb != null) {
+                cb.setTextColor(0xFF444444);
+            }
+        }
+
         final SeekBar seekbar = (SeekBar) findViewById(R.id.seekbar);
         final EditText editText = (EditText) findViewById(R.id.pageNumberTextEdit);
 
@@ -98,7 +107,9 @@ public class GoToPageDialog extends Dialog {
         handler.init(new IViewContainer.DialogBridge(this), seekbar, R.id.seekbar_minus, R.id.seekbar_plus);
 
         final CheckBox filePageCb = (CheckBox) findViewById(R.id.useFilePageCheckBox);
-        if (offset == 1) {
+        if (filePageCb == null) {
+            // layout-land omits this checkbox
+        } else if (offset == 1) {
             filePageCb.setVisibility(View.GONE);
         } else {
             filePageCb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {

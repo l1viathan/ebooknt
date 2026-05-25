@@ -1,5 +1,6 @@
 package org.ebookdroid.ui.viewer.views;
 
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.core.models.ZoomModel;
 
 import android.content.Context;
@@ -24,12 +25,16 @@ public class PageViewZoomControls extends LinearLayout {
         setOrientation(LinearLayout.HORIZONTAL);
         setGravity(Gravity.BOTTOM);
 
+        final boolean eink = AppSettings.current().einkMode;
+        final int btnTextColor = eink ? Color.BLACK : Color.WHITE;
+        final int btnBgColor = eink ? 0xCCE0E0E0 : 0x80000000;
+
         final Button cancel = new Button(context);
         cancel.setText(android.R.string.cancel);
-        cancel.setTextColor(Color.WHITE);
+        cancel.setTextColor(btnTextColor);
         cancel.setTextSize(13);
         cancel.setTypeface(Typeface.DEFAULT_BOLD);
-        cancel.setBackgroundColor(0x80000000);
+        cancel.setBackgroundColor(btnBgColor);
         cancel.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -42,10 +47,10 @@ public class PageViewZoomControls extends LinearLayout {
 
         final Button ok = new Button(context);
         ok.setText(android.R.string.ok);
-        ok.setTextColor(Color.WHITE);
+        ok.setTextColor(btnTextColor);
         ok.setTextSize(13);
         ok.setTypeface(Typeface.DEFAULT_BOLD);
-        ok.setBackgroundColor(0x80000000);
+        ok.setBackgroundColor(btnBgColor);
         ok.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {

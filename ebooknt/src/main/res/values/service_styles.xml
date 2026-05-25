@@ -2,8 +2,17 @@
 <resources>
 
     <style name="ebookdroid" parent="@style/Theme.AppCompat.NoActionBar">
-        <!-- TODO: pick our own colorPrimary, colorPrimaryDark, colorAccent -->
+        <item name="colorPrimary">#FF333333</item>
+        <item name="colorPrimaryDark">#FF222222</item>
+        <item name="colorAccent">#FF448AFF</item>
     </style>
+
+    <style name="ebookdroid_eink" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#FFE0E0E0</item>
+        <item name="colorPrimaryDark">#FFD0D0D0</item>
+        <item name="colorAccent">#FF757575</item>
+    </style>
+
 
     <!-- TODO: Migrate the settings activities to appcompat and remove this (and the v11/v21 versions) -->
     <style name="ebookdroid_prefs" parent="android:Theme"/>
@@ -63,7 +72,7 @@
         <item name="android:ellipsize">marquee</item>
         <item name="android:lines">1</item>
         <item name="android:textSize">20dip</item>
-        <item name="android:textColor">@color/actionbar_white</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
         <item name="android:text">@string/app_name</item>
     </style>
 
@@ -73,7 +82,7 @@
         <item name="android:ellipsize">marquee</item>
         <item name="android:singleLine">true</item>
         <item name="android:textSize">@dimen/browser_item_title_textsize</item>
-        <item name="android:textColor">@color/actionbar_white</item>
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
 
     <style name="browser_item_info">
@@ -82,7 +91,7 @@
         <item name="android:ellipsize">marquee</item>
         <item name="android:singleLine">true</item>
         <item name="android:textSize">@dimen/browser_item_info_textsize</item>
-        <item name="android:textColor">@color/actionbar_white</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
     </style>
 
 </resources>
