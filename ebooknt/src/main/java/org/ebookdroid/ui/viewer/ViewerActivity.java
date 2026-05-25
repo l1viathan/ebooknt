@@ -760,12 +760,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         static final class BookItem {
             final String path;
             final String title;
+            final String outlineLabel;
             final boolean isCurrent;
             final int currentPage;
             final int pageCount;
             BookItem(final String path, final boolean isCurrent) {
                 this.path = path;
                 this.title = OpenBooksManager.getDisplayTitle(path);
+                this.outlineLabel = OpenBooksManager.get().getOutlineLabel(path);
                 this.isCurrent = isCurrent;
                 this.pageCount = OpenBooksManager.get().getPageCount(path);
                 if (pageCount > 0) {
@@ -809,14 +811,16 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         @Override
         public View getView(final int pos, View convertView, final ViewGroup parent) {
             ImageView icon;
-            TextView tv;
+            TextView titleTv;
             TextView progressTv;
+            TextView outlineTv;
             if (convertView == null) {
                 final float density = ctx.getResources().getDisplayMetrics().density;
                 final int dp16 = (int) (16 * density + 0.5f);
                 final int dp12 = (int) (12 * density + 0.5f);
                 final int dp24 = (int) (24 * density + 0.5f);
                 final int dp8 = (int) (8 * density + 0.5f);
+                final int dp2 = (int) (2 * density + 0.5f);
 
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
@@ -833,29 +837,55 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
                 row.addView(icon);
 
-                tv = new TextView(ctx);
-                tv.setTextSize(15);
-                tv.setSingleLine(true);
-                tv.setEllipsize(TextUtils.TruncateAt.END);
-                final LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(
+                final LinearLayout textCol = new LinearLayout(ctx);
+                textCol.setOrientation(LinearLayout.VERTICAL);
+                final LinearLayout.LayoutParams textColLp = new LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-                tv.setLayoutParams(tvLp);
-                row.addView(tv);
+                textCol.setLayoutParams(textColLp);
+
+                final LinearLayout titleRow = new LinearLayout(ctx);
+                titleRow.setOrientation(LinearLayout.HORIZONTAL);
+                titleRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                titleTv = new TextView(ctx);
+                titleTv.setTextSize(16);
+                titleTv.setSingleLine(true);
+                titleTv.setEllipsize(TextUtils.TruncateAt.END);
+                titleTv.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f));
+                titleRow.addView(titleTv);
 
                 progressTv = new TextView(ctx);
-                progressTv.setTextSize(13);
+                progressTv.setTextSize(12);
                 progressTv.setSingleLine(true);
                 final LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 pLp.leftMargin = dp8;
                 progressTv.setLayoutParams(pLp);
-                row.addView(progressTv);
+                titleRow.addView(progressTv);
 
+                textCol.addView(titleRow);
+
+                outlineTv = new TextView(ctx);
+                outlineTv.setTextSize(12);
+                outlineTv.setSingleLine(true);
+                outlineTv.setEllipsize(TextUtils.TruncateAt.END);
+                final LinearLayout.LayoutParams olLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                olLp.topMargin = dp2;
+                outlineTv.setLayoutParams(olLp);
+                textCol.addView(outlineTv);
+
+                row.addView(textCol);
                 convertView = row;
             } else {
-                icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
-                tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
-                progressTv = (TextView) ((ViewGroup) convertView).getChildAt(2);
+                final ViewGroup row = (ViewGroup) convertView;
+                icon = (ImageView) row.getChildAt(0);
+                final ViewGroup textCol = (ViewGroup) row.getChildAt(1);
+                final ViewGroup titleRow = (ViewGroup) textCol.getChildAt(0);
+                titleTv = (TextView) titleRow.getChildAt(0);
+                progressTv = (TextView) titleRow.getChildAt(1);
+                outlineTv = (TextView) textCol.getChildAt(1);
             }
             final Object item = items.get(pos);
             final boolean eink = AppSettings.current().einkMode;
@@ -863,20 +893,27 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 final BookItem book = (BookItem) item;
                 final boolean isActive = book.isCurrent || OpenBooksManager.get().isActive(book.path);
                 if (book.isCurrent) {
-                    tv.setText("▸ " + book.title);
-                    tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    tv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
+                    titleTv.setText("▸ " + book.title);
+                    titleTv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    titleTv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
                     icon.setAlpha(1.0f);
                 } else if (isActive) {
-                    tv.setText(book.title);
-                    tv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-                    tv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
+                    titleTv.setText(book.title);
+                    titleTv.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+                    titleTv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
                     icon.setAlpha(0.9f);
                 } else {
-                    tv.setText(book.title);
-                    tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                    tv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
+                    titleTv.setText(book.title);
+                    titleTv.setTypeface(android.graphics.Typeface.DEFAULT);
+                    titleTv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
                     icon.setAlpha(0.5f);
+                }
+                if (book.outlineLabel != null) {
+                    outlineTv.setText(book.outlineLabel);
+                    outlineTv.setTextColor(eink ? 0xFF777777 : 0xFFAAAAAA);
+                    outlineTv.setVisibility(View.VISIBLE);
+                } else {
+                    outlineTv.setVisibility(View.GONE);
                 }
                 icon.setImageResource(R.drawable.viewer_menu_bookmark);
                 if (book.pageCount > 0) {
@@ -887,9 +924,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     progressTv.setVisibility(View.GONE);
                 }
             } else {
-                tv.setText(R.string.drawer_action_library);
-                tv.setTypeface(android.graphics.Typeface.DEFAULT);
-                tv.setTextColor(eink ? 0xFF505050 : 0xFFB0B0B0);
+                titleTv.setText(R.string.drawer_action_library);
+                titleTv.setTypeface(android.graphics.Typeface.DEFAULT);
+                titleTv.setTextColor(eink ? 0xFF505050 : 0xFFB0B0B0);
+                outlineTv.setVisibility(View.GONE);
                 icon.setImageResource(R.drawable.application_icon);
                 icon.setAlpha(0.7f);
                 progressTv.setVisibility(View.GONE);

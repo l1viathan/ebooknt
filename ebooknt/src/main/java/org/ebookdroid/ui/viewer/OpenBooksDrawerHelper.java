@@ -70,14 +70,16 @@ public class OpenBooksDrawerHelper {
         @Override
         public View getView(int pos, View convertView, ViewGroup parent) {
             ImageView icon;
-            TextView tv;
+            TextView titleTv;
             TextView progressTv;
+            TextView outlineTv;
             if (convertView == null) {
                 final float density = ctx.getResources().getDisplayMetrics().density;
                 final int dp16 = (int) (16 * density + 0.5f);
                 final int dp12 = (int) (12 * density + 0.5f);
                 final int dp24 = (int) (24 * density + 0.5f);
                 final int dp8 = (int) (8 * density + 0.5f);
+                final int dp2 = (int) (2 * density + 0.5f);
 
                 final LinearLayout row = new LinearLayout(ctx);
                 row.setOrientation(LinearLayout.HORIZONTAL);
@@ -94,29 +96,55 @@ public class OpenBooksDrawerHelper {
                 icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
                 row.addView(icon);
 
-                tv = new TextView(ctx);
-                tv.setTextSize(15);
-                tv.setSingleLine(true);
-                tv.setEllipsize(TextUtils.TruncateAt.END);
-                final LinearLayout.LayoutParams tvLp = new LinearLayout.LayoutParams(
+                final LinearLayout textCol = new LinearLayout(ctx);
+                textCol.setOrientation(LinearLayout.VERTICAL);
+                final LinearLayout.LayoutParams textColLp = new LinearLayout.LayoutParams(
                     0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f);
-                tv.setLayoutParams(tvLp);
-                row.addView(tv);
+                textCol.setLayoutParams(textColLp);
+
+                final LinearLayout titleRow = new LinearLayout(ctx);
+                titleRow.setOrientation(LinearLayout.HORIZONTAL);
+                titleRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                titleTv = new TextView(ctx);
+                titleTv.setTextSize(16);
+                titleTv.setSingleLine(true);
+                titleTv.setEllipsize(TextUtils.TruncateAt.END);
+                titleTv.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.0f));
+                titleRow.addView(titleTv);
 
                 progressTv = new TextView(ctx);
-                progressTv.setTextSize(13);
+                progressTv.setTextSize(12);
                 progressTv.setSingleLine(true);
                 final LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 pLp.leftMargin = dp8;
                 progressTv.setLayoutParams(pLp);
-                row.addView(progressTv);
+                titleRow.addView(progressTv);
 
+                textCol.addView(titleRow);
+
+                outlineTv = new TextView(ctx);
+                outlineTv.setTextSize(12);
+                outlineTv.setSingleLine(true);
+                outlineTv.setEllipsize(TextUtils.TruncateAt.END);
+                final LinearLayout.LayoutParams olLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                olLp.topMargin = dp2;
+                outlineTv.setLayoutParams(olLp);
+                textCol.addView(outlineTv);
+
+                row.addView(textCol);
                 convertView = row;
             } else {
-                icon = (ImageView) ((ViewGroup) convertView).getChildAt(0);
-                tv = (TextView) ((ViewGroup) convertView).getChildAt(1);
-                progressTv = (TextView) ((ViewGroup) convertView).getChildAt(2);
+                final ViewGroup row = (ViewGroup) convertView;
+                icon = (ImageView) row.getChildAt(0);
+                final ViewGroup textCol = (ViewGroup) row.getChildAt(1);
+                final ViewGroup titleRow = (ViewGroup) textCol.getChildAt(0);
+                titleTv = (TextView) titleRow.getChildAt(0);
+                progressTv = (TextView) titleRow.getChildAt(1);
+                outlineTv = (TextView) textCol.getChildAt(1);
             }
             final String path = items.get(pos);
             final boolean isCurrent = path.equals(currentBookPath);
@@ -124,22 +152,31 @@ public class OpenBooksDrawerHelper {
             final boolean eink = AppSettings.current().einkMode;
 
             if (isCurrent) {
-                tv.setText("▸ " + OpenBooksManager.getDisplayTitle(path));
-                tv.setTypeface(Typeface.DEFAULT_BOLD);
-                tv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
+                titleTv.setText("▸ " + OpenBooksManager.getDisplayTitle(path));
+                titleTv.setTypeface(Typeface.DEFAULT_BOLD);
+                titleTv.setTextColor(eink ? 0xFF8B4513 : 0xFFFFCC80);
                 icon.setAlpha(1.0f);
             } else if (isActive) {
-                tv.setText(OpenBooksManager.getDisplayTitle(path));
-                tv.setTypeface(Typeface.DEFAULT_BOLD);
-                tv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
+                titleTv.setText(OpenBooksManager.getDisplayTitle(path));
+                titleTv.setTypeface(Typeface.DEFAULT_BOLD);
+                titleTv.setTextColor(eink ? 0xFF000000 : 0xFFFFFFFF);
                 icon.setAlpha(0.9f);
             } else {
-                tv.setText(OpenBooksManager.getDisplayTitle(path));
-                tv.setTypeface(Typeface.DEFAULT);
-                tv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
+                titleTv.setText(OpenBooksManager.getDisplayTitle(path));
+                titleTv.setTypeface(Typeface.DEFAULT);
+                titleTv.setTextColor(eink ? 0xFF505050 : 0xFFD0D0D0);
                 icon.setAlpha(0.5f);
             }
             icon.setImageResource(R.drawable.viewer_menu_bookmark);
+
+            final String olLabel = OpenBooksManager.get().getOutlineLabel(path);
+            if (olLabel != null) {
+                outlineTv.setText(olLabel);
+                outlineTv.setTextColor(eink ? 0xFF777777 : 0xFFAAAAAA);
+                outlineTv.setVisibility(View.VISIBLE);
+            } else {
+                outlineTv.setVisibility(View.GONE);
+            }
 
             final int pc = OpenBooksManager.get().getPageCount(path);
             if (pc > 0) {

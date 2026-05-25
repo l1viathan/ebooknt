@@ -38,6 +38,7 @@ public final class OpenBooksManager {
     private final List<String> openBooks = new ArrayList<>();
     private final Set<String> activeBooks = new HashSet<>();
     private final Map<String, Integer> pageCounts = new HashMap<>();
+    private final Map<String, String> outlineLabels = new HashMap<>();
     private final Map<String, Activity> viewerActivities = new HashMap<>();
     private boolean loaded;
 
@@ -144,6 +145,20 @@ public final class OpenBooksManager {
         ensureLoaded();
         final Integer c = pageCounts.get(path);
         return c != null ? c : 0;
+    }
+
+    public synchronized void setOutlineLabel(final String path, final String label) {
+        if (path != null) {
+            if (label != null) {
+                outlineLabels.put(path, label);
+            } else {
+                outlineLabels.remove(path);
+            }
+        }
+    }
+
+    public synchronized String getOutlineLabel(final String path) {
+        return path != null ? outlineLabels.get(path) : null;
     }
 
     private void trimToMax() {

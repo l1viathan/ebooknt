@@ -436,10 +436,64 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 setWindowTitle();
                 getManagedComponent().currentPageChanged(getPageNumberString());
                 SettingsManager.currentPageChanged(bookSettings, oldIndex, newIndex);
+                updateOutlineLabel(newIndex.viewIndex);
             }
         };
 
         getView().post(r);
+    }
+
+    private void updateOutlineLabel(final int viewIndex) {
+        final DecodeService ds = getDecodeService();
+        if (ds == null || m_fileName == null) return;
+        final List<OutlineLink> outline = ds.getOutline();
+        if (outline == null || outline.isEmpty()) {
+            OpenBooksManager.get().setOutlineLabel(m_fileName, null);
+            return;
+        }
+        final int docPage = viewIndex + 1;
+        int bestIdx = -1;
+        int bestPage = -1;
+        for (int i = 0; i < outline.size(); i++) {
+            final OutlineLink link = outline.get(i);
+            if (link.targetPage >= 1 && link.targetPage <= docPage && link.targetPage > bestPage) {
+                bestPage = link.targetPage;
+                bestIdx = i;
+            }
+        }
+        if (bestIdx < 0) {
+            OpenBooksManager.get().setOutlineLabel(m_fileName, null);
+            return;
+        }
+        final OutlineLink leaf = outline.get(bestIdx);
+        int parentIdx = -1;
+        for (int i = bestIdx - 1; i >= 0; i--) {
+            if (outline.get(i).level < leaf.level) {
+                parentIdx = i;
+                break;
+            }
+        }
+        final String label;
+        if (parentIdx >= 0) {
+            String parentTitle = outline.get(parentIdx).title.trim();
+            parentTitle = truncateByWidth(parentTitle, 16);
+            label = parentTitle + " > " + leaf.title.trim();
+        } else {
+            label = leaf.title.trim();
+        }
+        OpenBooksManager.get().setOutlineLabel(m_fileName, label);
+    }
+
+    private static String truncateByWidth(final String s, final int maxWidth) {
+        int w = 0;
+        for (int i = 0; i < s.length(); i++) {
+            final char c = s.charAt(i);
+            w += (c > 0x7F) ? 2 : 1;
+            if (w > maxWidth) {
+                return s.substring(0, i) + "...";
+            }
+        }
+        return s;
     }
 
     /**
