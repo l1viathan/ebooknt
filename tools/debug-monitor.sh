@@ -16,6 +16,7 @@
 # without it, falls back to PNG file-size heuristic).
 
 set -uo pipefail
+set -m
 
 PKG="org.ebooknt.viewer"
 LOG_DIR="${1:-$HOME/ebooknt-logs}"
@@ -32,7 +33,7 @@ BG_PIDS=()
 
 cleanup() {
     for pid in "${BG_PIDS[@]}"; do
-        kill "$pid" 2>/dev/null
+        kill -- -"$pid" 2>/dev/null || kill "$pid" 2>/dev/null
     done
     wait "${BG_PIDS[@]}" 2>/dev/null
     rm -f "$TMPSHOT"
