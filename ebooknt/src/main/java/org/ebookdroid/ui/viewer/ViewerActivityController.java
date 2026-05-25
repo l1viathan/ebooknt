@@ -990,10 +990,25 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             return;
         }
         final ViewerActivity activity = getManagedComponent();
+
+        final AppSettings appSettings = AppSettings.current();
+        final BookSettings targetBs = SettingsManager.getBookSettings(path);
+        final int currentOrientation = bookSettings != null
+                ? bookSettings.getOrientation(appSettings)
+                : appSettings.rotation.getOrientation();
+        final int targetOrientation = targetBs != null
+                ? targetBs.getOrientation(appSettings)
+                : appSettings.rotation.getOrientation();
+
+        if (currentOrientation != targetOrientation) {
+            activity.view.getView().setVisibility(View.INVISIBLE);
+        }
+
         final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(path)));
         intent.setClass(activity, ViewerActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         activity.startActivity(intent);
+        activity.overridePendingTransition(0, 0);
     }
 
     public void goToLibrary(final ActionEx action) {
@@ -1395,6 +1410,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                     try {
                         getDocumentController().show();
 
+                        final View cv = getManagedComponent().view.getView();
+                        if (cv.getVisibility() != View.VISIBLE) {
+                            cv.setVisibility(View.VISIBLE);
+                        }
+
                         final DocumentModel dm = getDocumentModel();
                         currentPageChanged(PageIndex.NULL, dm.getCurrentIndex());
 
@@ -1430,6 +1450,10 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 LCTX.e("BookLoadTask.onPostExecute(): Unexpected error", th);
                 LogManager.onUnexpectedError(result);
             } finally {
+                final View cv = getManagedComponent().view.getView();
+                if (cv.getVisibility() != View.VISIBLE) {
+                    cv.setVisibility(View.VISIBLE);
+                }
                 LCTX.d("BookLoadTask.onPostExecute(): finish");
             }
         }
