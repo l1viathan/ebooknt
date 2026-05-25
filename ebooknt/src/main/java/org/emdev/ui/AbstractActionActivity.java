@@ -202,7 +202,7 @@ public abstract class AbstractActionActivity<A extends Activity, C extends Abstr
 
         super.onResume();
 
-        setRequestedOrientation(AppSettings.current().rotation.getOrientation());
+        setRequestedOrientation(controller.getRequestedOrientation());
 
         if (Helper.enabled(this.eventMask, ON_RESUME)) {
             onResumeImpl();

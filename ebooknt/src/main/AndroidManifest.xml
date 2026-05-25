@@ -141,6 +141,7 @@
         <activity
             android:name="org.ebookdroid.ui.settings.BookSettingsActivity"
             android:configChanges="keyboardHidden|orientation|screenSize"
+            android:screenOrientation="behind"
             android:launchMode="singleTask"
             android:theme="@style/ebookdroid_prefs"
             android:exported="false" />

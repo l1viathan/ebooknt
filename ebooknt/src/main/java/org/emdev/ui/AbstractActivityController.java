@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 
+import org.ebookdroid.common.settings.AppSettings;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.emdev.common.log.LogContext;
@@ -69,6 +71,10 @@ public class AbstractActivityController<A extends Activity> extends AbstractComp
     }
 
     public void onDestroy(final boolean finishing) {
+    }
+
+    public int getRequestedOrientation() {
+        return AppSettings.current().rotation.getOrientation();
     }
 
 }

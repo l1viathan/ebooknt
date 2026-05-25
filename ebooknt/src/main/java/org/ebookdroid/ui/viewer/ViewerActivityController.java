@@ -961,6 +961,14 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         return bookSettings;
     }
 
+    @Override
+    public int getRequestedOrientation() {
+        if (bookSettings != null) {
+            return bookSettings.getOrientation(AppSettings.current());
+        }
+        return AppSettings.current().rotation.getOrientation();
+    }
+
     public String getCurrentBookPath() {
         return m_fileName;
     }

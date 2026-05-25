@@ -28,20 +28,21 @@ public class BookSettingsActivity extends BaseSettingsActivity {
     @SuppressWarnings("deprecation")
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
+        final String fileName = getIntent().getStringExtra("bookFileName");
+        if (fileName != null) {
+            current = SettingsManager.getBookSettings(fileName);
+        }
+
+        if (current != null) {
+            setRequestedOrientation(current.getOrientation(AppSettings.current()));
+        }
+
         super.onCreate(savedInstanceState);
 
-        final String fileName = getIntent().getStringExtra("bookFileName");
-        if (fileName == null) {
-            finish();
-            return;
-        }
-        current = SettingsManager.getBookSettings(fileName);
         if (current == null) {
             finish();
             return;
         }
-
-        setRequestedOrientation(current.getOrientation(AppSettings.current()));
 
         SettingsManager.onBookSettingsActivityCreated(current);
 
