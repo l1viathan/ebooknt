@@ -227,7 +227,8 @@ LOCAL_SRC_FILES := \
 	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-BoldItalic.cff.c \
 	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-Italic.cff.c \
 	$(MY_ROOT)/generated/resources/fonts/urw/NimbusSans-Regular.cff.c \
-	$(MY_ROOT)/generated/resources/fonts/urw/StandardSymbolsPS.cff.c
+	$(MY_ROOT)/generated/resources/fonts/urw/StandardSymbolsPS.cff.c \
+	$(MY_ROOT)/generated/resources/fonts/han/SourceHanSerif-Regular.ttc.c
 
 #LOCAL_SRC_FILES := $(addprefix ../, $(LOCAL_SRC_FILES))
 
