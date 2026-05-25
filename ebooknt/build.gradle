@@ -83,7 +83,7 @@ android {
             'x86': 'x86',
             'x86_64': 'x86_64',
         ].getOrDefault(abi, abi) : 'universal'
-        def versionName = variant.mergedFlavor.versionName ?: android.defaultConfig.versionName ?: "1.0.0"
+        def versionName = variant.mergedFlavor.versionName ?: android.defaultConfig.versionName ?: "1.1.0"
         output.outputFileName = "ebooknt-${abiLabel}-v${versionName}.apk"
         if (abi != null) {
           output.versionCodeOverride = project.ext.versionCodes.get(abi) + getVerCode()
