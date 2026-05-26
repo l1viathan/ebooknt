@@ -25,7 +25,7 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
     private static final int DEFAULT_DEFAULT_VALUE = 50;
 
     private final int defaultValue;
-    private final int maxValue;
+    private int maxValue;
     private final int minValue;
     private final int displayDivisor;
     private int currentValue;
@@ -51,6 +51,17 @@ public final class SeekBarPreference extends DialogPreference implements OnSeekB
 
     public int getValue() {
         return currentValue;
+    }
+
+    public void setMaxValue(final int newMax) {
+        this.maxValue = newMax;
+        if (currentValue > maxValue) {
+            currentValue = maxValue;
+            if (shouldPersist()) {
+                persistString(Integer.toString(currentValue));
+            }
+            notifyChanged();
+        }
     }
 
     private String formatValue(final int value) {

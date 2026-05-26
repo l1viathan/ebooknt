@@ -99,6 +99,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     public final int maxOpenFiles;
 
+    public final int cachedBooks;
+
     public final int pagesInMemory;
 
     public final int decodingThreads;
@@ -220,6 +222,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         keysBinding = KEY_BINDINGS.getPreferenceValue(prefs);
         /* =============== Performance settings =============== */
         maxOpenFiles = MAX_OPEN_FILES.getPreferenceValue(prefs);
+        cachedBooks = Math.min(CACHED_BOOKS.getPreferenceValue(prefs), maxOpenFiles - 1);
         pagesInMemory = PAGES_IN_MEMORY.getPreferenceValue(prefs);
         decodingThreads = DECODING_THREADS.getPreferenceValue(prefs);
         decodingThreadPriority = DECODE_THREAD_PRIORITY.getPreferenceValue(prefs);

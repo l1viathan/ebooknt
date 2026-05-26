@@ -6,6 +6,11 @@
     <string translatable="false" name="pref_maxopenfiles_minvalue">2</string>
     <string translatable="false" name="pref_maxopenfiles_maxvalue">12</string>
 
+    <string translatable="false" name="pref_cachedbooks_id">cachedbooks</string>
+    <string translatable="false" name="pref_cachedbooks_defvalue">1</string>
+    <string translatable="false" name="pref_cachedbooks_minvalue">1</string>
+    <string translatable="false" name="pref_cachedbooks_maxvalue">11</string>
+
     <string translatable="false" name="pref_pagesinmemory_id">pagesinmemory</string>
     <string translatable="false" name="pref_pagesinmemory_defvalue">4</string>
     <string translatable="false" name="pref_pagesinmemory_minvalue">1</string>

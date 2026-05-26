@@ -7,6 +7,9 @@
     <string name="pref_maxopenfiles_title">Max open files</string>
     <string name="pref_maxopenfiles_summary">Maximum number of files to keep open simultaneously (default: 6)</string>
 
+    <string name="pref_cachedbooks_title">Cached books</string>
+    <string name="pref_cachedbooks_summary">Number of inactive books to keep in memory for fast switching (default: 1)</string>
+
     <string name="pref_pagesinmemory_title">Pages in memory</string>
     <string name="pref_pagesinmemory_summary">Number of pages to store in memory</string>
 

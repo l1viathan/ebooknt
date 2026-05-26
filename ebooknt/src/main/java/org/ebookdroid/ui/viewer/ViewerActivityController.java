@@ -141,29 +141,37 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     private final AsyncTaskExecutor executor;
 
-    private static final int MAX_CACHED_BOOKS = 3;
-    private static final HashMap<String, DocumentInfo> docInfoCache = new HashMap<String, DocumentInfo>();
-    private static final LinkedHashMap<String, CachedBook> bookCache =
-            new LinkedHashMap<String, CachedBook>(MAX_CACHED_BOOKS + 1, 0.75f, true) {
+    private volatile int maxCachedBooks = 1;
+    private final HashMap<String, DocumentInfo> docInfoCache = new HashMap<String, DocumentInfo>();
+    private final LinkedHashMap<String, CachedBook> bookCache =
+            new LinkedHashMap<String, CachedBook>(16, 0.75f, true) {
                 @Override
                 protected boolean removeEldestEntry(final Map.Entry<String, CachedBook> eldest) {
-                    if (size() > MAX_CACHED_BOOKS) {
-                        final CachedBook evicted = eldest.getValue();
-                        final DocumentInfo di = evicted.documentModel.docInfo;
-                        if (di != null) {
-                            docInfoCache.put(eldest.getKey(), di);
-                        }
-                        new Thread("cache-evict") {
-                            @Override
-                            public void run() {
-                                evicted.recycle();
-                            }
-                        }.start();
+                    if (size() > maxCachedBooks) {
+                        evictEntry(eldest);
                         return true;
                     }
                     return false;
                 }
             };
+
+    private void evictEntry(final Map.Entry<String, CachedBook> entry) {
+        final CachedBook evicted = entry.getValue();
+        final DocumentInfo di = evicted.documentModel.docInfo;
+        if (di != null) {
+            docInfoCache.put(entry.getKey(), di);
+        }
+        new Thread("cache-evict") {
+            @Override
+            public void run() {
+                evicted.recycle();
+            }
+        }.start();
+    }
+
+    void updateCachedBooksLimit(final int newLimit) {
+        maxCachedBooks = Math.max(1, newLimit);
+    }
 
     private static class CachedBook {
         final DocumentModel documentModel;
@@ -205,6 +213,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         executor = new AsyncTaskExecutor(256, 1, 5, 1, "BookExecutor-" + id);
 
+        maxCachedBooks = Math.max(1, AppSettings.current().cachedBooks);
         SettingsManager.addListener(this);
     }
 
@@ -245,7 +254,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
      */
     @Override
     public void afterCreate(final ViewerActivity activity, final boolean recreated) {
-
         final AppSettings appSettings = AppSettings.current();
 
         IUIManager.instance.setFullScreenMode(activity, getManagedComponent().view.getView(), appSettings.fullScreen);
@@ -343,7 +351,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         bookSettings = SettingsManager.create(id, m_fileName, scheme.temporary, intent);
         SettingsManager.applyBookSettingsChanges(null, bookSettings);
 
-        OpenBooksManager.get().onBookOpened(m_fileName, activity);
+        OpenBooksManager.get().onBookOpened(m_fileName);
     }
 
     /**
@@ -378,23 +386,21 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             if (BackupSettings.current().backupOnBookClose) {
                 BackupManager.backup();
             }
-            if (documentModel != null) {
+            if (documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
                 documentModel.recycle();
             }
-            for (final CachedBook cb : bookCache.values()) {
-                cb.recycle();
-            }
-            bookCache.clear();
-            docInfoCache.clear();
             if (scheme != null && scheme.temporary) {
                 CacheManager.clear(scheme.key);
             }
             SettingsManager.removeListener(this);
             OpenBooksManager.get().onBookClosed(m_fileName);
-            if (OpenBooksManager.get().isEmpty()) {
-                BitmapManager.clear("on finish");
-                ByteBufferManager.clear("on finish");
+            for (final CachedBook cb : bookCache.values()) {
+                cb.recycle();
             }
+            bookCache.clear();
+            docInfoCache.clear();
+            BitmapManager.clear("on finish");
+            ByteBufferManager.clear("on finish");
         }
     }
 
@@ -1043,7 +1049,13 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     }
 
     public void loadBook(final Intent newIntent) {
-        if (newIntent == null || newIntent.getData() == null) return;
+        if (newIntent == null || newIntent.getData() == null) {
+            return;
+        }
+
+        if (getManagedComponent().isFinishing()) {
+            return;
+        }
 
         final Uri data = newIntent.getData();
         final String targetPath = PathFromUri.retrieve(
@@ -1051,6 +1063,15 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         if (targetPath != null && targetPath.equals(m_fileName)
                 && documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
+            final IViewController dc = ctrl.get();
+            if (dc != null) {
+                dc.invalidatePageSizes(IViewController.InvalidateSizeReason.LAYOUT, null);
+                dc.redrawView();
+            }
+            final View cv = getManagedComponent().view.getView();
+            if (cv.getVisibility() != View.VISIBLE) {
+                cv.setVisibility(View.VISIBLE);
+            }
             return;
         }
 
@@ -1346,11 +1367,19 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     public void doClose(final ActionEx action) {
         final String closingPath = m_fileName;
 
-        if (documentModel != null) {
+        if (documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
             documentModel.recycle();
+            documentModel = ActivityControllerStub.DM_STUB;
         }
+        m_fileName = null;
+
+        final CachedBook evictedFromClose = closingPath != null ? bookCache.remove(closingPath) : null;
+        if (evictedFromClose != null) {
+            evictedFromClose.recycle();
+        }
+
         if (scheme != null && scheme.temporary) {
-            CacheManager.clear(m_fileName);
+            CacheManager.clear(closingPath);
         }
         SettingsManager.releaseBookSettings(id, bookSettings);
 
@@ -1360,10 +1389,27 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         }
 
         OpenBooksManager.get().removeBook(closingPath);
-        if (!OpenBooksManager.navigateToLastOpenBook(getActivity())) {
+
+        final String nextBook = findNextOpenBook();
+        if (nextBook != null) {
+            final Intent nextIntent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(nextBook)));
+            nextIntent.setClass(getActivity(), ViewerActivity.class);
+            loadBook(nextIntent);
+        } else {
             OpenBooksManager.navigateToLibrary(getActivity());
+            getManagedComponent().finish();
         }
-        getManagedComponent().finish();
+    }
+
+    private String findNextOpenBook() {
+        final List<String> books = OpenBooksManager.get().getOpenBooks();
+        for (final String path : books) {
+            if (new File(path).exists()) {
+                return path;
+            }
+            OpenBooksManager.get().removeBook(path);
+        }
+        return null;
     }
 
     private void goUp() {
@@ -1443,6 +1489,8 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         if (diff.isPagesInMemoryChanged()) {
             getDocumentController().updateMemorySettings();
         }
+
+        updateCachedBooksLimit(newSettings.cachedBooks);
 
         UIManagerAppCompat.invalidateOptionsMenu(getManagedComponent());
     }

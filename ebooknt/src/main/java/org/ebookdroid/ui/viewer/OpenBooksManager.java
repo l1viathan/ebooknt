@@ -39,7 +39,6 @@ public final class OpenBooksManager {
     private final Set<String> activeBooks = new HashSet<>();
     private final Map<String, Integer> pageCounts = new HashMap<>();
     private final Map<String, String> outlineLabels = new HashMap<>();
-    private final Map<String, Activity> viewerActivities = new HashMap<>();
     private boolean loaded;
 
     public boolean hasSearchResults;
@@ -64,14 +63,11 @@ public final class OpenBooksManager {
         return INSTANCE;
     }
 
-    public synchronized void onBookOpened(final String path, final Activity activity) {
+    public synchronized void onBookOpened(final String path) {
         if (path == null) return;
         ensureLoaded();
         openBooks.remove(path);
         openBooks.add(0, path);
-        if (activity != null) {
-            viewerActivities.put(path, activity);
-        }
         trimToMax();
         save();
     }
@@ -79,7 +75,6 @@ public final class OpenBooksManager {
     public synchronized void onBookClosed(final String path) {
         if (path == null) return;
         activeBooks.remove(path);
-        viewerActivities.remove(path);
     }
 
     public synchronized void onBookResumed(final String path) {
@@ -109,23 +104,17 @@ public final class OpenBooksManager {
         ensureLoaded();
         openBooks.remove(path);
         activeBooks.remove(path);
-        final Activity a = viewerActivities.remove(path);
-        if (a != null && !a.isFinishing()) {
-            a.finish();
-        }
+        pageCounts.remove(path);
+        outlineLabels.remove(path);
         save();
     }
 
     public synchronized void closeAll() {
         ensureLoaded();
-        for (final Activity a : viewerActivities.values()) {
-            if (a != null && !a.isFinishing()) {
-                a.finish();
-            }
-        }
-        viewerActivities.clear();
         openBooks.clear();
         activeBooks.clear();
+        pageCounts.clear();
+        outlineLabels.clear();
         save();
     }
 
@@ -166,10 +155,8 @@ public final class OpenBooksManager {
         while (openBooks.size() > maxFiles) {
             final String removed = openBooks.remove(openBooks.size() - 1);
             activeBooks.remove(removed);
-            final Activity a = viewerActivities.remove(removed);
-            if (a != null && !a.isFinishing()) {
-                a.finish();
-            }
+            pageCounts.remove(removed);
+            outlineLabels.remove(removed);
         }
     }
 

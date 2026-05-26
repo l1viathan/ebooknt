@@ -137,6 +137,22 @@ public class PreferencesDecorator implements IPreferenceContainer, AppPreference
     }
 
     public void decoratePerformanceSettings() {
+        final SeekBarPreference maxFilesPref = (SeekBarPreference) findPreference(MAX_OPEN_FILES.key);
+        final SeekBarPreference cachedBooksPref = (SeekBarPreference) findPreference(CACHED_BOOKS.key);
+        if (maxFilesPref != null && cachedBooksPref != null) {
+            cachedBooksPref.setMaxValue(maxFilesPref.getValue() - 1);
+            addListener(MAX_OPEN_FILES.key, new OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(final Preference preference, final Object newValue) {
+                    try {
+                        final int newMax = Integer.parseInt(newValue.toString()) - 1;
+                        cachedBooksPref.setMaxValue(newMax);
+                    } catch (final NumberFormatException e) {
+                    }
+                    return true;
+                }
+            });
+        }
     }
 
     public void decorateRenderSettings() {

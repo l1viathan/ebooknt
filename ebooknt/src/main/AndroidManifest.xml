@@ -51,6 +51,7 @@
         <meta-data android:name="com.sec.android.support.multiwindow" android:value="true"/>
         <activity
             android:name="org.ebookdroid.ui.viewer.ViewerActivity"
+            android:launchMode="singleTop"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:parentActivityName="org.ebookdroid.ui.library.RecentActivity"
             android:exported="true">

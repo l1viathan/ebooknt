@@ -26,9 +26,7 @@ public final class NavigationHelper {
             intent.putExtra("offsetX", "" + bookmark.offsetX);
             intent.putExtra("offsetY", "" + bookmark.offsetY);
         }
-        if (OpenBooksManager.get().isOpen(uri.getPath())) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         from.startActivity(intent);
     }
 }

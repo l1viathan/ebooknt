@@ -118,6 +118,9 @@ public interface AppPreferences {
     IntegerPreferenceDefinition MAX_OPEN_FILES = new IntegerPreferenceDefinition(pref_maxopenfiles_id,
             pref_maxopenfiles_defvalue, pref_maxopenfiles_minvalue, pref_maxopenfiles_maxvalue);
 
+    IntegerPreferenceDefinition CACHED_BOOKS = new IntegerPreferenceDefinition(pref_cachedbooks_id,
+            pref_cachedbooks_defvalue, pref_cachedbooks_minvalue, pref_cachedbooks_maxvalue);
+
     IntegerPreferenceDefinition PAGES_IN_MEMORY = new IntegerPreferenceDefinition(pref_pagesinmemory_id,
             pref_pagesinmemory_defvalue, pref_pagesinmemory_minvalue, pref_pagesinmemory_maxvalue);
 
