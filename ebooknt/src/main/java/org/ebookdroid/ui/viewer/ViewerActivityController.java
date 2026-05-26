@@ -1128,11 +1128,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         progressModel.addListener(this);
 
         final IViewController dc = cached.documentController;
-        if (dc instanceof AbstractViewController) {
-            final AbstractViewController avc = (AbstractViewController) dc;
-            avc.resetShown();
-            avc.setPageToGo(bookSettings.getCurrentPage());
-        }
         final IViewController oldDc = ctrl.getAndSet(dc);
         getZoomModel().removeListener(oldDc);
         getZoomModel().addListener(dc);
@@ -1143,34 +1138,25 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         final int targetOrientation = bookSettings.getOrientation(AppSettings.current());
         final boolean orientationChanging =
                 targetOrientation != activity.getRequestedOrientation();
+
+        if (dc instanceof AbstractViewController) {
+            final AbstractViewController avc = (AbstractViewController) dc;
+            if (orientationChanging) {
+                avc.prepareForCacheRestore();
+            } else {
+                avc.activateFromCache();
+            }
+        }
+
         activity.setRequestedOrientation(targetOrientation);
         setWindowTitle();
 
         final View cv = activity.view.getView();
-        if (orientationChanging) {
-            cv.setVisibility(View.INVISIBLE);
-            cv.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                @Override
-                public void onLayoutChange(final View v, int l, int t, int r, int b,
-                                           int ol, int ot, int or2, int ob) {
-                    v.removeOnLayoutChangeListener(this);
-                    dc.show();
-                    currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
-                    v.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            v.setVisibility(View.VISIBLE);
-                        }
-                    });
-                }
-            });
-        } else {
-            dc.show();
-            currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
-            if (cv.getVisibility() != View.VISIBLE) {
-                cv.setVisibility(View.VISIBLE);
-            }
+        if (cv.getVisibility() != View.VISIBLE) {
+            cv.setVisibility(View.VISIBLE);
         }
+
+        currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
     }
 
     public void switchToOpenBook(final String path) {

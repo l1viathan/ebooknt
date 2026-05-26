@@ -82,7 +82,9 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     protected final AtomicBoolean inZoomToColumn = new AtomicBoolean();
 
-    protected PageIndex pageToGo;
+    protected final PageIndex pageToGo;
+
+    private boolean pendingCacheActivation;
 
     protected int firstVisiblePage;
 
@@ -450,6 +452,12 @@ public abstract class AbstractViewController extends AbstractComponentController
             LCTX.d("onLayoutChanged(" + layoutChanged + ", " + layoutLocked + "," + oldLaout + ", " + newLayout + ")");
         }
         if (layoutChanged && !layoutLocked) {
+            if (pendingCacheActivation) {
+                pendingCacheActivation = false;
+                isShown = true;
+                EventPool.newEventReset(this, InvalidateSizeReason.INIT, false).process().release();
+                return true;
+            }
             if (isShown) {
                 EventPool.newEventReset(this, InvalidateSizeReason.LAYOUT, false).process().release();
                 return true;
@@ -503,12 +511,18 @@ public abstract class AbstractViewController extends AbstractComponentController
      *
      * @return true, if is initialized
      */
-    public void resetShown() {
+    public void prepareForCacheRestore() {
         isShown = false;
+        pendingCacheActivation = true;
     }
 
-    public void setPageToGo(final PageIndex page) {
-        this.pageToGo = page;
+    public void activateFromCache() {
+        pendingCacheActivation = false;
+        isShown = true;
+        invalidatePageSizes(InvalidateSizeReason.INIT, null);
+        final BookSettings bs = base.getBookSettings();
+        final int page = model != null ? model.getCurrentViewPageIndex() : 0;
+        goToPage(page, bs != null ? bs.offsetX : 0, bs != null ? bs.offsetY : 0);
     }
 
     protected final boolean isShown() {
