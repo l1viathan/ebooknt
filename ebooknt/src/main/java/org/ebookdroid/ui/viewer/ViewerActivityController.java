@@ -171,7 +171,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     }
 
     void updateCachedBooksLimit(final int newLimit) {
-        maxCachedBooks = Math.max(1, newLimit);
+        maxCachedBooks = Math.max(0, newLimit);
     }
 
     private static class CachedBook {
@@ -214,7 +214,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         executor = new AsyncTaskExecutor(256, 1, 5, 1, "BookExecutor-" + id);
 
-        maxCachedBooks = Math.max(1, AppSettings.current().cachedBooks);
+        maxCachedBooks = Math.max(0, AppSettings.current().cachedBooks);
         SettingsManager.addListener(this);
     }
 

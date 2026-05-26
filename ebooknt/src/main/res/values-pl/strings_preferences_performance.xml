@@ -5,7 +5,7 @@
     <string name="pref_performance_category_summary">Ustawienia wydajności</string>
 
     <string name="pref_maxopenfiles_title">Maks. otwartych plików</string>
-    <string name="pref_maxopenfiles_summary">Maksymalna liczba jednocześnie otwartych plików (domyślnie: 6)</string>
+    <string name="pref_maxopenfiles_summary">Maksymalna liczba jednocześnie otwartych plików (domyślnie: 6): %s</string>
 
     <string name="pref_pagesinmemory_title">Stron w pamięci</string>
     <string name="pref_pagesinmemory_summary">Liczba stron przechowywanych w pamięci</string>

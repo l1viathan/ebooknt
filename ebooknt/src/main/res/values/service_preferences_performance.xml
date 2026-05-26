@@ -8,7 +8,7 @@
 
     <string translatable="false" name="pref_cachedbooks_id">cachedbooks</string>
     <string translatable="false" name="pref_cachedbooks_defvalue">1</string>
-    <string translatable="false" name="pref_cachedbooks_minvalue">1</string>
+    <string translatable="false" name="pref_cachedbooks_minvalue">0</string>
     <string translatable="false" name="pref_cachedbooks_maxvalue">11</string>
 
     <string translatable="false" name="pref_pagesinmemory_id">pagesinmemory</string>

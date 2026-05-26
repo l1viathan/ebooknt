@@ -4,7 +4,7 @@
     <string name="pref_performance_category">"Impostazioni avanzate"</string>
     <string name="pref_performance_category_summary">"Impostazione dei parametri di elaborazione che influiscono sulle prestazioni"</string>
     <string name="pref_maxopenfiles_title">Max file aperti</string>
-    <string name="pref_maxopenfiles_summary">Numero massimo di file aperti contemporaneamente (predefinito: 6)</string>
+    <string name="pref_maxopenfiles_summary">Numero massimo di file aperti contemporaneamente (predefinito: 6): %s</string>
 
     <string name="pref_pagesinmemory_title">"Pagine in memoria"</string>
     <string name="pref_pagesinmemory_summary">"Numero di pagine\ conservate in memoria"</string>
