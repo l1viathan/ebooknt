@@ -127,9 +127,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     protected void onNewIntent(final Intent intent) {
         super.onNewIntent(intent);
-        if (LCTX.isDebugEnabled()) {
-            LCTX.d("onNewIntent(): " + intent);
-        }
+        android.util.Log.i("BookSwitch", "onNewIntent: " + intent);
         getController().loadBook(intent);
     }
 

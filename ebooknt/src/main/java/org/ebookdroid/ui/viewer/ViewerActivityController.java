@@ -1,6 +1,12 @@
 package org.ebookdroid.ui.viewer;
 
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.ebookdroid.CodecType;
+import org.ebookdroid.core.AbstractViewController;
 import org.ebookdroid.EBookDroidApp;
 import org.ebookdroid.common.settings.types.RotationType;
 import org.emdev.ui.actions.ActionMenuHelper;
@@ -9,6 +15,7 @@ import org.ebooknt.viewer.R;
 import org.ebookdroid.common.bitmaps.BitmapManager;
 import org.ebookdroid.common.bitmaps.ByteBufferManager;
 import org.ebookdroid.common.cache.CacheManager;
+import org.ebookdroid.common.cache.DocumentCacheFile.DocumentInfo;
 import org.ebookdroid.common.keysbinding.KeyBindingsDialog;
 import org.ebookdroid.common.keysbinding.KeyBindingsManager;
 import org.ebookdroid.common.settings.AppSettings;
@@ -133,6 +140,58 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
     private BookSettings bookSettings;
 
     private final AsyncTaskExecutor executor;
+
+    private static final int MAX_CACHED_BOOKS = 3;
+    private static final HashMap<String, DocumentInfo> docInfoCache = new HashMap<String, DocumentInfo>();
+    private static final LinkedHashMap<String, CachedBook> bookCache =
+            new LinkedHashMap<String, CachedBook>(MAX_CACHED_BOOKS + 1, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(final Map.Entry<String, CachedBook> eldest) {
+                    if (size() > MAX_CACHED_BOOKS) {
+                        final CachedBook evicted = eldest.getValue();
+                        final DocumentInfo di = evicted.documentModel.docInfo;
+                        if (di != null) {
+                            docInfoCache.put(eldest.getKey(), di);
+                        }
+                        new Thread("cache-evict") {
+                            @Override
+                            public void run() {
+                                evicted.recycle();
+                            }
+                        }.start();
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+    private static class CachedBook {
+        final DocumentModel documentModel;
+        final IViewController documentController;
+        final BookSettings bookSettings;
+        final CodecType codecType;
+        final ContentScheme scheme;
+        final String bookTitle;
+        final SearchModel searchModel;
+        final DecodingProgressModel progressModel;
+
+        CachedBook(final DocumentModel dm, final IViewController dc, final BookSettings bs,
+                   final CodecType ct, final ContentScheme sc, final String title,
+                   final SearchModel sm, final DecodingProgressModel pm) {
+            this.documentModel = dm;
+            this.documentController = dc;
+            this.bookSettings = bs;
+            this.codecType = ct;
+            this.scheme = sc;
+            this.bookTitle = title;
+            this.searchModel = sm;
+            this.progressModel = pm;
+        }
+
+        void recycle() {
+            documentModel.recycle();
+        }
+    }
 
     /**
      * Instantiates a new base viewer activity.
@@ -276,6 +335,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             return;
         }
 
+        final DocumentInfo cachedDocInfo = docInfoCache.remove(m_fileName);
+        if (cachedDocInfo != null) {
+            documentModel.docInfo = cachedDocInfo;
+        }
+
         bookSettings = SettingsManager.create(id, m_fileName, scheme.temporary, intent);
         SettingsManager.applyBookSettingsChanges(null, bookSettings);
 
@@ -317,6 +381,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             if (documentModel != null) {
                 documentModel.recycle();
             }
+            for (final CachedBook cb : bookCache.values()) {
+                cb.recycle();
+            }
+            bookCache.clear();
+            docInfoCache.clear();
             if (scheme != null && scheme.temporary) {
                 CacheManager.clear(scheme.key);
             }
@@ -975,13 +1044,103 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     public void loadBook(final Intent newIntent) {
         if (newIntent == null || newIntent.getData() == null) return;
+
+        final Uri data = newIntent.getData();
+        final String targetPath = PathFromUri.retrieve(
+                getManagedComponent().getContentResolver(), data);
+
+        if (targetPath != null && targetPath.equals(m_fileName)
+                && documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
+            return;
+        }
+
+        saveCurrentBookToCache();
+
+        final CachedBook cached = targetPath != null ? bookCache.remove(targetPath) : null;
+        if (cached != null) {
+            restoreBookFromCache(cached, newIntent);
+            return;
+        }
+
+        final ViewerActivity activity = getManagedComponent();
+        activity.view.getView().setVisibility(View.INVISIBLE);
         if (documentModel != null && documentModel != ActivityControllerStub.DM_STUB) {
-            documentModel.recycle();
+            final DocumentModel oldModel = documentModel;
             documentModel = ActivityControllerStub.DM_STUB;
+            new Thread("recycle") {
+                @Override
+                public void run() { oldModel.recycle(); }
+            }.start();
         }
         this.intent = newIntent;
-        afterCreate(getManagedComponent(), false);
+        afterCreate(activity, false);
         onPostCreate(null, false);
+    }
+
+    private void saveCurrentBookToCache() {
+        if (m_fileName == null || documentModel == null
+                || documentModel == ActivityControllerStub.DM_STUB) {
+            return;
+        }
+        bookCache.put(m_fileName, new CachedBook(
+                documentModel, ctrl.get(), bookSettings,
+                codecType, scheme, bookTitle,
+                searchModel, progressModel));
+        documentModel = ActivityControllerStub.DM_STUB;
+        ctrl.set(ViewContollerStub.STUB);
+    }
+
+    private void restoreBookFromCache(final CachedBook cached, final Intent newIntent) {
+        this.intent = newIntent;
+        this.documentModel = cached.documentModel;
+        this.bookSettings = cached.bookSettings;
+        this.codecType = cached.codecType;
+        this.scheme = cached.scheme;
+        this.bookTitle = cached.bookTitle;
+        this.searchModel = cached.searchModel;
+        this.progressModel = cached.progressModel;
+        this.m_fileName = cached.bookSettings.fileName;
+
+        documentModel.addListener(this);
+        progressModel.addListener(this);
+
+        final IViewController dc = cached.documentController;
+        if (dc instanceof AbstractViewController) {
+            ((AbstractViewController) dc).resetShown();
+        }
+        final IViewController oldDc = ctrl.getAndSet(dc);
+        getZoomModel().removeListener(oldDc);
+        getZoomModel().addListener(dc);
+
+        SettingsManager.create(id, m_fileName, scheme.temporary, newIntent);
+
+        final ViewerActivity activity = getManagedComponent();
+        final int targetOrientation = bookSettings.getOrientation(AppSettings.current());
+        final boolean orientationChanging =
+                targetOrientation != activity.getRequestedOrientation();
+        activity.setRequestedOrientation(targetOrientation);
+        setWindowTitle();
+
+        final View cv = activity.view.getView();
+        if (orientationChanging) {
+            cv.setVisibility(View.INVISIBLE);
+            cv.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(final View v, int l, int t, int r, int b,
+                                           int ol, int ot, int or2, int ob) {
+                    v.removeOnLayoutChangeListener(this);
+                    dc.show();
+                    currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
+                    v.setVisibility(View.VISIBLE);
+                }
+            });
+        } else {
+            dc.show();
+            currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
+            if (cv.getVisibility() != View.VISIBLE) {
+                cv.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     public void switchToOpenBook(final String path) {
@@ -990,20 +1149,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             return;
         }
         final ViewerActivity activity = getManagedComponent();
-
-        final AppSettings appSettings = AppSettings.current();
-        final BookSettings targetBs = SettingsManager.getBookSettings(path);
-        final int currentOrientation = bookSettings != null
-                ? bookSettings.getOrientation(appSettings)
-                : appSettings.rotation.getOrientation();
-        final int targetOrientation = targetBs != null
-                ? targetBs.getOrientation(appSettings)
-                : appSettings.rotation.getOrientation();
-
-        if (currentOrientation != targetOrientation) {
-            activity.view.getView().setVisibility(View.INVISIBLE);
-        }
-
         final Intent intent = new Intent(Intent.ACTION_VIEW, Uri.fromFile(new File(path)));
         intent.setClass(activity, ViewerActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
@@ -1370,7 +1515,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         @Override
         protected Throwable doInBackground(final String... params) {
-            LCTX.d("BookLoadTask.doInBackground(): start");
             try {
                 if (scheme == ContentScheme.CONTENT) {
                     final ParcelFileDescriptor pfd = getManagedComponent().getContentResolver()
@@ -1404,7 +1548,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         @Override
         protected void onPostExecute(Throwable result) {
-            LCTX.d("BookLoadTask.onPostExecute(): start");
             try {
                 if (result == null) {
                     try {

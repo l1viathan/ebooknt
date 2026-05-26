@@ -803,25 +803,21 @@ JNI_FN(MuPdfPage_renderPageDirect)(JNIEnv *env, jobject this, jlong dochandle,
     viewbox.y1 = viewboxarr[3];
     (*env)->ReleasePrimitiveArrayCritical(env, viewboxarray, viewboxarr, 0);
 
-    fz_context* ctx = page->ctx;
-    if (!ctx)
+    if (!page->ctx)
     {
         ERROR("No page context");
         return JNI_FALSE;
     }
 
-    // TODO: Changing the mupdf/fitz source for implementation of the slow cmyk
-    // and night mode respectively is not so nice; have to find a more elegant
-    // way to do this
+    fz_context* ctx = fz_clone_context(page->ctx);
+    if (!ctx)
+    {
+        ERROR("Context cloning failed in renderPageDirect");
+        return JNI_FALSE;
+    }
 
-    //add check for night mode and set global variable accordingly
     ctx->ebookdroid_nightmode = nightmode;
-    // FIXME: This seems to be necessary; why is doc->ctx different than ctx?
     doc->ctx->ebookdroid_nightmode = nightmode;
-
-    // TODO: slowcmyk patch no longer applies cleanly to mupdf, so this was disabled
-    //add check for slowcmyk mode and set global variable accordingly
-    //ctx->ebookdroid_slowcmyk = slowcmyk;
 
     fz_try(ctx)
     {
@@ -845,6 +841,7 @@ JNI_FN(MuPdfPage_renderPageDirect)(JNIEnv *env, jobject this, jlong dochandle,
     {
         ERROR("renderPageDirect failed: %s", fz_caught_message(ctx));
     }
+    fz_drop_context(ctx);
     return JNI_TRUE;
 }
 

@@ -508,6 +508,10 @@ public abstract class AbstractViewController extends AbstractComponentController
      *
      * @return true, if is initialized
      */
+    public void resetShown() {
+        isShown = false;
+    }
+
     protected final boolean isShown() {
         return isShown;
     }

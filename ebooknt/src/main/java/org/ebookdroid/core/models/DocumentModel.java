@@ -143,7 +143,7 @@ public class DocumentModel extends ListenerProxy {
 
     public void saveDocumentInfo() {
         final boolean cacheable = decodeService.isFeatureSupported(CodecFeatures.FEATURE_CACHABLE_PAGE_INFO);
-        if (cacheable) {
+        if (cacheable && cacheFile != null && docInfo != null) {
             cacheFile.save(docInfo);
         }
     }
