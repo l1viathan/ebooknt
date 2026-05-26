@@ -268,7 +268,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         final AppSettings appSettings = AppSettings.current();
 
         IUIManager.instance.setFullScreenMode(activity, getManagedComponent().view.getView(), appSettings.fullScreen);
-        UIManagerAppCompat.setToolbarVisible(activity, appSettings.showTitle);
+        UIManagerAppCompat.setToolbarVisible(activity, appSettings.showTitle && !appSettings.fullScreen);
 
         createAction(R.id.mainmenu_crop).putValue("view", activity.getManualCropControls()).putValue("mode",
                 DocumentViewMode.SINGLE_PAGE);
@@ -1494,7 +1494,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         if (diff.isFullScreenChanged()) {
             IUIManager.instance.setFullScreenMode(activity, activity.view.getView(), newSettings.fullScreen);
-            UIManagerAppCompat.setToolbarVisible(activity, newSettings.showTitle);
+            UIManagerAppCompat.setToolbarVisible(activity, newSettings.showTitle && !newSettings.fullScreen);
             setWindowTitle();
             activity.view.getView().post(new Runnable() {
                 @Override
@@ -1510,7 +1510,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         }
 
         if (!diff.isFirstTime() && diff.isShowTitleChanged()) {
-            UIManagerAppCompat.setToolbarVisible(activity, newSettings.showTitle);
+            UIManagerAppCompat.setToolbarVisible(activity, newSettings.showTitle && !newSettings.fullScreen);
         }
 
         if (diff.isKeepScreenOnChanged()) {

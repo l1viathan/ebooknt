@@ -595,8 +595,6 @@ public abstract class AbstractViewController extends AbstractComponentController
     private boolean processToggleFullscreenTap() {
         if (AppSettings.current().tapTogglesFullscreen) {
             AppSettings.toggleFullScreen();
-
-            // set title (toolbar) visibility to match fullscreen state
             AppSettings.setTitleVisibility(!AppSettings.current().fullScreen);
             return true;
         }

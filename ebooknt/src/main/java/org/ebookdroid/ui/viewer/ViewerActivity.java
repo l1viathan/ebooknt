@@ -205,18 +205,17 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         getSupportActionBar().setDisplayShowHomeEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        // Push toolbar below the status bar when SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN is active.
-        ViewCompat.setOnApplyWindowInsetsListener(toolbar, (v, insets) -> {
+        // Apply status bar inset as top padding on the parent LinearLayout so that
+        // content stays below the status bar regardless of toolbar visibility.
+        final View toolbarParent = (View) toolbar.getParent();
+        ViewCompat.setOnApplyWindowInsetsListener(toolbarParent, (v, insets) -> {
             final int sbInset = insets.getSystemWindowInsetTop();
-            final android.widget.LinearLayout.LayoutParams lp =
-                    (android.widget.LinearLayout.LayoutParams) v.getLayoutParams();
-            if (lp.topMargin != sbInset) {
-                lp.topMargin = sbInset;
-                v.setLayoutParams(lp);
+            if (v.getPaddingTop() != sbInset) {
+                v.setPadding(v.getPaddingLeft(), sbInset, v.getPaddingRight(), v.getPaddingBottom());
             }
             return insets;
         });
-        ViewCompat.requestApplyInsets(toolbar);
+        ViewCompat.requestApplyInsets(toolbarParent);
 
         openBooksAdapter = new OpenBooksAdapter(this);
 
