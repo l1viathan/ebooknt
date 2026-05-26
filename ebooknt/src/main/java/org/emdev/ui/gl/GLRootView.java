@@ -48,6 +48,7 @@ public class GLRootView extends TextureView implements TextureView.SurfaceTextur
 
     protected int mFlags = FLAG_NEED_LAYOUT;
     protected volatile boolean mRenderRequested = false;
+    private volatile boolean mNeedExtraFrame = false;
 
     protected final ReentrantLock mRenderLock = new ReentrantLock();
     protected final Condition mFreezeCondition = mRenderLock.newCondition();
@@ -171,6 +172,7 @@ public class GLRootView extends TextureView implements TextureView.SurfaceTextur
         if (mCanvas != null) {
             mCanvas.setSize(width, height);
         }
+        mNeedExtraFrame = true;
         mRenderRequested = false;
         requestRender();
     }
@@ -206,6 +208,11 @@ public class GLRootView extends TextureView implements TextureView.SurfaceTextur
         draw(this.mCanvas);
 
         mCanvas.restore();
+
+        if (mNeedExtraFrame) {
+            mNeedExtraFrame = false;
+            mRenderRequested = true;
+        }
 
         if (UploadedTexture.uploadLimitReached()) {
             requestRender();

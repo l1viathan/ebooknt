@@ -157,6 +157,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     private void evictEntry(final Map.Entry<String, CachedBook> entry) {
         final CachedBook evicted = entry.getValue();
+        SettingsManager.storeBookSettings(evicted.bookSettings);
         final DocumentInfo di = evicted.documentModel.docInfo;
         if (di != null) {
             docInfoCache.put(entry.getKey(), di);
@@ -1103,6 +1104,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 || documentModel == ActivityControllerStub.DM_STUB) {
             return;
         }
+        SettingsManager.storeBookSettings(bookSettings);
         bookCache.put(m_fileName, new CachedBook(
                 documentModel, ctrl.get(), bookSettings,
                 codecType, scheme, bookTitle,
@@ -1127,7 +1129,9 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         final IViewController dc = cached.documentController;
         if (dc instanceof AbstractViewController) {
-            ((AbstractViewController) dc).resetShown();
+            final AbstractViewController avc = (AbstractViewController) dc;
+            avc.resetShown();
+            avc.setPageToGo(bookSettings.getCurrentPage());
         }
         final IViewController oldDc = ctrl.getAndSet(dc);
         getZoomModel().removeListener(oldDc);
@@ -1152,7 +1156,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                     v.removeOnLayoutChangeListener(this);
                     dc.show();
                     currentPageChanged(PageIndex.NULL, documentModel.getCurrentIndex());
-                    v.setVisibility(View.VISIBLE);
+                    v.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            v.setVisibility(View.VISIBLE);
+                        }
+                    });
                 }
             });
         } else {

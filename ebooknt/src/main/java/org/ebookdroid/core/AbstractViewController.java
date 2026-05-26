@@ -82,7 +82,7 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     protected final AtomicBoolean inZoomToColumn = new AtomicBoolean();
 
-    protected final PageIndex pageToGo;
+    protected PageIndex pageToGo;
 
     protected int firstVisiblePage;
 
@@ -449,8 +449,6 @@ public abstract class AbstractViewController extends AbstractComponentController
         if (LCTX.isDebugEnabled()) {
             LCTX.d("onLayoutChanged(" + layoutChanged + ", " + layoutLocked + "," + oldLaout + ", " + newLayout + ")");
         }
-        android.util.Log.e("EBOOKNT", "onLayoutChanged lc=" + layoutChanged + " ll=" + layoutLocked
-                + " old=" + oldLaout + " new=" + newLayout);
         if (layoutChanged && !layoutLocked) {
             if (isShown) {
                 EventPool.newEventReset(this, InvalidateSizeReason.LAYOUT, false).process().release();
@@ -471,9 +469,6 @@ public abstract class AbstractViewController extends AbstractComponentController
      */
     @Override
     public final void toggleRenderingEffects() {
-        android.util.Log.e("EBOOKNT", "toggleRenderingEffects model=" + model
-                + " pages=" + (model != null ? model.getPages().length : -1),
-                new Throwable());
         if (model != null && model.getPages().length > 0) {
             EventPool.newEventReset(this, null, true).process().release();
         }
@@ -510,6 +505,10 @@ public abstract class AbstractViewController extends AbstractComponentController
      */
     public void resetShown() {
         isShown = false;
+    }
+
+    public void setPageToGo(final PageIndex page) {
+        this.pageToGo = page;
     }
 
     protected final boolean isShown() {

@@ -16,6 +16,7 @@ package org.emdev.ui.gl;
  * limitations under the License.
  */
 
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
@@ -612,7 +613,12 @@ public class GLCanvasImpl implements GLCanvas {
 
     @Override
     public void clearBuffer(final int color) {
-        fillRect(0, 0, mScreenWidth, mScreenHeight, color);
+        mGL.glClearColor(
+                Color.red(color) / 255.0f,
+                Color.green(color) / 255.0f,
+                Color.blue(color) / 255.0f,
+                Color.alpha(color) / 255.0f);
+        mGL.glClear(GL10.GL_COLOR_BUFFER_BIT);
     }
 
     private void setTextureCoords(final RectF source) {
