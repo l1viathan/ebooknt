@@ -45,4 +45,7 @@
     <string name="pref_showanimicon_title">"Показывать тип анимации"</string>
     <string name="pref_showanimicon_summary">"Показывать тип анимации если анимация или перетаскивание возможны"</string>
 
+    <string name="pref_fontscale_title">"Масштаб шрифта"</string>
+    <string name="pref_fontscale_summary">"Масштабирование текста интерфейса (требуется перезапуск, по умолчанию: 1.00): %s"</string>
+
 </resources>

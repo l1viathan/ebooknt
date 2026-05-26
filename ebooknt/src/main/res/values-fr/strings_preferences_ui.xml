@@ -45,4 +45,7 @@
     <string name="pref_showanimicon_title">"Montrer le type d’animation"</string>
     <string name="pref_showanimicon_summary">"Montrer le type d’animation si l’animation ou le glisser sont possibles"</string>
 
+    <string name="pref_fontscale_title">"Échelle de police"</string>
+    <string name="pref_fontscale_summary">"Mettre à l\’échelle tout le texte (redémarrage requis, défaut : 1.00) : %s"</string>
+
 </resources>

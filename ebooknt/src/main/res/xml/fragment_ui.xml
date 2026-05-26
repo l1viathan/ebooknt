@@ -92,4 +92,13 @@
             android:summary="@string/pref_einkmode_summary"
             android:title="@string/pref_einkmode_title" />
 
+    <org.emdev.ui.preference.SeekBarPreference
+            android:defaultValue="@string/pref_fontscale_defvalue"
+            android:key="@string/pref_fontscale_id"
+            ebookdroid:minValue="@string/pref_fontscale_minvalue"
+            ebookdroid:maxValue="@string/pref_fontscale_maxvalue"
+            ebookdroid:displayDivisor="100"
+            android:summary="@string/pref_fontscale_summary"
+            android:title="@string/pref_fontscale_title" />
+
 </PreferenceScreen>

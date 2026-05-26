@@ -57,6 +57,9 @@ public interface AppPreferences {
     BooleanPreferenceDefinition EINK_MODE = new BooleanPreferenceDefinition(pref_einkmode_id,
             pref_einkmode_defvalue);
 
+    IntegerPreferenceDefinition FONT_SCALE = new IntegerPreferenceDefinition(pref_fontscale_id,
+            pref_fontscale_defvalue, pref_fontscale_minvalue, pref_fontscale_maxvalue);
+
     /* =============== Tap & Scroll settings =============== */
 
     BooleanPreferenceDefinition TAPS_ENABLED = new BooleanPreferenceDefinition(pref_tapsenabled_id,

@@ -55,6 +55,8 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
 
     public final boolean einkMode;
 
+    public final int fontScale;
+
     /* =============== Tap & Scroll settings =============== */
 
     public final boolean tapsEnabled;
@@ -200,6 +202,7 @@ public class AppSettings implements AppPreferences, BookPreferences, IBackupAgen
         zoomToastPosition = ZOOM_TOAST_POSITION.getPreferenceValue(prefs);
         showAnimIcon = SHOW_ANIM_ICON.getPreferenceValue(prefs);
         einkMode = EINK_MODE.getPreferenceValue(prefs);
+        fontScale = FONT_SCALE.getPreferenceValue(prefs);
         /* =============== Tap & Scroll settings =============== */
         tapsEnabled = TAPS_ENABLED.getPreferenceValue(prefs);
         scrollHeight = SCROLL_HEIGHT.getPreferenceValue(prefs);

@@ -45,4 +45,7 @@
     <string name="pref_showanimicon_title">"לציין את הסוג של אנימציה"</string>
     <string name="pref_showanimicon_summary">"לציין את סוג האנימציה אם אפשריים אנימציה או גרירה"</string>
 
+    <string name="pref_fontscale_title">"קנה מידה של גופן"</string>
+    <string name="pref_fontscale_summary">"שנה גודל כל טקסט הממשק (נדרשת הפעלה מחדש, ברירת מחדל: 1.00): %s"</string>
+
 </resources>

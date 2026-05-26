@@ -62,4 +62,7 @@
     <string name="pref_showanimicon_title">Montri movbildan piktogramon</string>
     <string name="pref_showanimicon_summary">Montri movbildan aŭ ŝovadan piktogramon kiam movbildoj aŭ ŝovado estas aktivaj</string>
 
+    <string name="pref_fontscale_title">Tipara grandskalo</string>
+    <string name="pref_fontscale_summary">Skali ĉiujn fasadajn tekstojn (relanĉo necesa, defaŭlto: 1.00): %s</string>
+
 </resources>

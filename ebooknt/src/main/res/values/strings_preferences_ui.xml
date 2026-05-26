@@ -67,4 +67,7 @@
     <string name="pref_einkmode_title">E-ink mode</string>
     <string name="pref_einkmode_summary">Dark text on light background for e-ink screens (restart required)</string>
 
+    <string name="pref_fontscale_title">Font size scaling</string>
+    <string name="pref_fontscale_summary">Scale all UI text (restart required, default: 1.00): %s</string>
+
 </resources>

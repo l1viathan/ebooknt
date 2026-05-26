@@ -45,4 +45,7 @@
     <string name="pref_showanimicon_title">"Vertoon het animatie regime"</string>
     <string name="pref_showanimicon_summary">"Vertoon het animatie regime als animatie en verplaatsing mogelijk is"</string>
 
+    <string name="pref_fontscale_title">"Lettertypeschaal"</string>
+    <string name="pref_fontscale_summary">"Alle interfacetekst schalen (herstart vereist, standaard: 1.00): %s"</string>
+
 </resources>

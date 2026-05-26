@@ -49,4 +49,7 @@
     <string name="pref_showanimicon_title">"Animationstyp anzeigen"</string>
     <string name="pref_showanimicon_summary">"Animationstyp anzeigen, wenn Funktionen 'Blättern' oder 'Ziehen' zugänglich sind"</string>
 
+    <string name="pref_fontscale_title">"Schriftgrößenskalierung"</string>
+    <string name="pref_fontscale_summary">"Alle UI-Texte skalieren (Neustart erforderlich, Standard: 1.00): %s"</string>
+
 </resources>

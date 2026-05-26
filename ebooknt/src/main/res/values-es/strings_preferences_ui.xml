@@ -62,4 +62,7 @@
     <string name="pref_showanimicon_title">Mostrar icono de animación</string>
     <string name="pref_showanimicon_summary">Mostrar animación o icono de desplazamiento si están activados</string>
 
+    <string name="pref_fontscale_title">Escala de fuente</string>
+    <string name="pref_fontscale_summary">Escalar todo el texto de la interfaz (requiere reinicio, predeterminado: 1.00): %s</string>
+
 </resources>

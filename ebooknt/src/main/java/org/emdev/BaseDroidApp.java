@@ -166,13 +166,27 @@ public class BaseDroidApp extends Application {
     public static Context wrapContext(final Context base) {
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(base);
         final String lang = prefs.getString("lang", "");
-        if (LengthUtils.isNotEmpty(lang)) {
-            final int sep = lang.indexOf('_');
-            final Locale locale = sep > 0
-                    ? new Locale(lang.substring(0, sep), lang.substring(sep + 1))
-                    : new Locale(lang);
+
+        int fontScalePercent = 100;
+        try {
+            fontScalePercent = Integer.parseInt(prefs.getString("fontscale", "100"));
+        } catch (final NumberFormatException e) { /* use default */ }
+
+        final boolean hasLocale = LengthUtils.isNotEmpty(lang);
+        final boolean hasFontScale = fontScalePercent != 100;
+
+        if (hasLocale || hasFontScale) {
             final Configuration config = new Configuration(base.getResources().getConfiguration());
-            config.setLocale(locale);
+            if (hasLocale) {
+                final int sep = lang.indexOf('_');
+                final Locale locale = sep > 0
+                        ? new Locale(lang.substring(0, sep), lang.substring(sep + 1))
+                        : new Locale(lang);
+                config.setLocale(locale);
+            }
+            if (hasFontScale) {
+                config.fontScale = fontScalePercent / 100f;
+            }
             return base.createConfigurationContext(config);
         }
         return base;

@@ -62,4 +62,7 @@
     <string name="pref_showanimicon_title">Pokaż animowaną ikonę</string>
     <string name="pref_showanimicon_summary">Pokaż animację lub ikonę przesuwania gdy animacje lub przesuwanie jest włączone</string>
 
+    <string name="pref_fontscale_title">Skalowanie czcionki</string>
+    <string name="pref_fontscale_summary">Skaluj cały tekst interfejsu (wymagane ponowne uruchomienie, domyślnie: 1.00): %s</string>
+
 </resources>

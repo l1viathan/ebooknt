@@ -45,4 +45,7 @@
     <string name="pref_showanimicon_title">"Visualizza simbolo animazione"</string>
     <string name="pref_showanimicon_summary">"Se l'animazione o il trascinamento sono possibili, visualizza un simbolo del tipo di animazione selezionata"</string>
 
+    <string name="pref_fontscale_title">"Scala dei caratteri"</string>
+    <string name="pref_fontscale_summary">"Scala tutto il testo dell\'interfaccia (riavvio richiesto, predefinito: 1.00): %s"</string>
+
 </resources>

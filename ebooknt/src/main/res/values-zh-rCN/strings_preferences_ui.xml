@@ -49,4 +49,7 @@
     <string name="list_lang_eo">"世界语 (Esperanto)"</string>
     <string name="list_lang_pl">"波兰语 (Polski)"</string>
 
+    <string name="pref_fontscale_title">"字号缩放"</string>
+    <string name="pref_fontscale_summary">"缩放所有界面文字（需重启，默认：1.00）：%s"</string>
+
 </resources>
