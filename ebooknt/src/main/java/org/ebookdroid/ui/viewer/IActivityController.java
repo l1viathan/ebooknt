@@ -5,6 +5,7 @@ import org.ebookdroid.core.DecodeService;
 import org.ebookdroid.core.models.DecodingProgressModel;
 import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.core.models.SearchModel;
+import org.ebookdroid.core.NavigationHistoryTree;
 import org.ebookdroid.core.models.ZoomModel;
 
 import android.app.Activity;
@@ -37,6 +38,8 @@ public interface IActivityController extends IActionController<ViewerActivity> {
     DecodingProgressModel getDecodingProgressModel();
 
     void jumpToPage(int viewIndex, float offsetX, float offsetY, boolean addToHistory);
+
+    void setPendingNavigation(NavigationHistoryTree.NavigationType type, String detail);
 
     void runOnUiThread(Runnable r);
 

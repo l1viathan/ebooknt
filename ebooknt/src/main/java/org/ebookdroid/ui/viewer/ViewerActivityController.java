@@ -30,6 +30,8 @@ import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.common.touch.TouchManager;
 import org.ebookdroid.core.DecodeService;
 import org.ebookdroid.core.NavigationHistory;
+import org.ebookdroid.core.NavigationHistoryTree;
+import org.ebookdroid.ui.viewer.dialogs.NavigationHistoryDialog;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.PageIndex;
 import org.ebookdroid.core.ViewState;
@@ -135,6 +137,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     private final NavigationHistory history;
 
+    private NavigationHistoryTree navHistory;
+
+    private NavigationHistoryTree.NavigationType pendingNavType;
+    private String pendingNavDetail;
+
     private String currentSearchPattern;
 
     private BookSettings bookSettings;
@@ -183,10 +190,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         final String bookTitle;
         final SearchModel searchModel;
         final DecodingProgressModel progressModel;
+        final NavigationHistoryTree navHistory;
 
         CachedBook(final DocumentModel dm, final IViewController dc, final BookSettings bs,
                    final CodecType ct, final ContentScheme sc, final String title,
-                   final SearchModel sm, final DecodingProgressModel pm) {
+                   final SearchModel sm, final DecodingProgressModel pm,
+                   final NavigationHistoryTree nh) {
             this.documentModel = dm;
             this.documentController = dc;
             this.bookSettings = bs;
@@ -195,6 +204,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             this.bookTitle = title;
             this.searchModel = sm;
             this.progressModel = pm;
+            this.navHistory = nh;
         }
 
         void recycle() {
@@ -622,6 +632,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             if (link.targetPage < 1 || link.targetPage > pageCount) {
                 getManagedComponent().showToastText(2000, R.string.error_page_out_of_rande, pageCount);
             } else {
+                setPendingNavigation(NavigationHistoryTree.NavigationType.OUTLINE, link.title);
                 getDocumentController().goToLink(link.targetPage - 1, link.targetRect,
                         AppSettings.current().storeOutlineGotoHistory);
             }
@@ -645,7 +656,29 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         if (addToHistory) {
             history.update();
         }
+        if (pendingNavType != null && navHistory != null) {
+            navHistory.recordJump(viewIndex, pendingNavType, pendingNavDetail);
+            pendingNavType = null;
+            pendingNavDetail = null;
+        }
         getDocumentController().goToPage(viewIndex, offsetX, offsetY);
+    }
+
+    public void setPendingNavigation(final NavigationHistoryTree.NavigationType type, final String detail) {
+        final AppSettings as = AppSettings.current();
+        switch (type) {
+            case GOTO:     if (!as.storeGotoHistory) return; break;
+            case LINK:     if (!as.storeLinkGotoHistory) return; break;
+            case OUTLINE:  if (!as.storeOutlineGotoHistory) return; break;
+            case SEARCH:   if (!as.storeSearchGotoHistory) return; break;
+            default: break;
+        }
+        this.pendingNavType = type;
+        this.pendingNavDetail = detail;
+    }
+
+    public NavigationHistoryTree getNavHistory() {
+        return navHistory;
     }
 
     @ActionMethod(ids = R.id.mainmenu_outline)
@@ -690,6 +723,15 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         currentSearchPattern = newPattern;
 
         executor.execute(new SearchTask(), newPattern, oldPattern, (String) action.getParameter("forward"));
+    }
+
+    @ActionMethod(ids = R.id.mainmenu_nav_history)
+    public void showNavHistory(final ActionEx action) {
+        if (navHistory == null || navHistory.isEmpty()) {
+            getManagedComponent().showToastText(Toast.LENGTH_SHORT, R.string.nav_history_empty);
+            return;
+        }
+        new NavigationHistoryDialog(this, navHistory).show();
     }
 
     @ActionMethod(ids = R.id.mainmenu_goto_page)
@@ -943,6 +985,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         }
         final Page actualPage = b.page.getActualPage(getDocumentModel(), bookSettings);
         if (actualPage != null) {
+            setPendingNavigation(NavigationHistoryTree.NavigationType.BOOKMARK, b.name);
             jumpToPage(actualPage.index.viewIndex, b.offsetX, b.offsetY, AppSettings.current().storeGotoHistory);
         }
     }
@@ -1108,7 +1151,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         bookCache.put(m_fileName, new CachedBook(
                 documentModel, ctrl.get(), bookSettings,
                 codecType, scheme, bookTitle,
-                searchModel, progressModel));
+                searchModel, progressModel, navHistory));
         documentModel = ActivityControllerStub.DM_STUB;
         ctrl.set(ViewContollerStub.STUB);
     }
@@ -1122,6 +1165,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         this.bookTitle = cached.bookTitle;
         this.searchModel = cached.searchModel;
         this.progressModel = cached.progressModel;
+        this.navHistory = cached.navHistory;
         this.m_fileName = cached.bookSettings.fileName;
 
         documentModel.addListener(this);
@@ -1602,6 +1646,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                         }
 
                         final DocumentModel dm = getDocumentModel();
+                        navHistory = new NavigationHistoryTree(dm.getCurrentIndex().viewIndex);
                         currentPageChanged(PageIndex.NULL, dm.getCurrentIndex());
 
                         OpenBooksManager.get().setPageCount(m_fileName, dm.getPageCount());
@@ -1712,6 +1757,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 final int controlsHeight = 3 + sc.getActualHeight();
                 final float pageHeight = targetPage.getBounds(getZoomModel().getZoom()).height();
                 newRect.offset(0, -(controlsHeight / pageHeight));
+                setPendingNavigation(NavigationHistoryTree.NavigationType.SEARCH, pattern);
                 getDocumentController().goToLink(targetPage.index.docIndex, newRect,
                         AppSettings.current().storeSearchGotoHistory);
             } else {

@@ -5,6 +5,7 @@ import org.ebooknt.viewer.R;
 import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.books.BookSettings;
 import org.ebookdroid.common.settings.books.Bookmark;
+import org.ebookdroid.core.NavigationHistoryTree;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.ui.viewer.IActivityController;
@@ -162,6 +163,7 @@ public class GoToPageDialog extends Dialog {
         if (current != null) {
             final Page actualPage = current.page.getActualPage(base.getDocumentModel(), adapter.bookSettings);
             if (actualPage != null) {
+                base.setPendingNavigation(NavigationHistoryTree.NavigationType.BOOKMARK, current.name);
                 base.jumpToPage(actualPage.index.viewIndex, current.offsetX, current.offsetY,
                         AppSettings.current().storeGotoHistory);
                 dismiss();
@@ -178,6 +180,7 @@ public class GoToPageDialog extends Dialog {
             Toast.makeText(getContext(), msg, Toast.LENGTH_LONG).show();
             return;
         }
+        base.setPendingNavigation(NavigationHistoryTree.NavigationType.GOTO, null);
         base.jumpToPage(pageNumber, 0, 0, AppSettings.current().storeGotoHistory);
         dismiss();
     }

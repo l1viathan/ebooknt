@@ -87,6 +87,11 @@ public class ActivityControllerStub extends ActionController<ViewerActivity> imp
     }
 
     @Override
+    public void setPendingNavigation(final org.ebookdroid.core.NavigationHistoryTree.NavigationType type,
+            final String detail) {
+    }
+
+    @Override
     public SearchModel getSearchModel() {
         return SEARCH_STUB;
     }

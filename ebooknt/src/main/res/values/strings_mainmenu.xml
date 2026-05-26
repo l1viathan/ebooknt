@@ -18,6 +18,7 @@
     <string name="menu_searchbook_recent">Search history</string>
     <string name="menu_searchbook_browser">Search current directory</string>
     <string name="menu_searchtext">Find text</string>
+    <string name="menu_nav_history">Navigation history</string>
     <string name="menu_show_options_menu">Show options menu</string>
     <string name="menu_backupsettings">Backup &amp; Restore</string>
     <string name="menu_crop">Manual crop</string>

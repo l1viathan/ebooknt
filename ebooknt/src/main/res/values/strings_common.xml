@@ -122,6 +122,8 @@
     <string name="outline_title">Outline</string>
     <string name="outline_missed">No outline available</string>
 
+    <string name="nav_history_empty">No navigation history</string>
+
     <string name="error_page_out_of_rande">Page number out of range. Valid range: 1-%1$d</string>
 
     <string name="msg_loading">Loading&#8230; Please wait</string>

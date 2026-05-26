@@ -98,6 +98,7 @@
     <string name="book_delete_msg">"確定要刪除本書？"</string>
     <string name="outline_title">"目錄"</string>
     <string name="outline_missed">"沒有目錄"</string>
+    <string name="nav_history_empty">"沒有導航歷史"</string>
     <string name="error_page_out_of_rande">"無效的頁碼。有效頁碼範圍: 1-%1$d"</string>
     <string name="msg_loading">"載入中… 請稍候"</string>
     <string name="msg_getting_page_size">"獲取頁面大小 %1$d/%2$d"</string>

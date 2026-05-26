@@ -22,6 +22,11 @@
         android:icon="@drawable/viewer_menu_searchtext"
         android:title="@string/menu_searchtext"/>
     <item
+        android:id="@+id/mainmenu_nav_history"
+        android:alphabeticShortcut="h"
+        android:icon="@drawable/viewer_menu_nav_history"
+        android:title="@string/menu_nav_history"/>
+    <item
         android:id="@+id/mainmenu_fastsettings_menu"
         android:icon="@drawable/viewer_actionbar_menu_fastsettings"
         android:title="@string/menu_fastsettings_menu"/>

@@ -55,4 +55,5 @@
     <string name="nav_label_search_results">Resultados</string>
     <string name="action_close_browser">Cerrar explorador</string>
     <string name="action_close_search">Cerrar búsqueda</string>
+    <string name="menu_nav_history">Historial de navegación</string>
 </resources>

@@ -675,6 +675,7 @@ public abstract class AbstractViewController extends AbstractComponentController
             return true;
         }
 
+        base.setPendingNavigation(NavigationHistoryTree.NavigationType.LINK, null);
         goToLink(link.targetPage, link.targetRect, AppSettings.current().storeLinkGotoHistory);
         return true;
     }

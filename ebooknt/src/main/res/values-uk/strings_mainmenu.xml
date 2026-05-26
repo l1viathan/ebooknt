@@ -47,4 +47,5 @@
     <string name="nav_label_search_results">Результати пошуку</string>
     <string name="action_close_browser">Закрити оглядач</string>
     <string name="action_close_search">Закрити пошук</string>
+    <string name="menu_nav_history">Історія навігації</string>
 </resources>

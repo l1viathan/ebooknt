@@ -52,5 +52,6 @@
     <string name="action_close_browser">關閉瀏覽</string>
     <string name="action_close_search">關閉搜尋</string>
     <string name="menu_exit">結束應用程式</string>
+    <string name="menu_nav_history">導航歷史</string>
 
 </resources>
