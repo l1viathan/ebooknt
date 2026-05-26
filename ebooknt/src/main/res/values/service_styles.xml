@@ -16,6 +16,7 @@
 
     <!-- TODO: Migrate the settings activities to appcompat and remove this (and the v11/v21 versions) -->
     <style name="ebookdroid_prefs" parent="android:Theme"/>
+    <style name="ebookdroid_prefs_eink" parent="android:Theme.Light"/>
 
     <!-- actionbar -->
     <style name="action_bar">

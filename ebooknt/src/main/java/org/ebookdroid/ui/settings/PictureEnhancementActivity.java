@@ -72,6 +72,9 @@ public class PictureEnhancementActivity extends Activity {
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         Log.d(TAG, "onCreate start");
+        if (AppSettings.current().einkMode) {
+            setTheme(R.style.ebookdroid_prefs_eink);
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_picture_enhancement);
         Log.d(TAG, "setContentView done");

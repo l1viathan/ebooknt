@@ -2,5 +2,6 @@
 <resources>
 
     <style name="ebookdroid_prefs" parent="android:Theme.Holo"/>
+    <style name="ebookdroid_prefs_eink" parent="android:Theme.Holo.Light"/>
 
 </resources>

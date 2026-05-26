@@ -50,7 +50,7 @@
             android:layout_marginRight="10dp"
             android:gravity="center"
             android:text="→"
-            android:textColor="#ffffff"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="20sp" />
 
         <org.afzkl.colorpicker.views.ColorPanelView
