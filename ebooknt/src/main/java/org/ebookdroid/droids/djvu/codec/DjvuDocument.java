@@ -8,10 +8,14 @@ import org.ebookdroid.core.codec.PageTextBox;
 import android.graphics.RectF;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.emdev.utils.LengthUtils;
 
 public class DjvuDocument extends AbstractCodecDocument {
+
+    private final ConcurrentLinkedQueue<Long> pendingPageReleases = new ConcurrentLinkedQueue<>();
+    private volatile boolean documentFreed;
 
     DjvuDocument(final DjvuContext djvuContext, final String fileName) {
         super(djvuContext, open(djvuContext.getContextHandle(), fileName));
@@ -19,6 +23,19 @@ public class DjvuDocument extends AbstractCodecDocument {
 
     DjvuDocument(final DjvuContext djvuContext, final int fd) {
         super(djvuContext, openFd(djvuContext.getContextHandle(), fd));
+    }
+
+    void queuePageRelease(final long pageHandle) {
+        if (!documentFreed) {
+            pendingPageReleases.add(pageHandle);
+        }
+    }
+
+    private void drainPendingReleases() {
+        Long h;
+        while ((h = pendingPageReleases.poll()) != null) {
+            DjvuPage.free(h);
+        }
     }
 
     @Override
@@ -29,7 +46,8 @@ public class DjvuDocument extends AbstractCodecDocument {
 
     @Override
     public DjvuPage getPage(final int pageNumber) {
-        return new DjvuPage(context.getContextHandle(), documentHandle, getPage(documentHandle, pageNumber), pageNumber);
+        drainPendingReleases();
+        return new DjvuPage(this, context.getContextHandle(), documentHandle, getPage(documentHandle, pageNumber), pageNumber);
     }
 
     @Override
@@ -50,6 +68,8 @@ public class DjvuDocument extends AbstractCodecDocument {
 
     @Override
     protected void freeDocument() {
+        documentFreed = true;
+        drainPendingReleases();
         free(documentHandle);
     }
 

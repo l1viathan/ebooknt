@@ -20,14 +20,14 @@ import org.emdev.utils.LengthUtils;
 
 public class DjvuPage extends AbstractCodecPage {
 
+    private final DjvuDocument document;
     private final long contextHandle;
     private final long docHandle;
     private final int pageNo;
-    private long pageHandle;
+    private volatile long pageHandle;
 
-    private final static boolean USE_DIRECT = true;
-
-    DjvuPage(final long contextHandle, final long docHandle, final long pageHandle, final int pageNo) {
+    DjvuPage(final DjvuDocument document, final long contextHandle, final long docHandle, final long pageHandle, final int pageNo) {
+        this.document = document;
         this.contextHandle = contextHandle;
         this.docHandle = docHandle;
         this.pageHandle = pageHandle;
@@ -36,12 +36,14 @@ public class DjvuPage extends AbstractCodecPage {
 
     @Override
     public int getWidth() {
-        return getWidth(pageHandle);
+        final long h = pageHandle;
+        return h != 0 ? getWidth(h) : 0;
     }
 
     @Override
     public int getHeight() {
-        return getHeight(pageHandle);
+        final long h = pageHandle;
+        return h != 0 ? getHeight(h) : 0;
     }
 
     @Override
@@ -51,12 +53,14 @@ public class DjvuPage extends AbstractCodecPage {
 
         ByteBufferBitmap buf = ByteBufferManager.getBitmap(width, height);
         if (width > 0 && height > 0) {
-
-            final ByteBuffer byteBuffer = buf.getPixels();
-
-            if (renderPageDirect(pageHandle, contextHandle, width, height, pageSliceBounds.left, pageSliceBounds.top,
-                    pageSliceBounds.width(), pageSliceBounds.height(), byteBuffer, renderMode)) {
-                return buf;
+            final long h = pageHandle;
+            if (h != 0) {
+                final ByteBuffer byteBuffer = buf.getPixels();
+                if (renderPageDirect(h, contextHandle, width, height,
+                        pageSliceBounds.left, pageSliceBounds.top,
+                        pageSliceBounds.width(), pageSliceBounds.height(), byteBuffer, renderMode)) {
+                    return buf;
+                }
             }
         }
 
@@ -71,16 +75,19 @@ public class DjvuPage extends AbstractCodecPage {
     }
 
     @Override
-    public synchronized void recycle() {
-        if (pageHandle == 0) {
-            return;
+    public void recycle() {
+        long h;
+        synchronized (this) {
+            h = pageHandle;
+            pageHandle = 0;
         }
-        free(pageHandle);
-        pageHandle = 0;
+        if (h != 0) {
+            document.queuePageRelease(h);
+        }
     }
 
     @Override
-    public synchronized boolean isRecycled() {
+    public boolean isRecycled() {
         return pageHandle == 0;
     }
 
@@ -163,7 +170,7 @@ public class DjvuPage extends AbstractCodecPage {
             int targetHeight, float pageSliceX, float pageSliceY, float pageSliceWidth, float pageSliceHeight,
             ByteBuffer byteBuffer, int renderMode);
 
-    private static native void free(long pageHandle);
+    static native void free(long pageHandle);
 
     private native static ArrayList<PageLink> getPageLinks(long docHandle, int pageNo);
 
