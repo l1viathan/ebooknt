@@ -217,7 +217,7 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
 
     @Override
     public void onBackPressed() {
-        if (drawerLayout != null && drawerLayout.isDrawerOpen(android.view.Gravity.START)) {
+        if (drawerLayout != null && drawerLayout.isDrawerOpen(android.view.Gravity.END)) {
             drawerLayout.closeDrawers();
             return;
         }

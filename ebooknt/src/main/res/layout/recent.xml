@@ -27,7 +27,7 @@
         android:id="@+id/recent_drawer_list"
         android:layout_width="280dp"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
+        android:layout_gravity="end"
         android:background="#FE303030"
         android:divider="#505050"
         android:dividerHeight="1dp" />

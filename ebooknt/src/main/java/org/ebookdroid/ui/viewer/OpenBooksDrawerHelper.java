@@ -287,15 +287,16 @@ public class OpenBooksDrawerHelper {
             final float density = activity.getResources().getDisplayMetrics().density;
             final float edgeSize = 40 * density;
             final float minSwipe = 60 * density;
+            final int viewWidth = activity.getWindow().getDecorView().getWidth();
             final int viewHeight = activity.getWindow().getDecorView().getHeight();
             final float excludeZone = viewHeight * 0.40f;
             switch (ev.getActionMasked()) {
                 case MotionEvent.ACTION_DOWN:
-                    if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                    if (drawerLayout.isDrawerOpen(Gravity.END)) {
                         closeSwipeStartX = ev.getX();
                         closeSwipeStartY = ev.getY();
                         edgeSwipeStartX = -1;
-                    } else if (ev.getX() < edgeSize
+                    } else if (ev.getX() > viewWidth - edgeSize
                             && ev.getY() > excludeZone
                             && ev.getY() < viewHeight - excludeZone) {
                         edgeSwipeStartX = ev.getX();
@@ -310,7 +311,7 @@ public class OpenBooksDrawerHelper {
                     return false;
                 case MotionEvent.ACTION_MOVE:
                     if (edgeSwipeStartX >= 0) {
-                        final float dx = ev.getX() - edgeSwipeStartX;
+                        final float dx = edgeSwipeStartX - ev.getX();
                         final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
                         if (dy > dx && dy > edgeSize) {
                             edgeSwipeStartX = -1;
@@ -319,7 +320,7 @@ public class OpenBooksDrawerHelper {
                         }
                         if (dx > minSwipe && dy < dx) {
                             if (onBeforeOpen != null) onBeforeOpen.run();
-                            drawerLayout.openDrawer(Gravity.START);
+                            drawerLayout.openDrawer(Gravity.END);
                             edgeSwipeStartX = -1;
                         }
                         intercepting = true;
@@ -335,7 +336,7 @@ public class OpenBooksDrawerHelper {
                         if (Math.abs(dx) > edgeSize) {
                             closeIntercepting = true;
                         }
-                        if (dx < -minSwipe && dy < -dx) {
+                        if (dx > minSwipe && dy < dx) {
                             drawerLayout.closeDrawers();
                             closeSwipeStartX = -1;
                         }
