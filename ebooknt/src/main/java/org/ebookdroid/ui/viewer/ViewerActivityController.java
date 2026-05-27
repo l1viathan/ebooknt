@@ -535,7 +535,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         int bestPage = -1;
         for (int i = 0; i < outline.size(); i++) {
             final OutlineLink link = outline.get(i);
-            if (link.targetPage >= 1 && link.targetPage <= docPage && link.targetPage > bestPage) {
+            if (link.targetPage >= 1 && link.targetPage <= docPage && link.targetPage >= bestPage) {
                 bestPage = link.targetPage;
                 bestIdx = i;
             }
