@@ -43,6 +43,7 @@
         android:title="@string/menu_booksettings"/>
     <item
         android:id="@+id/mainmenu_other_menu"
+        android:icon="@drawable/viewer_menu_other"
         app:showAsAction="never"
         android:title="@string/menu_other_menu">
         <menu>

@@ -53,4 +53,6 @@
     <string name="action_close_search">关闭搜索</string>
     <string name="menu_exit">退出应用</string>
     <string name="menu_nav_history">导航历史</string>
+    <string name="menu_fit_by_height">适配高度</string>
+    <string name="menu_fit_by_width">适配宽度</string>
 </resources>

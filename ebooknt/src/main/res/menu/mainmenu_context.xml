@@ -51,6 +51,7 @@
     <group android:id="@+id/ctx_grp_other">
         <item
             android:id="@+id/mainmenu_other_menu"
+            android:icon="@drawable/viewer_menu_other"
             android:title="@string/menu_other_menu">
             <menu>
                 <item
