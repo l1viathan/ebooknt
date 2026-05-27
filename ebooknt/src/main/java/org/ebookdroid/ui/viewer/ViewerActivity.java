@@ -197,13 +197,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     overflow.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
                     toolbar.setOverflowIcon(overflow);
                 }
-                android.graphics.drawable.Drawable nav = toolbar.getNavigationIcon();
-                if (nav != null) nav.setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
             });
         }
-
-        getSupportActionBar().setDisplayShowHomeEnabled(true);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Apply status bar inset as top padding on the parent LinearLayout so that
         // content stays below the status bar regardless of toolbar visibility.

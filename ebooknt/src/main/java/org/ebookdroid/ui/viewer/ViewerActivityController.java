@@ -67,8 +67,6 @@ import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.AnyThread;
-import android.support.v4.app.NavUtils;
-import android.support.v4.app.TaskStackBuilder;
 import android.support.v7.widget.AppCompatEditText;
 import android.text.Editable;
 import android.text.InputType;
@@ -1370,15 +1368,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         builder.show();
     }
 
-    @ActionMethod(ids = android.R.id.home)
-    public void navigateUp(final ActionEx action) {
-        // Set a flag so that R.id.actions_doClose actually performs an "up" action instead of just closing
-        getOrCreateAction(R.id.actions_doClose).putValue("up", Boolean.TRUE);
-
-        // Show the save prompt if needed, then runs R.id.actions_doClose
-        getOrCreateAction(R.id.mainmenu_close).run();
-    }
-
 @ActionMethod(ids = R.id.actions_showSaveDlg)
     public void showSaveDlg(final ActionEx action) {
         final FolderDlg dlg = new FolderDlg(this);
@@ -1422,11 +1411,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         }
         SettingsManager.releaseBookSettings(id, bookSettings);
 
-        if (getOrCreateAction(R.id.actions_doClose).getParameter("up", Boolean.FALSE).booleanValue()) {
-            goUp();
-            return;
-        }
-
         OpenBooksManager.get().removeBook(closingPath);
 
         final String nextBook = findNextOpenBook();
@@ -1451,28 +1435,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         return null;
     }
 
-    private void goUp() {
-        // Implementation of the up button from http://developer.android.com/training/implementing-navigation/ancestral.html
-        // isTaskRoot() check works around a bug where pressing "up" does nothing when the viewer is launched
-        // by tapping on a pdf download notification in the notification list.
-        // see: http://stackoverflow.com/questions/19999619/navutils-navigateupto-does-not-start-any-activity
-        Activity activity = getActivity();
-        Intent upIntent = NavUtils.getParentActivityIntent(activity);
-        if (NavUtils.shouldUpRecreateTask(activity, upIntent) || activity.isTaskRoot()) {
-            // e.g., this is the case when opening a pdf from the Downloads app and pressing the up button:
-            // the ViewerActivity is running in the Downloads task, so the following will start a new task
-            // to open the EbookNT library in.
-            TaskStackBuilder.create(activity)
-                    .addNextIntentWithParentStack(upIntent)
-                    .startActivities();
-
-            getActivity().finish();
-        } else {
-            // Restart the existing instance of the RecentActivity rather than starting a new one   
-            upIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            NavUtils.navigateUpTo(activity, upIntent);
-        }
-    }
 
     /**
      * {@inheritDoc}
