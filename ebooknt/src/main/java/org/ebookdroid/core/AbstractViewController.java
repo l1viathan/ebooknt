@@ -14,12 +14,12 @@ import org.ebookdroid.common.touch.MultiTouchGestureDetector;
 import org.ebookdroid.common.touch.TouchManager;
 import org.ebookdroid.common.touch.TouchManager.Touch;
 import org.ebookdroid.core.codec.PageLink;
-import org.ebookdroid.core.codec.PageTextBox;
 import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.core.models.DocumentModel.PageIterator;
 import org.ebookdroid.ui.viewer.IActivityController;
 import org.ebookdroid.ui.viewer.IView;
 import org.ebookdroid.ui.viewer.IViewController;
+import org.ebookdroid.ui.viewer.views.TextSelectionManager;
 
 import android.content.Context;
 import android.content.Intent;
@@ -32,14 +32,9 @@ import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.util.FloatMath;
 import android.util.TypedValue;
-import android.os.AsyncTask;
-import android.support.v7.app.AlertDialog;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,6 +91,8 @@ public abstract class AbstractViewController extends AbstractComponentController
 
     private MultiTouchGestureDetector multiTouchDetector;
 
+    private TextSelectionManager textSelection;
+
     public AbstractViewController(final IActivityController base, final DocumentViewMode mode) {
         super(base, base.getView());
 
@@ -114,6 +111,17 @@ public abstract class AbstractViewController extends AbstractComponentController
         createAction(R.id.actions_leftBottomCorner, new Constant("offsetX", 0), new Constant("offsetY", 1));
         createAction(R.id.actions_rightTopCorner, new Constant("offsetX", 1), new Constant("offsetY", 0));
         createAction(R.id.actions_rightBottomCorner, new Constant("offsetX", 1), new Constant("offsetY", 1));
+    }
+
+    public TextSelectionManager getTextSelection() {
+        if (textSelection == null) {
+            textSelection = new TextSelectionManager(base, getView().getView());
+        }
+        return textSelection;
+    }
+
+    public TextSelectionManager getTextSelectionIfActive() {
+        return (textSelection != null && textSelection.isActive()) ? textSelection : null;
     }
 
     protected List<IGestureDetector> getGestureDetectors() {
@@ -224,6 +232,10 @@ public abstract class AbstractViewController extends AbstractComponentController
     public final void zoomChanged(final float oldZoom, final float newZoom, final boolean committed, @Nullable PointF center) {
         if (!isShown) {
             return;
+        }
+
+        if (textSelection != null && textSelection.isActive()) {
+            textSelection.clearSelection();
         }
 
         inZoom.set(!committed);
@@ -430,6 +442,9 @@ public abstract class AbstractViewController extends AbstractComponentController
      */
     @Override
     public final boolean onTouchEvent(final MotionEvent ev) {
+        if (textSelection != null && textSelection.isActive() && textSelection.onTouchEvent(ev)) {
+            return true;
+        }
         for (final IGestureDetector d : getGestureDetectors()) {
             if (d.enabled() && d.onTouchEvent(ev)) {
                 return true;
@@ -686,135 +701,6 @@ public abstract class AbstractViewController extends AbstractComponentController
         }
     }
 
-    protected void processTextLookup(final float x, final float y) {
-        final float zoom = base.getZoomModel().getZoom();
-        final float scrollX = getScrollX();
-        final float scrollY = getScrollY();
-
-        final PageIterator pages = model.getPages(firstVisiblePage, lastVisiblePage + 1);
-        try {
-            final RectF bounds = new RectF();
-            for (final Page page : pages) {
-                page.getBounds(zoom, bounds);
-                final float absX = x + scrollX;
-                final float absY = y + scrollY;
-                if (absX >= bounds.left && absX <= bounds.right
-                        && absY >= bounds.top && absY <= bounds.bottom) {
-                    float normX = (absX - bounds.left) / bounds.width();
-                    float normY = (absY - bounds.top) / bounds.height();
-                    final RectF crop = page.getCropping();
-                    if (crop != null) {
-                        normX = crop.left + normX * crop.width();
-                        normY = crop.top + normY * crop.height();
-                    }
-                    lookupTextAt(page.index.docIndex, normX, normY);
-                    return;
-                }
-            }
-        } finally {
-            pages.release();
-        }
-    }
-
-    private void lookupTextAt(final int pageIndex, final float normX, final float normY) {
-        new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(Void... params) {
-                final DecodeService ds = base.getDecodeService();
-                if (ds == null) {
-                    return null;
-                }
-                final List<PageTextBox> boxes = ds.getPageText(pageIndex);
-                if (boxes == null || boxes.isEmpty()) {
-                    return null;
-                }
-
-                PageTextBox best = null;
-                float bestDist = Float.MAX_VALUE;
-                boolean direct = false;
-                for (final PageTextBox box : boxes) {
-                    final float dx = Math.max(0, Math.max(box.left - normX, normX - box.right));
-                    final float dy = Math.max(0, Math.max(box.top - normY, normY - box.bottom));
-                    final float edgeDist = dx * dx + dy * dy;
-                    if (edgeDist == 0) {
-                        final float cx = (box.left + box.right) / 2;
-                        final float cy = (box.top + box.bottom) / 2;
-                        final float centerDist = (normX - cx) * (normX - cx) + (normY - cy) * (normY - cy);
-                        if (!direct || centerDist < bestDist) {
-                            best = box;
-                            bestDist = centerDist;
-                            direct = true;
-                        }
-                    } else if (!direct && edgeDist < bestDist) {
-                        bestDist = edgeDist;
-                        best = box;
-                    }
-                }
-                if (best == null || best.text == null) {
-                    return null;
-                }
-                return best.text.trim();
-            }
-
-            @Override
-            protected void onPostExecute(final String word) {
-                if (word != null && !word.isEmpty()) {
-                    showTextLookupDialog(word);
-                }
-            }
-        }.execute();
-    }
-
-    private void showTextLookupDialog(final String word) {
-        final Context ctx = base.getContext();
-        final LinearLayout layout = new LinearLayout(ctx);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        final int pad = (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, 16, ctx.getResources().getDisplayMetrics());
-        layout.setPadding(pad, pad, pad, 0);
-
-        final EditText editText = new EditText(ctx);
-        editText.setText(word);
-        editText.selectAll();
-        layout.addView(editText);
-
-        new AlertDialog.Builder(ctx)
-                .setTitle(R.string.text_lookup_title)
-                .setView(layout)
-                .setPositiveButton(R.string.text_lookup_search, (dialog, which) -> {
-                    final String query = editText.getText().toString().trim();
-                    if (!query.isEmpty()) {
-                        sendTextLookupIntent(query);
-                    }
-                })
-                .setNeutralButton(android.R.string.cancel, null)
-                .setNegativeButton(R.string.text_lookup_copy, (dialog, which) -> {
-                    final String query = editText.getText().toString().trim();
-                    if (!query.isEmpty()) {
-                        android.content.ClipboardManager cm = (android.content.ClipboardManager)
-                                ctx.getSystemService(Context.CLIPBOARD_SERVICE);
-                        cm.setPrimaryClip(android.content.ClipData.newPlainText("text", query));
-                    }
-                })
-                .show();
-    }
-
-    private void sendTextLookupIntent(final String query) {
-        final Context ctx = base.getContext();
-        final Intent intent = new Intent(Intent.ACTION_PROCESS_TEXT);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_PROCESS_TEXT, query);
-        intent.putExtra(Intent.EXTRA_PROCESS_TEXT_READONLY, true);
-        if (intent.resolveActivity(ctx.getPackageManager()) != null) {
-            ctx.startActivity(Intent.createChooser(intent, query));
-        } else {
-            final Intent sendIntent = new Intent(Intent.ACTION_SEND);
-            sendIntent.setType("text/plain");
-            sendIntent.putExtra(Intent.EXTRA_TEXT, query);
-            ctx.startActivity(Intent.createChooser(sendIntent, query));
-        }
-    }
-
     /**
      * {@inheritDoc}
      *
@@ -942,6 +828,11 @@ public abstract class AbstractViewController extends AbstractComponentController
             if (LCTX.isDebugEnabled()) {
                 LCTX.d("onSingleTapConfirmed(" + e + ")");
             }
+            if (textSelection != null && textSelection.isActive()) {
+                if (textSelection.onSingleTap(e.getX(), e.getY())) {
+                    return true;
+                }
+            }
             if (ignoreNextTap) {
                 ignoreNextTap = false;
                 return false;
@@ -966,7 +857,7 @@ public abstract class AbstractViewController extends AbstractComponentController
             if (bs == null || !bs.textSelection) {
                 return;
             }
-            processTextLookup(e.getX(), e.getY());
+            getTextSelection().startSelection(e.getX(), e.getY());
         }
 
         /**

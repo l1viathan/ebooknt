@@ -21,6 +21,33 @@
     <!-- Android 11+: all-files access needed to browse ebook library (PDF, epub, etc.) -->
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
+    <queries>
+        <intent>
+            <action android:name="colordict.intent.action.SEARCH" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEARCH" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <package android:name="com.ngc.fora" />
+        <package android:name="com.socialnmobile.colordict" />
+        <package android:name="mobi.goldendict.android" />
+        <package android:name="com.google.android.apps.translate" />
+        <package android:name="info.softex.dictan" />
+        <package android:name="cn.mdict" />
+        <package android:name="ru.yandex.translate" />
+        <package android:name="aarddict.android" />
+        <package android:name="itkach.aard2" />
+        <package android:name="livio.pack.lang.en_US" />
+        <package android:name="livio.pack.lang.fr_FR" />
+        <package android:name="livio.pack.lang.it_IT" />
+        <package android:name="livio.pack.lang.es_ES" />
+        <package android:name="livio.pack.lang.de_DE" />
+    </queries>
+
     <application
         android:name="org.ebookdroid.EBookDroidApp"
         android:allowBackup="true"

@@ -21,4 +21,10 @@
     <string name="pref_textselection_category">文本选择</string>
     <string name="pref_textselection_title">启用文本选择</string>
     <string name="pref_textselection_summary">长按选择文本进行查词或复制</string>
+
+    <string name="pref_lookup_app_title">查询应用</string>
+    <string name="pref_lookup_app_summary_none">选择查询应用</string>
+
+    <string name="pref_lookup_app_dialog_title">选择查询应用</string>
+    <string name="pref_lookup_app_clear">清除已有选择</string>
 </resources>

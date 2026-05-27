@@ -45,6 +45,12 @@
             android:summary="@string/pref_textselection_summary"
             android:title="@string/pref_textselection_title" />
 
+        <Preference
+            android:key="lookup_app"
+            android:title="@string/pref_lookup_app_title"
+            android:summary="@string/pref_lookup_app_summary_none"
+            android:dependency="@string/pref_textselection_id" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

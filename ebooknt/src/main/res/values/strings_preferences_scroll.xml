@@ -26,4 +26,10 @@
     <string name="pref_textselection_title">Enable text selection</string>
     <string name="pref_textselection_summary">Long press to select text for lookup or copy</string>
 
+    <string name="pref_lookup_app_title">Lookup application</string>
+    <string name="pref_lookup_app_summary_none">选择查询应用</string>
+
+    <string name="pref_lookup_app_dialog_title">Select lookup application</string>
+    <string name="pref_lookup_app_clear">Clear selection</string>
+
 </resources>

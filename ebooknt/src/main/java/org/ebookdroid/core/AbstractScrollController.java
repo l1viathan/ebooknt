@@ -94,6 +94,11 @@ public abstract class AbstractScrollController extends AbstractViewController {
         }
 
        EventPool.newEventScroll(this, mode == DocumentViewMode.VERTICALL_SCROLL ? dY : dX).process().release();
+
+       final org.ebookdroid.ui.viewer.views.TextSelectionManager sel = getTextSelectionIfActive();
+       if (sel != null) {
+           sel.onScrollChanged();
+       }
     }
 
     /**

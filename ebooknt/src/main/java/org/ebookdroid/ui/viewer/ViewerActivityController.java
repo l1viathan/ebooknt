@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.ebookdroid.CodecType;
 import org.ebookdroid.core.AbstractViewController;
+import org.ebookdroid.ui.viewer.views.TextSelectionManager;
 import org.ebookdroid.EBookDroidApp;
 import org.ebookdroid.common.settings.types.RotationType;
 import org.emdev.ui.uimanager.UIManagerAppCompat;
@@ -442,6 +443,11 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
                 final IViewController newDc = bs.viewMode.create(this);
                 if (newDc != null) {
                     final IViewController oldDc = ctrl.getAndSet(newDc);
+                    if (oldDc instanceof AbstractViewController) {
+                        final TextSelectionManager sel =
+                                ((AbstractViewController) oldDc).getTextSelectionIfActive();
+                        if (sel != null) sel.dispose();
+                    }
                     getZoomModel().removeListener(oldDc);
                     getZoomModel().addListener(newDc);
                     return ctrl.get();
@@ -1114,6 +1120,12 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         if (m_fileName == null || documentModel == null
                 || documentModel == ActivityControllerStub.DM_STUB) {
             return;
+        }
+        final IViewController dc = ctrl.get();
+        if (dc instanceof AbstractViewController) {
+            final TextSelectionManager sel =
+                    ((AbstractViewController) dc).getTextSelectionIfActive();
+            if (sel != null) sel.dispose();
         }
         SettingsManager.storeBookSettings(bookSettings);
         bookCache.put(m_fileName, new CachedBook(

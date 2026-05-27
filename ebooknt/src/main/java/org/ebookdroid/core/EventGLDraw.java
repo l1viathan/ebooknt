@@ -5,6 +5,7 @@ import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.core.codec.PageLink;
 import org.ebookdroid.core.models.SearchModel;
 import org.ebookdroid.core.models.SearchModel.Matches;
+import org.ebookdroid.ui.viewer.views.TextSelectionManager;
 
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -101,6 +102,7 @@ public class EventGLDraw implements IEvent {
             if (res) {
                 drawPageLinks(page);
                 drawHighlights(page);
+                drawTextSelection(page);
             }
 
             return res;
@@ -209,6 +211,28 @@ public class EventGLDraw implements IEvent {
             rect.offset(-viewState.viewBase.x, -viewState.viewBase.y);
             p.setColor(current ? app.currentSearchHighlightColor : app.searchHighlightColor);
             canvas.fillRect(rect, p);
+        }
+    }
+
+    private static final Paint SELECTION_PAINT = new Paint();
+
+    private void drawTextSelection(final Page page) {
+        if (!(viewState.ctrl instanceof AbstractViewController)) return;
+        final AbstractViewController ctrl = (AbstractViewController) viewState.ctrl;
+        final TextSelectionManager sel = ctrl.getTextSelectionIfActive();
+        if (sel == null) return;
+        if (page.index.docIndex != sel.getSelectionPageDocIndex()) return;
+
+        final List<RectF> rects = sel.getSelectionRects();
+        if (rects.isEmpty()) return;
+
+        SELECTION_PAINT.setColor(0x4033B5E5);
+        for (final RectF box : rects) {
+            final RectF rect = page.getPageRegion(pageBounds, new RectF(box));
+            if (rect != null) {
+                rect.offset(-viewState.viewBase.x, -viewState.viewBase.y);
+                canvas.fillRect(rect, SELECTION_PAINT);
+            }
         }
     }
 

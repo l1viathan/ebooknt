@@ -8,6 +8,7 @@ import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.common.settings.SettingsManager;
 import org.ebookdroid.common.settings.books.BookSettings;
 
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -15,6 +16,8 @@ import android.preference.Preference;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.widget.Toast;
+
+import org.ebookdroid.ui.viewer.views.DictionaryManager;
 
 import java.io.File;
 
@@ -61,6 +64,7 @@ public class SettingsActivity extends BaseSettingsActivity {
         }
 
         decorator.decorateSettings();
+        setupLookupAppPreference();
     }
 
     @SuppressWarnings("deprecation")
@@ -137,6 +141,59 @@ public class SettingsActivity extends BaseSettingsActivity {
         } else {
             screen.setSummary("No crash log");
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setupLookupAppPreference() {
+        final Preference pref = findPreference("lookup_app");
+        if (pref == null) return;
+
+        updateLookupSummary(pref);
+
+        pref.setOnPreferenceClickListener(p -> {
+            showLookupAppDialog(p);
+            return true;
+        });
+    }
+
+    private void updateLookupSummary(final Preference pref) {
+        final String label = DictionaryManager.getSelectedLabel(this);
+        if (label != null) {
+            pref.setSummary(label);
+        } else {
+            pref.setSummary(R.string.pref_lookup_app_summary_none);
+        }
+    }
+
+    private void showLookupAppDialog(final Preference pref) {
+        final DictionaryManager.DictEntry[] all = DictionaryManager.DICTIONARIES;
+        final String currentId = DictionaryManager.getSelectedId(this);
+        final boolean hasCurrent = currentId != null;
+        final int extra = hasCurrent ? 1 : 0;
+        final String[] labels = new String[all.length + extra];
+        final int[] checkedItem = { -1 };
+        if (hasCurrent) {
+            labels[0] = getString(R.string.pref_lookup_app_clear);
+        }
+        for (int i = 0; i < all.length; i++) {
+            labels[i + extra] = all[i].label;
+            if (all[i].id.equals(currentId)) {
+                checkedItem[0] = i + extra;
+            }
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.pref_lookup_app_dialog_title)
+                .setSingleChoiceItems(labels, checkedItem[0], (dialog, which) -> {
+                    if (hasCurrent && which == 0) {
+                        DictionaryManager.setSelectedId(this, null);
+                    } else {
+                        DictionaryManager.setSelectedId(this, all[which - extra].id);
+                    }
+                    updateLookupSummary(pref);
+                    dialog.dismiss();
+                })
+                .show();
     }
 
     @SuppressWarnings("deprecation")
