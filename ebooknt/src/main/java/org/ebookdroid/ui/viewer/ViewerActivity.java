@@ -50,6 +50,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -57,6 +60,12 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import android.text.Editable;
+import android.text.TextWatcher;
+
+import org.ebookdroid.core.codec.OutlineLink;
+import org.ebookdroid.ui.viewer.adapters.OutlineAdapter;
 
 import org.emdev.ui.AbstractActionActivity;
 import org.emdev.ui.actions.ActionDialogBuilder;
@@ -99,6 +108,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
     private OpenBooksDrawerHelper.EdgeSwipeHelper edgeSwipeHelper;
 
+    private View outlineDrawerPanel;
+    private ListView outlineDrawerList;
+    private EditText outlineSearchEdit;
+    private CheckBox outlinePreviewCheck;
+    private Button outlineConfirmBtn;
+    private OutlineAdapter outlineAdapter;
+    private List<OutlineLink> cachedOutline;
+
     /**
      * Instantiates a new base viewer activity.
      */
@@ -124,6 +141,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     protected void onNewIntent(final Intent intent) {
         super.onNewIntent(intent);
+        invalidateOutlineDrawer();
         getController().loadBook(intent);
     }
 
@@ -218,6 +236,55 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
 
         drawerList.setAdapter(openBooksAdapter);
 
+        outlineDrawerPanel = rootLayout.findViewById(R.id.viewer_outline_drawer);
+        outlineDrawerList = (ListView) rootLayout.findViewById(R.id.outline_drawer_list);
+        outlineSearchEdit = (EditText) rootLayout.findViewById(R.id.outline_drawer_search);
+        outlinePreviewCheck = (CheckBox) rootLayout.findViewById(R.id.outline_drawer_preview);
+        outlineConfirmBtn = (Button) rootLayout.findViewById(R.id.outline_drawer_confirm);
+
+        if (AppSettings.current().einkMode) {
+            outlineDrawerPanel.setBackgroundColor(0xD0F0F0F0);
+            outlineSearchEdit.setTextColor(0xFF000000);
+            outlineSearchEdit.setHintTextColor(0xFF777777);
+            outlinePreviewCheck.setTextColor(0xFF000000);
+            outlineConfirmBtn.setTextColor(0xFF000000);
+            outlineConfirmBtn.setBackgroundColor(0x40C0C0C0);
+        }
+
+        outlineSearchEdit.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (outlineAdapter != null) {
+                    outlineAdapter.setFilter(s.toString());
+                }
+            }
+        });
+
+        outlineDrawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(final AdapterView<?> parent, final View v,
+                                    final int position, final long id) {
+                if (outlineAdapter == null) return;
+                final OutlineLink link = outlineAdapter.getItem(position);
+                if (link == null || link.targetPage < 1) return;
+                final ViewerActivityController ctrl = getController();
+                if (ctrl == null) return;
+                ctrl.navigateToOutlineLink(link);
+                if (!outlinePreviewCheck.isChecked()) {
+                    drawerLayout.closeDrawer(Gravity.START);
+                }
+            }
+        });
+
+        outlineConfirmBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                drawerLayout.closeDrawer(Gravity.START);
+            }
+        });
+
         edgeSwipeHelper = new OpenBooksDrawerHelper.EdgeSwipeHelper(drawerLayout);
         edgeSwipeHelper.setOnBeforeOpen(new Runnable() {
             @Override public void run() {
@@ -227,6 +294,11 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 }
             }
         });
+        edgeSwipeHelper.setOnBeforeOpenStart(new Runnable() {
+            @Override public void run() {
+                loadOutlineDrawer();
+            }
+        });
 
         drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
@@ -234,7 +306,9 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             }
             @Override
             public void onDrawerOpened(final View drawerView) {
-                centerDrawerItems(headerSpacer, footerSpacer);
+                if (drawerView == drawerList) {
+                    centerDrawerItems(headerSpacer, footerSpacer);
+                }
             }
             @Override
             public void onDrawerClosed(final View drawerView) {
@@ -283,6 +357,65 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         OpenBooksManager.get().onBookResumed(getController().getCurrentBookPath());
         if (openBooksAdapter != null) {
             openBooksAdapter.refresh(getController().getCurrentBookPath());
+        }
+    }
+
+    void loadOutlineDrawer() {
+        final ViewerActivityController ctrl = getController();
+        if (ctrl == null) return;
+        final org.ebookdroid.core.DecodeService ds = ctrl.getDecodeService();
+        if (ds == null) return;
+        final List<OutlineLink> outline = ds.getOutline();
+        if (outline == null || outline.isEmpty()) {
+            if (outlineAdapter != null) {
+                outlineAdapter = null;
+                outlineDrawerList.setAdapter(null);
+            }
+            cachedOutline = null;
+            return;
+        }
+        if (cachedOutline == outline && outlineAdapter != null) {
+            return;
+        }
+        cachedOutline = outline;
+
+        final BookSettings bs = ctrl.getBookSettings();
+        OutlineLink current = null;
+        if (bs != null && bs.currentPage != null) {
+            final int currentDoc = bs.currentPage.docIndex;
+            for (final OutlineLink item : outline) {
+                if (item.targetPage - 1 <= currentDoc && item.targetPage >= 1) {
+                    current = item;
+                } else if (item.targetPage - 1 > currentDoc) {
+                    break;
+                }
+            }
+        }
+        outlineAdapter = new OutlineAdapter(this, ctrl, outline, current);
+        outlineDrawerList.setAdapter(outlineAdapter);
+        if (current != null) {
+            final int pos = outlineAdapter.getItemPosition(current);
+            if (pos >= 0) {
+                outlineDrawerList.setSelection(pos);
+            }
+        }
+        outlineSearchEdit.setText("");
+    }
+
+    void openOutlineDrawer() {
+        loadOutlineDrawer();
+        if (outlineAdapter != null && outlineAdapter.getCount() > 0) {
+            drawerLayout.openDrawer(Gravity.START);
+        } else {
+            showToastText(Toast.LENGTH_SHORT, R.string.outline_missed);
+        }
+    }
+
+    void invalidateOutlineDrawer() {
+        cachedOutline = null;
+        outlineAdapter = null;
+        if (outlineDrawerList != null) {
+            outlineDrawerList.setAdapter(null);
         }
     }
 

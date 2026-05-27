@@ -46,7 +46,7 @@ import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebookdroid.ui.settings.PictureEnhancementContext;
 import org.ebookdroid.ui.settings.SettingsUI;
 import org.ebookdroid.ui.viewer.dialogs.GoToPageDialog;
-import org.ebookdroid.ui.viewer.dialogs.OutlineDialog;
+
 import org.ebookdroid.ui.viewer.stubs.ActivityControllerStub;
 import org.ebookdroid.ui.viewer.stubs.ViewContollerStub;
 import org.ebookdroid.ui.viewer.views.ManualCropView;
@@ -619,7 +619,10 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
         if (link == null) {
             return;
         }
+        navigateToOutlineLink(link);
+    }
 
+    public void navigateToOutlineLink(final OutlineLink link) {
         if (link.targetPage != -1) {
             final int pageCount = documentModel.decodeService.getPageCount();
             if (link.targetPage < 1 || link.targetPage > pageCount) {
@@ -676,35 +679,7 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     @ActionMethod(ids = R.id.mainmenu_outline)
     public void showOutline(final ActionEx action) {
-        new OutlineLoadTask().execute();
-    }
-
-    final class OutlineLoadTask extends AsyncTask<Void, Void, List<OutlineLink>> {
-        private ProgressDialog progress;
-
-        @Override
-        protected void onPreExecute() {
-            progress = ProgressDialog.show(getManagedComponent(), "",
-                    getManagedComponent().getString(R.string.msg_loading), true);
-        }
-
-        @Override
-        protected List<OutlineLink> doInBackground(final Void... params) {
-            return documentModel.decodeService.getOutline();
-        }
-
-        @Override
-        protected void onPostExecute(final List<OutlineLink> outline) {
-            try {
-                progress.dismiss();
-            } catch (final Throwable ignored) {
-            }
-            if (outline != null && outline.size() > 0) {
-                new OutlineDialog(ViewerActivityController.this, outline).show();
-            } else {
-                getManagedComponent().showToastText(Toast.LENGTH_SHORT, R.string.outline_missed);
-            }
-        }
+        getManagedComponent().openOutlineDrawer();
     }
 
     @ActionMethod(ids = { R.id.actions_doSearch, R.id.actions_doSearchBack })

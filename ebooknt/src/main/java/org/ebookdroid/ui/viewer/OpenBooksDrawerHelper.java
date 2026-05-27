@@ -268,11 +268,14 @@ public class OpenBooksDrawerHelper {
 
     public static class EdgeSwipeHelper {
         private final DrawerLayout drawerLayout;
-        private Runnable onBeforeOpen;
+        private Runnable onBeforeOpenEnd;
+        private Runnable onBeforeOpenStart;
         private float edgeSwipeStartX = -1;
         private float edgeSwipeStartY = -1;
+        private int edgeSide; // Gravity.START or Gravity.END
         private float closeSwipeStartX = -1;
         private float closeSwipeStartY = -1;
+        private int closeSide;
         private boolean intercepting;
         private boolean closeIntercepting;
 
@@ -281,7 +284,8 @@ public class OpenBooksDrawerHelper {
             drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
         }
 
-        public void setOnBeforeOpen(Runnable r) { onBeforeOpen = r; }
+        public void setOnBeforeOpen(Runnable r) { onBeforeOpenEnd = r; }
+        public void setOnBeforeOpenStart(Runnable r) { onBeforeOpenStart = r; }
 
         public boolean handleTouch(MotionEvent ev, Activity activity) {
             final float density = activity.getResources().getDisplayMetrics().density;
@@ -295,12 +299,26 @@ public class OpenBooksDrawerHelper {
                     if (drawerLayout.isDrawerOpen(Gravity.END)) {
                         closeSwipeStartX = ev.getX();
                         closeSwipeStartY = ev.getY();
+                        closeSide = Gravity.END;
+                        edgeSwipeStartX = -1;
+                    } else if (drawerLayout.isDrawerOpen(Gravity.START)) {
+                        closeSwipeStartX = ev.getX();
+                        closeSwipeStartY = ev.getY();
+                        closeSide = Gravity.START;
                         edgeSwipeStartX = -1;
                     } else if (ev.getX() > viewWidth - edgeSize
                             && ev.getY() > excludeZone
                             && ev.getY() < viewHeight - excludeZone) {
                         edgeSwipeStartX = ev.getX();
                         edgeSwipeStartY = ev.getY();
+                        edgeSide = Gravity.END;
+                        closeSwipeStartX = -1;
+                    } else if (ev.getX() < edgeSize
+                            && ev.getY() > excludeZone
+                            && ev.getY() < viewHeight - excludeZone) {
+                        edgeSwipeStartX = ev.getX();
+                        edgeSwipeStartY = ev.getY();
+                        edgeSide = Gravity.START;
                         closeSwipeStartX = -1;
                     } else {
                         edgeSwipeStartX = -1;
@@ -311,7 +329,8 @@ public class OpenBooksDrawerHelper {
                     return false;
                 case MotionEvent.ACTION_MOVE:
                     if (edgeSwipeStartX >= 0) {
-                        final float dx = edgeSwipeStartX - ev.getX();
+                        final float rawDx = ev.getX() - edgeSwipeStartX;
+                        final float dx = edgeSide == Gravity.END ? -rawDx : rawDx;
                         final float dy = Math.abs(ev.getY() - edgeSwipeStartY);
                         if (dy > dx && dy > edgeSize) {
                             edgeSwipeStartX = -1;
@@ -319,24 +338,29 @@ public class OpenBooksDrawerHelper {
                             return false;
                         }
                         if (dx > minSwipe && dy < dx) {
-                            if (onBeforeOpen != null) onBeforeOpen.run();
-                            drawerLayout.openDrawer(Gravity.END);
+                            if (edgeSide == Gravity.END) {
+                                if (onBeforeOpenEnd != null) onBeforeOpenEnd.run();
+                            } else {
+                                if (onBeforeOpenStart != null) onBeforeOpenStart.run();
+                            }
+                            drawerLayout.openDrawer(edgeSide);
                             edgeSwipeStartX = -1;
                         }
                         intercepting = true;
                         return true;
                     } else if (closeSwipeStartX >= 0) {
-                        final float dx = ev.getX() - closeSwipeStartX;
+                        final float rawDx = ev.getX() - closeSwipeStartX;
+                        final float closeDx = closeSide == Gravity.END ? rawDx : -rawDx;
                         final float dy = Math.abs(ev.getY() - closeSwipeStartY);
-                        if (dy > edgeSize && dy > Math.abs(dx)) {
+                        if (dy > edgeSize && dy > Math.abs(rawDx)) {
                             closeSwipeStartX = -1;
                             closeIntercepting = false;
                             return false;
                         }
-                        if (Math.abs(dx) > edgeSize) {
+                        if (Math.abs(rawDx) > edgeSize) {
                             closeIntercepting = true;
                         }
-                        if (dx > minSwipe && dy < dx) {
+                        if (closeDx < -minSwipe && dy < -closeDx) {
                             drawerLayout.closeDrawers();
                             closeSwipeStartX = -1;
                         }
