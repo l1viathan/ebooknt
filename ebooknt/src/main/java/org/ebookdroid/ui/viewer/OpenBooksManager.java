@@ -82,17 +82,9 @@ public final class OpenBooksManager {
         activeBooks.add(path);
     }
 
-    public synchronized void onBookPaused(final String path) {
-    }
-
     public synchronized List<String> getOpenBooks() {
         ensureLoaded();
         return new ArrayList<>(openBooks);
-    }
-
-    public synchronized boolean isOpen(final String path) {
-        ensureLoaded();
-        return path != null && openBooks.contains(path);
     }
 
     public synchronized boolean isActive(final String path) {
@@ -116,11 +108,6 @@ public final class OpenBooksManager {
         pageCounts.clear();
         outlineLabels.clear();
         save();
-    }
-
-    public synchronized boolean isEmpty() {
-        ensureLoaded();
-        return openBooks.isEmpty();
     }
 
     public synchronized void setPageCount(final String path, final int count) {

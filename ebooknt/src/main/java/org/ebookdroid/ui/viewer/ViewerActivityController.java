@@ -9,7 +9,6 @@ import org.ebookdroid.CodecType;
 import org.ebookdroid.core.AbstractViewController;
 import org.ebookdroid.EBookDroidApp;
 import org.ebookdroid.common.settings.types.RotationType;
-import org.emdev.ui.actions.ActionMenuHelper;
 import org.emdev.ui.uimanager.UIManagerAppCompat;
 import org.ebooknt.viewer.R;
 import org.ebookdroid.common.bitmaps.BitmapManager;
@@ -43,7 +42,6 @@ import org.ebookdroid.core.models.DocumentModel;
 import org.ebookdroid.core.models.SearchModel;
 import org.ebookdroid.core.models.ZoomModel;
 import org.ebookdroid.droids.mupdf.codec.exceptions.MuPdfPasswordException;
-import org.ebookdroid.ui.library.RecentActivity;
 import org.ebookdroid.ui.library.dialogs.FolderDlg;
 import org.ebookdroid.ui.settings.PictureEnhancementContext;
 import org.ebookdroid.ui.settings.SettingsUI;
@@ -55,9 +53,7 @@ import org.ebookdroid.ui.viewer.views.ManualCropView;
 import org.ebookdroid.ui.viewer.views.SearchControls;
 import org.ebookdroid.ui.viewer.views.ViewEffects;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
@@ -88,7 +84,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.emdev.BaseDroidApp;
-import org.emdev.common.android.AndroidVersion;
 import org.emdev.common.backup.BackupManager;
 import org.emdev.common.content.ContentScheme;
 import org.emdev.common.filesystem.PathFromUri;
@@ -1355,10 +1350,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
             getOrCreateAction(R.id.actions_doClose).run();
             return;
         }
-
-        // TODO: These two lines appear to do nothing, "save" value is never used.
-        getOrCreateAction(R.id.actions_doSaveAndClose).putValue("save", Boolean.TRUE);
-        getOrCreateAction(R.id.actions_doClose).putValue("save", Boolean.FALSE);
 
         final ActionDialogBuilder builder = new ActionDialogBuilder(getManagedComponent(), this);
         builder.setTitle(R.string.confirmclose_title);

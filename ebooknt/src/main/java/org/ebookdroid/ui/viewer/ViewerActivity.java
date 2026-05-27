@@ -18,7 +18,6 @@ import org.ebookdroid.ui.viewer.viewers.GLView;
 import org.ebookdroid.ui.viewer.views.ManualCropView;
 import org.ebookdroid.ui.viewer.views.PageViewZoomControls;
 import org.ebookdroid.ui.viewer.views.SearchControls;
-import org.ebookdroid.ui.viewer.views.ViewEffects;
 
 import android.content.Context;
 import android.content.Intent;
@@ -43,7 +42,6 @@ import android.view.ContextMenu.ContextMenuInfo;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -60,7 +58,6 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.emdev.common.android.AndroidVersion;
 import org.emdev.ui.AbstractActionActivity;
 import org.emdev.ui.actions.ActionDialogBuilder;
 import org.emdev.ui.actions.ActionMenuHelper;
@@ -321,7 +318,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     protected void onPauseImpl(final boolean finishing) {
         IUIManager.instance.onPause(this);
         view.onPause();
-        OpenBooksManager.get().onBookPaused(getController().getCurrentBookPath());
     }
 
     /**

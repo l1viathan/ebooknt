@@ -53,13 +53,7 @@
             android:name="org.ebookdroid.ui.viewer.ViewerActivity"
             android:launchMode="singleTop"
             android:configChanges="orientation|keyboardHidden|screenSize"
-            android:parentActivityName="org.ebookdroid.ui.library.RecentActivity"
             android:exported="true">
-
-            <!-- Parent activity metadata for API below 16 -->
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="org.ebookdroid.ui.library.RecentActivity" />
 
             <!--
                 Note: Intent matching isn't as easy as it looks at first sight.

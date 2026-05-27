@@ -173,7 +173,6 @@ public abstract class AbstractViewController extends AbstractComponentController
      */
     @Override
     public final void onDestroy() {
-        // isShown = false;
     }
 
     /**
