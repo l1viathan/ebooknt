@@ -48,4 +48,7 @@
     <string name="action_close_browser">Chiudi esplora</string>
     <string name="action_close_search">Chiudi ricerca</string>
     <string name="menu_nav_history">Cronologia navigazione</string>
+    <string name="outline_search_hint">Cerca</string>
+    <string name="outline_preview">Anteprima</string>
+    <string name="outline_confirm">OK</string>
 </resources>

@@ -55,4 +55,7 @@
     <string name="menu_nav_history">导航历史</string>
     <string name="menu_fit_by_height">适配高度</string>
     <string name="menu_fit_by_width">适配宽度</string>
+    <string name="outline_search_hint">搜索</string>
+    <string name="outline_preview">预览</string>
+    <string name="outline_confirm">确定</string>
 </resources>

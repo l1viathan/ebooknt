@@ -62,4 +62,7 @@
     <string name="menu_folder_properties_books">Books: %d</string>
     <string name="menu_fit_by_height">Fit by height</string>
     <string name="menu_fit_by_width">Fit by width</string>
+    <string name="outline_search_hint">Search</string>
+    <string name="outline_preview">Preview</string>
+    <string name="outline_confirm">OK</string>
 </resources>

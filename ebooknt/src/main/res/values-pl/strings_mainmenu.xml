@@ -56,4 +56,7 @@
     <string name="action_close_browser">Zamknij przeglądarkę</string>
     <string name="action_close_search">Zamknij wyszukiwanie</string>
     <string name="menu_nav_history">Historia nawigacji</string>
+    <string name="outline_search_hint">Szukaj</string>
+    <string name="outline_preview">Podgląd</string>
+    <string name="outline_confirm">OK</string>
 </resources>

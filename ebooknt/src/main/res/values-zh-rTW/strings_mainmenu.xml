@@ -53,5 +53,7 @@
     <string name="action_close_search">關閉搜尋</string>
     <string name="menu_exit">結束應用程式</string>
     <string name="menu_nav_history">導航歷史</string>
-
+    <string name="outline_search_hint">搜尋</string>
+    <string name="outline_preview">預覽</string>
+    <string name="outline_confirm">確定</string>
 </resources>

@@ -48,4 +48,7 @@
     <string name="action_close_browser">Fermer l\'explorateur</string>
     <string name="action_close_search">Fermer la recherche</string>
     <string name="menu_nav_history">Historique de navigation</string>
+    <string name="outline_search_hint">Recherche</string>
+    <string name="outline_preview">Aperçu</string>
+    <string name="outline_confirm">OK</string>
 </resources>

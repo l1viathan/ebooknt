@@ -39,7 +39,7 @@
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"
-        android:background="#60303030">
+        android:background="#A0202020">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -61,7 +61,7 @@
                 android:textSize="14sp"
                 android:textColor="#FFFFFFFF"
                 android:textColorHint="#80FFFFFF"
-                android:hint="搜索"
+                android:hint="@string/outline_search_hint"
                 android:background="@android:color/transparent"
                 android:paddingLeft="4dp" />
 
@@ -69,10 +69,10 @@
                 android:id="@+id/outline_drawer_preview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="预览"
+                android:text="@string/outline_preview"
                 android:textColor="#FFFFFFFF"
                 android:textSize="13sp"
-                android:checked="true" />
+                android:checked="false" />
 
         </LinearLayout>
 
@@ -88,14 +88,15 @@
             android:layout_weight="1"
             android:choiceMode="singleChoice"
             android:cacheColorHint="#00000000"
-            android:divider="@null"
+            android:divider="#30FFFFFF"
+            android:dividerHeight="1px"
             android:fastScrollEnabled="true" />
 
         <Button
             android:id="@+id/outline_drawer_confirm"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="确定"
+            android:text="@string/outline_confirm"
             android:textColor="#FFFFFFFF"
             android:background="#40606060"
             android:layout_margin="8dp" />

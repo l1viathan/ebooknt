@@ -117,6 +117,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     private OutlineAdapter outlineAdapter;
     private List<OutlineLink> cachedOutline;
     private int pendingOutlineScroll = -1;
+    private int outlineOriginPage = -1;
+    private boolean outlineConfirmed;
 
     /**
      * Instantiates a new base viewer activity.
@@ -249,12 +251,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         outlineConfirmBtn = (Button) rootLayout.findViewById(R.id.outline_drawer_confirm);
 
         if (AppSettings.current().einkMode) {
-            outlineDrawerPanel.setBackgroundColor(0xD0F0F0F0);
+            outlineDrawerPanel.setBackgroundColor(0xE0F0F0F0);
             outlineSearchEdit.setTextColor(0xFF000000);
             outlineSearchEdit.setHintTextColor(0xFF777777);
             outlinePreviewCheck.setTextColor(0xFF000000);
             outlineConfirmBtn.setTextColor(0xFF000000);
             outlineConfirmBtn.setBackgroundColor(0x40C0C0C0);
+            outlineDrawerList.setDivider(new android.graphics.drawable.ColorDrawable(0x30000000));
+            outlineDrawerList.setDividerHeight(1);
         }
 
         updateOutlineDrawerWidth();
@@ -286,9 +290,18 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             }
         });
 
+        outlineConfirmBtn.setVisibility(outlinePreviewCheck.isChecked() ? View.VISIBLE : View.GONE);
+        outlinePreviewCheck.setOnCheckedChangeListener(
+                new android.widget.CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(android.widget.CompoundButton btn, boolean checked) {
+                outlineConfirmBtn.setVisibility(checked ? View.VISIBLE : View.GONE);
+            }
+        });
         outlineConfirmBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                outlineConfirmed = true;
                 drawerLayout.closeDrawer(Gravity.START);
             }
         });
@@ -317,6 +330,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 if (drawerView == drawerList) {
                     centerDrawerItems(headerSpacer, footerSpacer);
                 } else if (drawerView == outlineDrawerPanel) {
+                    outlineConfirmed = false;
+                    final ViewerActivityController ctrl = getController();
+                    if (ctrl != null) {
+                        final BookSettings bs = ctrl.getBookSettings();
+                        if (bs != null && bs.currentPage != null) {
+                            outlineOriginPage = bs.currentPage.viewIndex;
+                        }
+                    }
                     if (pendingOutlineScroll >= 0) {
                         final int pos = pendingOutlineScroll;
                         pendingOutlineScroll = -1;
@@ -329,6 +350,16 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             }
             @Override
             public void onDrawerClosed(final View drawerView) {
+                if (drawerView == outlineDrawerPanel) {
+                    if (!outlineConfirmed && outlinePreviewCheck.isChecked()
+                            && outlineOriginPage >= 0) {
+                        final ViewerActivityController ctrl = getController();
+                        if (ctrl != null) {
+                            ctrl.getDocumentController().goToPage(outlineOriginPage);
+                        }
+                    }
+                    outlineOriginPage = -1;
+                }
                 final View glView = view.getView();
                 if (glView instanceof org.emdev.ui.gl.GLRootView) {
                     ((org.emdev.ui.gl.GLRootView) glView).requestLayoutContentPane();
@@ -793,6 +824,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 getController().getOrCreateAction(R.id.actions_openOptionsMenu).run();
                 return true;
             }
+        }
+
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK
+                && drawerLayout != null && drawerLayout.isDrawerOpen(Gravity.START)) {
+            if (event.getAction() == KeyEvent.ACTION_UP) {
+                drawerLayout.closeDrawer(Gravity.START);
+            }
+            return true;
         }
 
         if (getController().dispatchKeyEvent(event)) {

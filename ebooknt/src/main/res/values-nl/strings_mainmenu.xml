@@ -48,4 +48,7 @@
     <string name="action_close_browser">Browser sluiten</string>
     <string name="action_close_search">Zoeken sluiten</string>
     <string name="menu_nav_history">Navigatiegeschiedenis</string>
+    <string name="outline_search_hint">Zoeken</string>
+    <string name="outline_preview">Voorbeeld</string>
+    <string name="outline_confirm">OK</string>
 </resources>

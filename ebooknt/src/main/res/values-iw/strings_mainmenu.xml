@@ -48,4 +48,7 @@
     <string name="action_close_browser">סגור דפדפן</string>
     <string name="action_close_search">סגור חיפוש</string>
     <string name="menu_nav_history">היסטוריית ניווט</string>
+    <string name="outline_search_hint">חיפוש</string>
+    <string name="outline_preview">תצוגה מקדימה</string>
+    <string name="outline_confirm">אישור</string>
 </resources>

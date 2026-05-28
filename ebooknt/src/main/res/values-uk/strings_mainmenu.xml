@@ -48,4 +48,7 @@
     <string name="action_close_browser">Закрити оглядач</string>
     <string name="action_close_search">Закрити пошук</string>
     <string name="menu_nav_history">Історія навігації</string>
+    <string name="outline_search_hint">Пошук</string>
+    <string name="outline_preview">Попередній перегляд</string>
+    <string name="outline_confirm">OK</string>
 </resources>

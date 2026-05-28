@@ -51,4 +51,7 @@
     <string name="action_close_browser">Browser schließen</string>
     <string name="action_close_search">Suche schließen</string>
     <string name="menu_nav_history">Navigationsverlauf</string>
+    <string name="outline_search_hint">Suche</string>
+    <string name="outline_preview">Vorschau</string>
+    <string name="outline_confirm">OK</string>
 </resources>

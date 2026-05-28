@@ -56,4 +56,7 @@
     <string name="action_close_browser">Fermi retumilon</string>
     <string name="action_close_search">Fermi serĉon</string>
     <string name="menu_nav_history">Navigada historio</string>
+    <string name="outline_search_hint">Serĉi</string>
+    <string name="outline_preview">Antaŭrigardo</string>
+    <string name="outline_confirm">Konfirmi</string>
 </resources>
