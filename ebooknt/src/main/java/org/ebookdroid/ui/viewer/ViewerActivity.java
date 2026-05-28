@@ -141,6 +141,10 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     @Override
     protected void onNewIntent(final Intent intent) {
         super.onNewIntent(intent);
+        if (drawerLayout != null) {
+            drawerLayout.closeDrawer(Gravity.END, false);
+            drawerLayout.closeDrawer(Gravity.START, false);
+        }
         invalidateOutlineDrawer();
         getController().loadBook(intent);
     }
@@ -325,6 +329,9 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         drawerList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(final AdapterView<?> parent, final View view, final int position, final long id) {
+                if (drawerLayout != null) {
+                    drawerLayout.closeDrawer(drawerList, false);
+                }
                 final Object item = parent.getItemAtPosition(position);
                 if (item instanceof OpenBooksAdapter.BookItem) {
                     final OpenBooksAdapter.BookItem book = (OpenBooksAdapter.BookItem) item;
@@ -333,9 +340,6 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                     }
                 } else if (item == OpenBooksAdapter.LIBRARY_SENTINEL) {
                     getController().goToLibrary(null);
-                }
-                if (drawerLayout != null) {
-                    drawerLayout.closeDrawers();
                 }
             }
         });

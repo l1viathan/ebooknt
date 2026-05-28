@@ -360,7 +360,7 @@ public class OpenBooksDrawerHelper {
                         if (Math.abs(rawDx) > edgeSize) {
                             closeIntercepting = true;
                         }
-                        if (closeDx < -minSwipe && dy < -closeDx) {
+                        if (closeDx > minSwipe && dy < closeDx) {
                             drawerLayout.closeDrawers();
                             closeSwipeStartX = -1;
                         }
