@@ -29,7 +29,6 @@ import org.ebookdroid.common.settings.types.DocumentViewMode;
 import org.ebookdroid.common.settings.types.PageAlign;
 import org.ebookdroid.common.touch.TouchManager;
 import org.ebookdroid.core.DecodeService;
-import org.ebookdroid.core.NavigationHistory;
 import org.ebookdroid.core.NavigationHistoryTree;
 import org.ebookdroid.ui.viewer.dialogs.NavigationHistoryDialog;
 import org.ebookdroid.core.Page;
@@ -129,7 +128,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
     private String m_fileName;
 
-    private final NavigationHistory history;
 
     private NavigationHistoryTree navHistory;
 
@@ -214,7 +212,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 
         intent = activity.getIntent();
 
-        history = new NavigationHistory(this);
 
         executor = new AsyncTaskExecutor(256, 1, 5, 1, "BookExecutor-" + id);
 
@@ -655,9 +652,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
      */
     @Override
     public void jumpToPage(final int viewIndex, final float offsetX, final float offsetY, final boolean addToHistory) {
-        if (addToHistory) {
-            history.update();
-        }
         if (pendingNavType != null && navHistory != null) {
             navHistory.recordJump(viewIndex, pendingNavType, pendingNavDetail);
             pendingNavType = null;
@@ -1260,11 +1254,6 @@ public class ViewerActivityController extends AbstractActivityController<ViewerA
 	    } else if (getManagedComponent().getManualCropControls().isShown()) {
 		ViewEffects.toggleControls(getManagedComponent().getManualCropControls());
 	    } else {
-
-		if (history.goBack()) {
-		    return true;
-		}
-
 		if (AppSettings.current().confirmClose) {
 		    final ActionDialogBuilder builder = new ActionDialogBuilder(getManagedComponent(), this);
 		    builder.setTitle(R.string.confirmclose_title);
