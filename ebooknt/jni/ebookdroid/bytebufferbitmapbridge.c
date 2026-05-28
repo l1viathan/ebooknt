@@ -361,15 +361,15 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeAutoLevels2(JNIEnv* en
 
     for (i = 0; i < 256; i++)
     {
-        if (cumulativeFreqR[i] > 5 * numpixels / 100 && minR == 0)
+        if (cumulativeFreqR[i] > 2 * numpixels / 100 && minR == 0)
         {
             minR = MAX(0, i - 1);
         }
-        if (cumulativeFreqG[i] > 5 * numpixels / 100 && minG == 0)
+        if (cumulativeFreqG[i] > 2 * numpixels / 100 && minG == 0)
         {
             minG = MAX(0, i - 1);
         }
-        if (cumulativeFreqB[i] > 5 * numpixels / 100 && minB == 0)
+        if (cumulativeFreqB[i] > 2 * numpixels / 100 && minB == 0)
         {
             minB = MAX(0, i - 1);
         }
@@ -377,15 +377,15 @@ Java_org_ebookdroid_common_bitmaps_ByteBufferBitmap_nativeAutoLevels2(JNIEnv* en
 
     for (i = 255; i >= 0; i--)
     {
-        if (cumulativeFreqR[i] < 95 * numpixels / 100 && maxR == 0)
+        if (cumulativeFreqR[i] < 90 * numpixels / 100 && maxR == 0)
         {
             maxR = MIN(255, i + 1);
         }
-        if (cumulativeFreqG[i] < 95 * numpixels / 100 && maxG == 0)
+        if (cumulativeFreqG[i] < 90 * numpixels / 100 && maxG == 0)
         {
             maxG = MIN(255, i + 1);
         }
-        if (cumulativeFreqB[i] < 95 * numpixels / 100 && maxB == 0)
+        if (cumulativeFreqB[i] < 90 * numpixels / 100 && maxB == 0)
         {
             maxB = MIN(255, i + 1);
         }

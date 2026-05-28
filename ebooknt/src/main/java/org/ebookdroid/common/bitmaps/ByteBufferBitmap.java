@@ -80,6 +80,9 @@ public final class ByteBufferBitmap {
         final boolean applySmoothness = bs.smoothness > AppPreferences.SMOOTHNESS.defValue;
 
         if (correctContrast || correctGamma || correctExposure || bs.autoLevels || applyThreshold || applySmoothness) {
+            if (bs.autoLevels) {
+                autoLevels();
+            }
             if (correctGamma) {
                 gamma(bs.gamma);
             }
@@ -88,9 +91,6 @@ public final class ByteBufferBitmap {
             }
             if (correctExposure) {
                 exposure(bs.exposure);
-            }
-            if (bs.autoLevels) {
-                autoLevels();
             }
             if (applySmoothness) {
                 smoothness(bs.smoothness);
