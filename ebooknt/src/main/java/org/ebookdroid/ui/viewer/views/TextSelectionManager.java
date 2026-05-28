@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
+import org.ebookdroid.common.settings.AppSettings;
 import org.ebookdroid.core.Page;
 import org.ebookdroid.core.codec.PageTextBox;
 import org.ebookdroid.core.models.DocumentModel;
@@ -51,8 +52,9 @@ public class TextSelectionManager {
         this.base = base;
         this.hostView = hostView;
         this.density = hostView.getResources().getDisplayMetrics().density;
-        highlightPaint.setColor(0x4033B5E5);
-        handlePaint.setColor(0xFF33B5E5);
+        final boolean eink = AppSettings.current().einkMode;
+        highlightPaint.setColor(eink ? 0x40404040 : 0x4033B5E5);
+        handlePaint.setColor(eink ? 0xFF333333 : 0xFF33B5E5);
     }
 
     public boolean isActive() {
