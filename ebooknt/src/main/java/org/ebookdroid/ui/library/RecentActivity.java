@@ -149,6 +149,9 @@ public class RecentActivity extends AbstractActionActivity<RecentActivity, Recen
         locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
 
         locationSpinner = (Spinner) toolbar.findViewById(R.id.recent_location_spinner);
+        if (AppSettings.current().einkMode) {
+            locationSpinner.getBackground().setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+        }
         locationSpinner.setAdapter(locationAdapter);
         locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

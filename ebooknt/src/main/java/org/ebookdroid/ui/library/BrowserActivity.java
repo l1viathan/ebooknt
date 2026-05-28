@@ -121,6 +121,9 @@ public class BrowserActivity extends AbstractActionActivity<BrowserActivity, Bro
         locationAdapter.setDropDownViewResource(R.layout.browser_spinner_dropdown_item);
 
         locationSpinner = (Spinner) toolbar.findViewById(R.id.browser_location_spinner);
+        if (AppSettings.current().einkMode) {
+            locationSpinner.getBackground().setColorFilter(0xFFFFFFFF, android.graphics.PorterDuff.Mode.SRC_IN);
+        }
         locationSpinner.setAdapter(locationAdapter);
         locationSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override

@@ -870,7 +870,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
                 final TextView tv = (TextView) row.getChildAt(1);
                 final TextView arrow = (TextView) row.getChildAt(2);
                 final MenuItem item = visible.get(pos);
-                iv.setImageDrawable(item.getIcon());
+                final android.graphics.drawable.Drawable icon = item.getIcon();
+                if (icon != null && AppSettings.current().einkMode) {
+                    final int id = item.getItemId();
+                    if (id == R.id.mainmenu_nav_menu || id == R.id.mainmenu_other_menu) {
+                        icon.setColorFilter(0xFF333333, android.graphics.PorterDuff.Mode.SRC_IN);
+                    }
+                }
+                iv.setImageDrawable(icon);
                 tv.setText(item.getTitle());
                 tv.setAlpha(item.isEnabled() ? 1f : 0.4f);
                 arrow.setVisibility(item.hasSubMenu() ? View.VISIBLE : View.INVISIBLE);
