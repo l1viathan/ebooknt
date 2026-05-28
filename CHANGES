@@ -48,17 +48,22 @@ User Interface
   from the drawer.
 - Reworked the search UI to avoid layout overlap between pathname and
   file size; integrated instant-search into the PDF outline.
-- Redesigned the "Go to page" dialog with a compact layout.
+- Redesigned the "Go to page" dialog: compact layout, positioned at
+  the bottom of the screen to stay out of the reading area.
 - Reworked the fullscreen reading experience: double-tap behavior,
   fast-pagination indicator, and status-bar/navigation-bar handling.
 - Added desktop shortcut creation for individual books.
 - Replaced the "bookcase" web-image placeholders with a static
   fallback for empty shelves.
+- E-ink display support: adapted toolbar colors, drawer backgrounds,
+  icon tinting, and dialog styling for e-ink screens.
+- Configurable UI font scale.
 - Extensive Chinese (Simplified and Traditional) translation
   corrections, plus additions/corrections for all 16 supported locales.
 - Renamed user-visible "folder" terminology to "directory" across all
   locales (Android is not Windows).
 - Added an "Exit the app" option to the main UI menu.
+- Removed "Share" and "Open with" menu actions.
 
 
 Library & File Browser
@@ -83,15 +88,26 @@ Library & File Browser
   toolbar.
 
 
+Text Selection & Dictionary
+----------------------------
+- Long-press to select text with draggable handles.
+- Selected text can be looked up in external dictionary apps
+  (ColorDict, GoldenDict, Google Translate, etc.).
+- Works across all view modes (scroll, single-page) and on e-ink
+  devices.
+
+
 PDF Outline & Rendering
 -----------------------
 - Rewrote PDF outline (table-of-contents) loading to minimize JNI
   round-trips, significantly improving performance on large documents.
-- Fixed rendering parameters: contrast, gamma, exposure, threshold,
-  auto-levels, and smoothness now match EBookDroid behavior.
-- Fixed the gray-pages-on-tap bug caused by IMMERSIVE_STICKY flag
-  handling triggering spurious window-resize events.
-- Fixed a multi-threaded decoding crash.
+- Picture enhancement with live preview: dedicated settings screen
+  with real-time preview of the current page; sliders for contrast,
+  gamma, exposure, auto-levels, threshold, and smoothness.
+- Improved auto-levels algorithm: histogram stretching is now applied
+  before other adjustments, and uses asymmetric clipping for better
+  results on scanned documents.
+- Thread-safe native rendering context management.
 
 
 Power & Battery
@@ -143,6 +159,8 @@ Open Books & Navigation Drawer
 - Drawer "home" icon replaced with the EbookNT application icon.
 - Proper landscape layout and improved overlay behavior (drawer
   no longer masks the reading page or conflicts with edge swipes).
+- Multi-book caching: switch between open books instantly without
+  re-decoding; configurable cache size.
 - Improved book-close, flush, and app-exit lifecycle.
 
 
@@ -157,8 +175,13 @@ Search
 
 Outline & Page Navigation
 -------------------------
+- Added an outline drawer (left-edge swipe) with instant search
+  filtering, optional preview mode, and a confirm/cancel workflow
+  for navigating to entries.
 - Added fast-scroll thumb to outline list for documents with
   many entries.
+- Tree-structured navigation history: tracks page jumps as a
+  tree rather than a linear stack; includes a visualization dialog.
 - Enhanced "Go to page" dialog.
 
 
@@ -169,6 +192,8 @@ Rendering & Display
 - Simplified Rotate settings.
 - Added Text Selection toggle in both global and per-book
   settings.
+- Added scroll behavior settings (configurable scroll direction
+  and sensitivity).
 
 
 Localization

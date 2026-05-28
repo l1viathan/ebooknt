@@ -26,6 +26,12 @@ Major changes:
 * **Removed submodules:** applied necessary patches and merged them into a monolithic repo
 * **100% Offline:** Removed OPDS support and the `INTERNET` permission entirely.
 * **Redesigned UI:** Tailored specifically for an uninterrupted offline reading experience.
+* **Text selection & dictionary lookup:** Long-press to select text, look up words in external dictionaries (ColorDict, GoldenDict, etc.).
+* **E-ink display support:** Adapted toolbar, drawers, dialogs, and icons for e-ink screens.
+* **Outline drawer:** Swipe-in table of contents with search, preview, and page-position confirmation.
+* **Picture enhancement with live preview:** Contrast, gamma, exposure, auto-levels, threshold, and smoothness — all adjustable with a real-time preview of the current page.
+* **Multi-book caching:** Switch between open books instantly without re-decoding.
+* **Navigation history tree:** Tree-structured reading history with visualization.
 * **Manual & auto cropping:** Per-book default crop actions, conservative auto-crop clamping.
 * **PDF/DjVu logical page numbers:** Automatic detection of page label offsets.
 * **Various bug fixes and stability improvements.**
