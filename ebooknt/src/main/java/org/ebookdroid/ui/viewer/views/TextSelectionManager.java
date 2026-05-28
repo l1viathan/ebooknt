@@ -71,23 +71,25 @@ public class TextSelectionManager {
         final float absX = viewX + scrollX;
         final float absY = viewY + scrollY;
 
-        final Page[] allPages = model.getPages();
-        final RectF bounds = new RectF();
-        for (final Page page : allPages) {
-            page.getBounds(zoom, bounds);
-            if (absX >= bounds.left && absX <= bounds.right
-                    && absY >= bounds.top && absY <= bounds.bottom) {
-                float normX = (absX - bounds.left) / bounds.width();
-                float normY = (absY - bounds.top) / bounds.height();
-                final RectF crop = page.getCropping();
-                if (crop != null) {
-                    normX = crop.left + normX * crop.width();
-                    normY = crop.top + normY * crop.height();
-                }
-                return startSelectionOnPage(page.index.docIndex, normX, normY);
-            }
+        final Page current = model.getCurrentPageObject();
+        if (current != null) {
+            final RectF cb = new RectF();
+            current.getBounds(zoom, cb);
+            return trySelectOnPage(current, cb, absX, absY);
         }
         return false;
+    }
+
+    private boolean trySelectOnPage(final Page page, final RectF bounds,
+                                     final float absX, final float absY) {
+        float normX = (absX - bounds.left) / bounds.width();
+        float normY = (absY - bounds.top) / bounds.height();
+        final RectF crop = page.getCropping();
+        if (crop != null) {
+            normX = crop.left + normX * crop.width();
+            normY = crop.top + normY * crop.height();
+        }
+        return startSelectionOnPage(page.index.docIndex, normX, normY);
     }
 
     private boolean startSelectionOnPage(final int pageDocIndex,
