@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <group android:id="@+id/ctx_grp_outline">
-        <item
-            android:id="@+id/mainmenu_outline"
-            android:icon="@drawable/viewer_menu_outline"
-            android:title="@string/menu_outline"/>
-    </group>
-
     <group android:id="@+id/ctx_grp_nav">
         <item
             android:id="@+id/mainmenu_nav_menu"
             android:icon="@drawable/viewer_actionbar_menu_navigation"
             android:title="@string/menu_navigation_menu">
             <menu>
+                <item
+                    android:id="@+id/mainmenu_outline"
+                    android:icon="@drawable/viewer_menu_outline"
+                    android:title="@string/menu_outline"/>
+                <item
+                    android:id="@+id/mainmenu_goto_page"
+                    android:icon="@drawable/viewer_menu_goto"
+                    android:title="@string/menu_goto_page"/>
                 <item
                     android:id="@+id/mainmenu_search"
                     android:icon="@drawable/viewer_menu_searchtext"
@@ -22,10 +23,6 @@
                     android:id="@+id/mainmenu_bookmark"
                     android:icon="@drawable/viewer_menu_bookmark_add"
                     android:title="@string/menu_add_bookmark"/>
-                <item
-                    android:id="@+id/mainmenu_goto_page"
-                    android:icon="@drawable/viewer_menu_goto"
-                    android:title="@string/menu_goto_page"/>
                 <item
                     android:id="@+id/mainmenu_nav_history"
                     android:icon="@drawable/viewer_menu_nav_history"

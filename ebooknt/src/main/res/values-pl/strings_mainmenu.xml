@@ -3,7 +3,7 @@
 
     <string name="menu_close">Zamknij</string>
     <string name="menu_goto_page">Idź do…</string>
-    <string name="menu_outline">Nawigacja - Spis treści</string>
+    <string name="menu_outline">Spis treści</string>
     <string name="menu_zoom">Powiększenie</string>
     <string name="menu_nightmode">Dzienny/nocny</string>
     <string name="menu_settings">Wszystkie ustawienia</string>
@@ -24,7 +24,7 @@
     <string name="menu_singlepage">Pojedyncza strona</string>
     <string name="menu_search">Wyszukaj</string>
 
-    <string name="menu_navigation_menu">Nawigacja - Inne</string>
+    <string name="menu_navigation_menu">Nawigacja</string>
     <string name="menu_other_menu">Inne…</string>
     <string name="menu_book_info">O tej książce</string>
     <string name="menu_fastsettings_menu">Widok…</string>

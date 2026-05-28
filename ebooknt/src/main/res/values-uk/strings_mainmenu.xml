@@ -3,7 +3,7 @@
 
     <string name="menu_close">"Закрити"</string>
     <string name="menu_goto_page">"Сторінка"</string>
-    <string name="menu_outline">"Навігація - Зміст"</string>
+    <string name="menu_outline">"Зміст"</string>
     <string name="menu_zoom">"Збільшення"</string>
     <string name="menu_nightmode">"День/Ніч"</string>
     <string name="menu_settings">"Всі налаштування"</string>
@@ -21,7 +21,7 @@
 <!--<string name="menu_show_options_menu">"Show options menu"</string>-->
 <!--<string name="menu_backupsettings">"Backup &amp; Restore"</string>-->
 <!--<string name="menu_crop">"Manual crop"</string>-->
-    <string name="menu_navigation_menu">"Навігація - Інше"</string>
+    <string name="menu_navigation_menu">"Навігація"</string>
     <string name="menu_other_menu">"Інше…"</string>
     <string name="menu_book_info">"Про цю книгу"</string>
 <!--<string name="menu_fastsettings_menu">"View..."</string>-->

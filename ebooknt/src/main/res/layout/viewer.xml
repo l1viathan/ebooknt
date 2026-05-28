@@ -35,7 +35,7 @@
     <!-- Outline drawer (left) -->
     <LinearLayout
         android:id="@+id/viewer_outline_drawer"
-        android:layout_width="300dp"
+        android:layout_width="280dp"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:orientation="vertical"

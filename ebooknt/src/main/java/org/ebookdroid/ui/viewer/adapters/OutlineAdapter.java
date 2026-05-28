@@ -37,6 +37,7 @@ public class OutlineAdapter extends BaseAdapter {
 
     private final Drawable background;
     private final Drawable selected;
+    private final boolean einkMode;
 
     private final VoidListener voidListener = new VoidListener();
     private final ItemListener itemListener = new ItemListener();
@@ -49,7 +50,7 @@ public class OutlineAdapter extends BaseAdapter {
     private final OutlineItemState[] states;
     private final boolean[] filtered;
     private final SparseIntArray mapping = new SparseIntArray();
-    private final int currentId;
+    private int currentId;
     private final int offset;
     private String filterQuery = "";
 
@@ -64,6 +65,7 @@ public class OutlineAdapter extends BaseAdapter {
 
         background = resources.getDrawable(R.drawable.viewer_outline_item_background);
         selected = resources.getDrawable(R.drawable.viewer_outline_item_background_selected);
+        einkMode = AppSettings.current().einkMode;
 
         this.offset = bs != null ? bs.firstPageOffset : 1;
         this.objects = objects.toArray(new OutlineLink[objects.size()]);
@@ -111,6 +113,33 @@ public class OutlineAdapter extends BaseAdapter {
                 rebuild();
             }
         }
+    }
+
+    public void updateCurrentPage(final int docIndex) {
+        int newId = -1;
+        for (int i = 0; i < objects.length; i++) {
+            if (objects[i].targetPage - 1 <= docIndex && objects[i].targetPage >= 1) {
+                newId = i;
+            } else if (objects[i].targetPage - 1 > docIndex) {
+                break;
+            }
+        }
+        if (newId != currentId) {
+            currentId = newId;
+            if (currentId >= 0) {
+                for (int p = getParentId(currentId); p != -1; p = getParentId(p)) {
+                    if (states[p] != OutlineItemState.COLLAPSED) break;
+                    states[p] = OutlineItemState.EXPANDED;
+                }
+                rebuild();
+            }
+            notifyDataSetChanged();
+        }
+    }
+
+    public int getCurrentPosition() {
+        if (currentId < 0) return -1;
+        return getItemPosition(currentId < objects.length ? objects[currentId] : null);
     }
 
     public void setFilter(String query) {
@@ -251,7 +280,13 @@ public class OutlineAdapter extends BaseAdapter {
         holder.btn.setTag(position);
         holder.pageIndex.setText(getPageIndex(position));
 
-        container.setBackgroundDrawable(id == currentId ? this.selected : this.background);
+        final boolean isCurrent = id == currentId;
+        if (isCurrent && einkMode) {
+            container.setBackgroundColor(0x30000000);
+        } else {
+            container.setBackgroundDrawable(isCurrent ? this.selected : this.background);
+        }
+        holder.title.setTypeface(null, isCurrent ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
 
         final RelativeLayout.LayoutParams sl = (LayoutParams) holder.space.getLayoutParams();
         sl.width = item.level * spaceWidth;

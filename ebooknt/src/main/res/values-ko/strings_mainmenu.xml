@@ -3,7 +3,7 @@
 
 <string name="menu_close">닫기</string>
 <string name="menu_goto_page">바로가기...</string>
-<string name="menu_outline">탐색 - 목차</string>
+<string name="menu_outline">목차</string>
 <string name="menu_zoom">확대</string>
 <string name="menu_nightmode">주간/야간</string>
 <string name="menu_settings">모든 설정</string>
@@ -22,7 +22,7 @@
 <string name="menu_backupsettings">백업 &amp; 복원</string>
 <string name="menu_crop">수동 자르기</string>
 
-<string name="menu_navigation_menu">탐색 - 기타</string>
+<string name="menu_navigation_menu">탐색</string>
 <string name="menu_other_menu">기타…</string>
 <string name="menu_book_info">이 책에 대하여</string>
 <string name="menu_fastsettings_menu">보기...</string>

@@ -61,6 +61,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.res.Configuration;
 import android.text.Editable;
 import android.text.TextWatcher;
 
@@ -115,6 +116,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     private Button outlineConfirmBtn;
     private OutlineAdapter outlineAdapter;
     private List<OutlineLink> cachedOutline;
+    private int pendingOutlineScroll = -1;
 
     /**
      * Instantiates a new base viewer activity.
@@ -255,6 +257,8 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             outlineConfirmBtn.setBackgroundColor(0x40C0C0C0);
         }
 
+        updateOutlineDrawerWidth();
+
         outlineSearchEdit.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
             @Override public void onTextChanged(CharSequence s, int st, int b, int c) {}
@@ -312,6 +316,15 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             public void onDrawerOpened(final View drawerView) {
                 if (drawerView == drawerList) {
                     centerDrawerItems(headerSpacer, footerSpacer);
+                } else if (drawerView == outlineDrawerPanel) {
+                    if (pendingOutlineScroll >= 0) {
+                        final int pos = pendingOutlineScroll;
+                        pendingOutlineScroll = -1;
+                        final int h = outlineDrawerList.getHeight();
+                        if (h > 0) {
+                            outlineDrawerList.setSelectionFromTop(pos, h / 2);
+                        }
+                    }
                 }
             }
             @Override
@@ -367,6 +380,7 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
     void loadOutlineDrawer() {
         final ViewerActivityController ctrl = getController();
         if (ctrl == null) return;
+        updateOutlineDrawerWidth();
         final org.ebookdroid.core.DecodeService ds = ctrl.getDecodeService();
         if (ds == null) return;
         final List<OutlineLink> outline = ds.getOutline();
@@ -379,6 +393,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
             return;
         }
         if (cachedOutline == outline && outlineAdapter != null) {
+            final BookSettings bs2 = ctrl.getBookSettings();
+            if (bs2 != null && bs2.currentPage != null) {
+                outlineAdapter.updateCurrentPage(bs2.currentPage.docIndex);
+                final int pos = outlineAdapter.getCurrentPosition();
+                if (pos >= 0) {
+                    scrollOutlineToCenter(pos);
+                }
+            }
             return;
         }
         cachedOutline = outline;
@@ -400,10 +422,14 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         if (current != null) {
             final int pos = outlineAdapter.getItemPosition(current);
             if (pos >= 0) {
-                outlineDrawerList.setSelection(pos);
+                scrollOutlineToCenter(pos);
             }
         }
         outlineSearchEdit.setText("");
+    }
+
+    private void scrollOutlineToCenter(final int position) {
+        pendingOutlineScroll = position;
     }
 
     void openOutlineDrawer() {
@@ -478,6 +504,34 @@ public class ViewerActivity extends AbstractActionActivity<ViewerActivity, Viewe
         if (hasFocus && this.view != null) {
             IUIManager.instance.setFullScreenMode(this, this.view.getView(), AppSettings.current().fullScreen);
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(final Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updateOutlineDrawerWidth();
+    }
+
+    private void updateOutlineDrawerWidth() {
+        if (outlineDrawerPanel == null) return;
+        final DisplayMetrics dm = getResources().getDisplayMetrics();
+        boolean landscape = false;
+        final ViewerActivityController ctrl = getController();
+        if (ctrl != null) {
+            final BookSettings bs = ctrl.getBookSettings();
+            if (bs != null) {
+                landscape = bs.rotation == RotationType.LANDSCAPE;
+            }
+        }
+        final int screenWidthPx = landscape
+                ? Math.max(dm.widthPixels, dm.heightPixels)
+                : Math.min(dm.widthPixels, dm.heightPixels);
+        final float ratio = landscape ? 0.50f : 0.80f;
+        final int maxPx = (int) (480 * dm.density);
+        final int width = Math.min((int) (screenWidthPx * ratio), maxPx);
+        final ViewGroup.LayoutParams lp = outlineDrawerPanel.getLayoutParams();
+        lp.width = width;
+        outlineDrawerPanel.setLayoutParams(lp);
     }
 
     private void initOverlays() {

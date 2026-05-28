@@ -7,11 +7,6 @@
         android:icon="@drawable/viewer_menu_outline"
         android:title="@string/menu_outline"/>
     <item
-        android:id="@+id/mainmenu_bookmark"
-        android:alphabeticShortcut="b"
-        android:icon="@drawable/viewer_menu_bookmark_add"
-        android:title="@string/menu_add_bookmark"/>
-    <item
         android:id="@+id/mainmenu_goto_page"
         android:alphabeticShortcut="g"
         android:icon="@drawable/viewer_menu_goto"
@@ -21,6 +16,11 @@
         android:alphabeticShortcut="r"
         android:icon="@drawable/viewer_menu_searchtext"
         android:title="@string/menu_searchtext"/>
+    <item
+        android:id="@+id/mainmenu_bookmark"
+        android:alphabeticShortcut="b"
+        android:icon="@drawable/viewer_menu_bookmark_add"
+        android:title="@string/menu_add_bookmark"/>
     <item
         android:id="@+id/mainmenu_nav_history"
         android:alphabeticShortcut="h"

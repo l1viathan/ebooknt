@@ -3,7 +3,7 @@
 
     <string name="menu_close">"Закрыть"</string>
     <string name="menu_goto_page">"Перейти к..."</string>
-    <string name="menu_outline">"Навигация - Содержание"</string>
+    <string name="menu_outline">"Содержание"</string>
     <string name="menu_zoom">"Увеличение"</string>
     <string name="menu_nightmode">"День/Ночь"</string>
     <string name="menu_settings">"Все настройки"</string>
@@ -21,7 +21,7 @@
     <string name="menu_show_options_menu">"Показать меню"</string>
     <string name="menu_backupsettings">"Сохранение и восстановление"</string>
     <string name="menu_crop">"Ручная обрезка страницы"</string>
-    <string name="menu_navigation_menu">"Навигация - Прочее"</string>
+    <string name="menu_navigation_menu">"Навигация"</string>
     <string name="menu_other_menu">"Прочее…"</string>
     <string name="menu_book_info">"Об этой книге"</string>
     <string name="menu_fastsettings_menu">"Вид..."</string>
