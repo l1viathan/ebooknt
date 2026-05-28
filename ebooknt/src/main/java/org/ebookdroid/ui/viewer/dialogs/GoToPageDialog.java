@@ -128,9 +128,12 @@ public class GoToPageDialog extends Dialog {
         super.onStart();
 
         final android.view.Window win = getWindow();
-        win.setGravity(Gravity.CENTER);
+        win.setGravity(Gravity.BOTTOM);
         win.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
                       WindowManager.LayoutParams.WRAP_CONTENT);
+        final WindowManager.LayoutParams lp = win.getAttributes();
+        lp.y = (int) (8 * getContext().getResources().getDisplayMetrics().density);
+        win.setAttributes(lp);
 
         final DocumentModel dm = base.getDocumentModel();
         final Page lastPage = dm != null ? dm.getLastPageObject() : null;
